@@ -17,7 +17,16 @@ function InstallButton() {
       return;
     }
 
-    // Listen for beforeinstallprompt event
+    // Detect iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
+
+    // For iOS, show button if not in standalone mode
+    if (isIOS && !isInStandaloneMode) {
+      setShowButton(true);
+    }
+
+    // Listen for beforeinstallprompt event (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -34,8 +43,8 @@ function InstallButton() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // Check if already installed
-    if ('serviceWorker' in navigator) {
+    // Check if already installed (Android)
+    if ('serviceWorker' in navigator && !isIOS) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         if (registrations.length > 0) {
           // App might be installed
@@ -55,15 +64,31 @@ function InstallButton() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // Fallback: Show instructions based on device
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isAndroid = /Android/.test(navigator.userAgent);
-      
-      let instructions = '';
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    
+    // iOS doesn't support beforeinstallprompt, show instructions
+    if (isIOS || !deferredPrompt) {
+      // Show detailed iOS instructions
       if (isIOS) {
-        instructions = '📱 iOS Installation:\n\n1. Tap the Share button (⬆️) at the bottom\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" to confirm';
-      } else if (isAndroid) {
+        const instructions = `📱 iPhone/iPad Installation Guide:
+
+1️⃣ Tap the Share button (⬆️) at the bottom of Safari
+2️⃣ Scroll down in the menu
+3️⃣ Tap "Add to Home Screen"
+4️⃣ Tap "Add" in the top right corner
+
+✅ The app will appear on your home screen like a native app!
+
+💡 Tip: Make sure you're using Safari browser (not Chrome)`;
+        
+        alert(instructions);
+        return;
+      }
+      
+      // Fallback for other devices
+      let instructions = '';
+      if (isAndroid) {
         instructions = '📱 Android Installation:\n\n1. Tap the menu (⋮) in your browser\n2. Select "Add to Home screen" or "Install app"\n3. Tap "Add" or "Install" to confirm';
       } else {
         instructions = '💻 Desktop Installation:\n\n1. Look for the install icon in your browser address bar\n2. Or use browser menu: More tools > Create shortcut\n3. Check "Open as window" option';

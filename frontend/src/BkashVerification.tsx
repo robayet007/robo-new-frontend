@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 
 type BkashVerificationProps = {
-  onVerify: (businessId: string) => void;
+  onVerify: (businessId: string) => Promise<void>;
   onClose: () => void;
   amount?: number;
 };
@@ -14,7 +14,7 @@ function BkashVerification({
   amount,
 }: BkashVerificationProps) {
   const [transactionId, setTransactionId] = useState("");
-  const [isVerified, setIsVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [error, setError] = useState("");
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -23,7 +23,7 @@ function BkashVerification({
     return trxIdRegex.test(trxId);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -39,16 +39,26 @@ function BkashVerification({
       return;
     }
 
-    setIsVerified(true);
+    setIsVerifying(true);
+    setError("");
 
-    // Show success popup
-    setShowSuccess(true);
-
-    // Automatically close after 3 seconds and verify
-    setTimeout(() => {
-      setShowSuccess(false);
-      onVerify(trimmedTrxId);
-    }, 3000);
+    try {
+      // Call onVerify which is async
+      await onVerify(trimmedTrxId);
+      
+      // If successful, show success message
+      setShowSuccess(true);
+      
+      // Auto close after 2 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 2000);
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      setError(err.message || 'Payment verification failed. Please try again.');
+      setIsVerifying(false);
+    }
   };
 
   const handlePaste = async () => {
@@ -595,7 +605,7 @@ function BkashVerification({
                       setError("");
                     }}
                     placeholder="Enter TrxID (e.g., C7H9J2K4L5M)"
-                    disabled={isVerified}
+                    disabled={isVerifying}
                     style={{
                       width: "100%",
                       padding: "16px",
@@ -606,13 +616,13 @@ function BkashVerification({
                       fontWeight: "400",
                       letterSpacing: "1px",
                       color: "#1e293b",
-                      backgroundColor: isVerified ? "#f1f5f9" : "white",
+                      backgroundColor: isVerifying ? "#f1f5f9" : "white",
                       boxSizing: "border-box",
                       transition: "all 0.3s ease",
                       WebkitAppearance: "none",
                     }}
                     onFocus={(e) => {
-                      if (!isVerified) {
+                      if (!isVerifying) {
                         e.target.style.borderColor = "#e2136e";
                         e.target.style.boxShadow =
                           "0 0 0 3px rgba(226, 19, 110, 0.1)";
@@ -803,12 +813,12 @@ function BkashVerification({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={!transactionId.trim() || isVerified}
+            disabled={!transactionId.trim() || isVerifying}
             style={{
               width: "100%",
               padding: "18px",
               background:
-                !transactionId.trim() || isVerified
+                !transactionId.trim() || isVerifying
                   ? "#cbd5e1"
                   : "linear-gradient(135deg, #e2136e, #d70270)",
               color: "white",
@@ -817,7 +827,7 @@ function BkashVerification({
               fontSize: "1.1rem",
               fontWeight: "700",
               cursor:
-                !transactionId.trim() || isVerified ? "not-allowed" : "pointer",
+                !transactionId.trim() || isVerifying ? "not-allowed" : "pointer",
               transition: "all 0.3s ease",
               display: "flex",
               alignItems: "center",
@@ -830,21 +840,21 @@ function BkashVerification({
               letterSpacing: "0.5px",
             }}
             onMouseOver={(e) => {
-              if (transactionId.trim() && !isVerified) {
+              if (transactionId.trim() && !isVerifying) {
                 e.currentTarget.style.transform = "translateY(-2px)";
                 e.currentTarget.style.boxShadow =
                   "0 8px 24px rgba(226, 19, 110, 0.4)";
               }
             }}
             onMouseOut={(e) => {
-              if (transactionId.trim() && !isVerified) {
+              if (transactionId.trim() && !isVerifying) {
                 e.currentTarget.style.transform = "translateY(0)";
                 e.currentTarget.style.boxShadow =
                   "0 6px 20px rgba(226, 19, 110, 0.3)";
               }
             }}
           >
-            {isVerified ? (
+            {isVerifying ? (
               <>
                 <span
                   style={{

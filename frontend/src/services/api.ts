@@ -1,183 +1,51 @@
 import type { ApiResponse, BackendProduct, BackendCategory } from '../types';
 
-// ==================== SMART API MANAGER ====================
-interface APIEndpoint {
-  url: string;
-  name: string;
-  priority: number;
-  type: string;
-}
-
+// ==================== API MANAGER - Render.com Only ====================
 class SmartAPIManager {
-  static endpoints: APIEndpoint[] = [
-    { 
-      url: 'https://robo-backend-gguf.onrender.com/api', 
-      name: 'Render', 
-      priority: 1, 
-      type: 'https' 
-    },
-    { 
-      url: '/api', 
-      name: 'Vercel Proxy', 
-      priority: 2, 
-      type: 'proxy' 
-    },
-    { 
-      url: 'http://3.27.116.101:5000/api', 
-      name: 'EC2 Direct', 
-      priority: 3, 
-      type: 'http' 
-    }
-  ];
+  // Use only Render.com backend
+  static baseURL = 'https://robo-backend-gguf.onrender.com/api';
   
-  static currentEndpoint: APIEndpoint = this.endpoints[0];
-  static isInitialized: boolean = false;
-  static initializationPromise: Promise<string> | null = null;
-  
-  // Initialize API manager
-  static async initialize(): Promise<string> {
-    if (this.isInitialized) {
-      return this.currentEndpoint.url;
-    }
-    
-    if (this.initializationPromise) {
-      return this.initializationPromise;
-    }
-    
-    this.initializationPromise = (async (): Promise<string> => {
-      console.log('🔍 Initializing API Manager...');
-      
-      // Sort by priority
-      const sortedEndpoints = [...this.endpoints].sort((a, b) => a.priority - b.priority);
-      
-      // Filter out incompatible endpoints
-      const compatibleEndpoints = sortedEndpoints.filter(endpoint => {
-        // Skip HTTP endpoints on HTTPS sites
-        if (window.location.protocol === 'https:' && endpoint.type === 'http') {
-          console.log(`⏭️ Skipping ${endpoint.name} (HTTP not allowed on HTTPS site)`);
-          return false;
-        }
-        return true;
-      });
-      
-      if (compatibleEndpoints.length === 0) {
-        console.warn('⚠️ No compatible endpoints found, using first endpoint');
-        this.currentEndpoint = this.endpoints[0];
-        this.isInitialized = true;
-        return this.endpoints[0].url;
-      }
-      
-      // Test endpoints
-      for (const endpoint of compatibleEndpoints) {
-        try {
-          console.log(`Testing ${endpoint.name} (${endpoint.url})...`);
-          const isHealthy = await this.testEndpoint(endpoint);
-          
-          if (isHealthy) {
-            this.currentEndpoint = endpoint;
-            console.log(`✅ Selected: ${endpoint.name}`);
-            this.isInitialized = true;
-            return endpoint.url;
-          }
-          
-          console.log(`❌ ${endpoint.name} failed`);
-        } catch (error) {
-          console.log(`⚠️ ${endpoint.name} test error:`, error instanceof Error ? error.message : String(error));
-        }
-      }
-      
-      // All endpoints failed, use first compatible
-      this.currentEndpoint = compatibleEndpoints[0];
-      console.warn(`⚠️ All endpoints failed, using fallback: ${compatibleEndpoints[0].name}`);
-      this.isInitialized = true;
-      return compatibleEndpoints[0].url;
-    })();
-    
-    return this.initializationPromise;
-  }
-  
-  // Test endpoint health
-  static async testEndpoint(endpoint: APIEndpoint): Promise<boolean> {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      
-      const response = await fetch(`${endpoint.url}/health`, {
-        signal: controller.signal,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        return false;
-      }
-      
-      try {
-        const data = await response.json();
-        return data.status === 'OK' || data.success === true || data.message?.includes('running');
-      } catch {
-        // If not JSON, check if response text contains success indicators
-        const text = await response.text();
-        return text.includes('"status":"OK"') || text.includes('"success":true');
-      }
-    } catch (error) {
-      console.log(`Endpoint ${endpoint.name} test failed:`, error instanceof Error ? error.message : String(error));
-      return false;
-    }
-  }
-  
-  // Get current API base URL
+  // Get API base URL
   static async getBaseURL(): Promise<string> {
-    if (!this.isInitialized) {
-      return await this.initialize();
-    }
-    return this.currentEndpoint.url;
+    return this.baseURL;
   }
   
-  // Smart fetch with retry logic
+  // Simple fetch to Render backend with timeout
   static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
-    const baseURL = await this.getBaseURL();
+    const url = `${this.baseURL}${path}`;
+    
+    console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
+    
+    // Add default timeout if not already set
+    const timeout = 20000; // 20 seconds default
+    const controller = options.signal || new AbortController();
+    const timeoutId = setTimeout(() => {
+      if (!options.signal) {
+        controller.abort();
+      }
+    }, timeout);
     
     try {
-      const response = await fetch(`${baseURL}${path}`, {
+      const response = await fetch(url, {
         ...options,
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers
         }
       });
       
-      // If request fails, try next endpoint (except for POST/PUT/DELETE to avoid duplicates)
-      if (!response.ok && 
-          this.currentEndpoint.priority < this.endpoints.length && 
-          (!options.method || options.method === 'GET')) {
-        
-        const currentIndex = this.endpoints.findIndex(e => e.url === baseURL);
-        if (currentIndex < this.endpoints.length - 1) {
-          console.warn(`Retrying with next endpoint (HTTP ${response.status})`);
-          this.currentEndpoint = this.endpoints[currentIndex + 1];
-          return this.smartFetch(path, options);
-        }
-      }
-      
+      clearTimeout(timeoutId);
       return response;
-    } catch (error) {
-      console.error('Fetch error:', error);
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout. Please check your connection.');
+      }
       throw error;
     }
   }
 }
-
-// Initialize API manager when module loads
-SmartAPIManager.initialize().then(url => {
-  console.log('🚀 API Manager initialized with:', url);
-}).catch(error => {
-  console.error('Failed to initialize API manager:', error);
-});
 
 // ==================== API SERVICES ====================
 // Products API with smart fetch
@@ -269,10 +137,11 @@ export const paymentApi = {
     price?: number;
     paymentMethod?: 'bkash' | 'robo';
     updatedBalance?: number; // For Robo Balance payments, send the remaining balance
-    userEmail?: string; // User email for Telegram notification
-    userName?: string; // User name for Telegram notification
+    userEmail?: string; // User email for database tracking
+    userName?: string; // User name for database tracking
+    userId?: string; // User ID for database tracking
     timestamp?: string; // Timestamp for tracking
-  }): Promise<ApiResponse> => {
+  }, options: RequestInit = {}): Promise<ApiResponse> => {
     try {
       const baseURL = await SmartAPIManager.getBaseURL();
       console.log('🌐 API Base URL:', baseURL);
@@ -284,56 +153,30 @@ export const paymentApi = {
       const response = await SmartAPIManager.smartFetch('/payments/verify', {
         method: 'POST',
         body: JSON.stringify(paymentData),
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        ...options // Pass options including signal
       });
       
-      console.log('📊 Response Status:', response.status);
-      console.log('✅ Response OK:', response.ok);
-      console.log('📋 Response Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('API Response status:', response.status);
+      console.log('API Response ok:', response.ok);
       
       if (!response.ok) {
-        let errorText = '';
-        try {
-          errorText = await response.text();
-          console.error('❌ API Error Response Text:', errorText);
-        } catch (e) {
-          console.error('❌ Could not read error response');
-        }
-        
+        const errorText = await response.text();
+        console.error('API Error response:', errorText);
         return {
           success: false,
-          message: `Server error (${response.status}): ${response.statusText}`,
+          message: `Server error: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`,
           data: null
         };
       }
       
-      let jsonResponse;
-      try {
-        const responseText = await response.text();
-        console.log('📄 Raw Response Text:', responseText);
-        jsonResponse = JSON.parse(responseText);
-        console.log('✅ Parsed JSON Response:', JSON.stringify(jsonResponse, null, 2));
-      } catch (parseError: any) {
-        console.error('❌ JSON Parse Error:', parseError);
-        return {
-          success: false,
-          message: 'Invalid response from server',
-          data: null
-        };
-      }
-      
+      const jsonResponse = await response.json();
+      console.log('API JSON response:', jsonResponse);
       return jsonResponse;
     } catch (error: any) {
-      console.error('❌ API Call Exception:', error);
-      console.error('❌ Error Type:', error.constructor.name);
-      console.error('❌ Error Message:', error.message);
-      console.error('❌ Error Stack:', error.stack);
-      
+      console.error('❌ API Call failed:', error);
       return {
         success: false,
-        message: error.message || 'Network error. Please check your connection and backend server.',
+        message: error.message || 'Network error. Please check your connection.',
         data: null
       };
     }

@@ -62,7 +62,11 @@ function Checkout({ products }: { products: Product[] }) {
         productId: product.id,
         productName: product.name,
         diamonds: product.diamonds,
-        price: product.price
+        price: product.price,
+        paymentMethod: 'bkash',
+        userEmail: user?.email || '',
+        userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+        userId: user?.uid || ''
       });
       
       if (response.success) {
@@ -141,8 +145,9 @@ function Checkout({ products }: { products: Product[] }) {
         price: product.price,
         paymentMethod: 'robo' as const, // Important: This tells backend it's a Robo Balance payment
         updatedBalance: updatedBalance, // Send updated balance for Telegram
-        userEmail: user?.email || '', // User email for Telegram
-        userName: user?.displayName || user?.email?.split('@')[0] || 'User', // User name for Telegram
+        userEmail: user?.email || '', // User email for database tracking
+        userName: user?.displayName || user?.email?.split('@')[0] || 'User', // User name for database tracking
+        userId: user?.uid || '', // User ID for database tracking
         timestamp: new Date().toISOString() // Timestamp for tracking
       };
       
@@ -151,29 +156,33 @@ function Checkout({ products }: { products: Product[] }) {
       console.log('📤 Updated Balance:', paymentPayload.updatedBalance);
       console.log('📤 User Email:', paymentPayload.userEmail);
       
-      // Set timeout for API call (30 seconds)
-      const apiCallPromise = paymentApi.verify(paymentPayload);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('API call timeout after 30 seconds')), 30000)
-      );
+      // Set timeout for API call (10 seconds - faster feedback)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.warn('⏱️ API call timeout after 10 seconds');
+      }, 10000);
       
       let response;
       try {
-        console.log('⏳ Waiting for backend response...');
-        response = await Promise.race([apiCallPromise, timeoutPromise]) as any;
+        console.log('⏳ Waiting for backend response (10s timeout)...');
+        response = await paymentApi.verify(paymentPayload, { signal: controller.signal });
+        clearTimeout(timeoutId);
         console.log('📥 Backend Response Received:', JSON.stringify(response, null, 2));
         console.log('✅ Response Success:', response?.success);
         console.log('📝 Response Message:', response?.message);
       } catch (apiError: any) {
+        clearTimeout(timeoutId);
         console.error('❌ API Call Exception:', apiError);
         console.error('❌ Error Type:', apiError.constructor?.name);
         console.error('❌ Error Message:', apiError.message);
-        console.error('❌ Error Stack:', apiError.stack);
         
         // Continue with payment even if API fails - balance is already deducted
         response = { 
           success: false, 
-          message: apiError.message || 'API call failed. Balance was deducted but Telegram notification may not have been sent.' 
+          message: apiError.name === 'AbortError' 
+            ? 'Request timeout. Payment processed but Telegram notification may be delayed.'
+            : apiError.message || 'API call failed. Balance was deducted but Telegram notification may not have been sent.' 
         };
       }
 
@@ -187,12 +196,21 @@ function Checkout({ products }: { products: Product[] }) {
         console.warn('⚠️ Balance was deducted but Telegram notification may not have been sent');
         console.warn('⚠️ Backend error message:', response?.message || 'Unknown error');
         
-        // Show user-friendly message
-        alert(`✅ Payment processed!\n\n৳${product.price} deducted from your Robo Balance.\nRemaining balance: ৳${updatedBalance.toFixed(2)}\n\n⚠️ Note: ${response?.message || 'Telegram notification may not have been sent. Please check backend logs.'}`);
+        // Show user-friendly message - payment was successful even if Telegram failed
+        alert(`✅ Payment processed successfully!\n\n৳${product.price} deducted from your Robo Balance.\nRemaining balance: ৳${updatedBalance.toFixed(2)}\n\n⚠️ Note: ${response?.message || 'Telegram notification may be delayed.'}`);
       }
       
-      // Refresh balance and navigate
-      await refresh();
+      // Refresh balance and navigate - always do this
+      console.log('🔄 Refreshing balance...');
+      try {
+        await refresh();
+        console.log('✅ Balance refreshed');
+      } catch (refreshError) {
+        console.warn('⚠️ Balance refresh failed (non-critical):', refreshError);
+      }
+      
+      console.log('✅ Navigating to home...');
+      setProcessing(false);
       navigate('/');
       
     } catch (err: any) {
@@ -200,8 +218,15 @@ function Checkout({ products }: { products: Product[] }) {
       console.error('❌ Error Type:', err.constructor?.name);
       console.error('❌ Error Message:', err.message);
       console.error('❌ Error Stack:', err.stack);
-      alert('❌ Payment failed: ' + (err.message || 'Please try again.'));
+      
+      // Refresh balance to check if it was actually deducted
+      await refresh();
+      
+      // Show error but don't block - balance might have been deducted
+      alert('⚠️ Payment Error: ' + (err.message || 'Unknown error') + '\n\nIf your balance was deducted, payment was successful. Please check your balance.');
+      setProcessing(false);
     } finally {
+      // Always reset processing state - critical to prevent stuck UI
       console.log('🔄 Resetting processing state...');
       setProcessing(false);
     }

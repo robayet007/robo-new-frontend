@@ -37,27 +37,26 @@ function AddMoney() {
     setShowBkashVerification(true);
   };
 
-  const handleBkashVerify = async (transactionId: string) => {
+  const handleBkashVerify = async (transactionId: string): Promise<void> => {
+    const amountValue = parseFloat(amount);
+    
+    // Validate transaction ID format
+    const trimmedTrxId = transactionId.trim().toUpperCase();
+    if (!trimmedTrxId.startsWith('C')) {
+      throw new Error('Invalid bKash Transaction ID. bKash TrxID must start with "C"');
+    }
+
+    const bKashTrxIdRegex = /^C[A-Z0-9]{9,11}$/;
+    if (!bKashTrxIdRegex.test(trimmedTrxId)) {
+      throw new Error('Invalid bKash Transaction ID format. Must be 10-12 characters starting with C');
+    }
+
+    // Add timeout for API call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+
     try {
-      const amountValue = parseFloat(amount);
-      
-      // Validate transaction ID format
-      const trimmedTrxId = transactionId.trim().toUpperCase();
-      if (!trimmedTrxId.startsWith('C')) {
-        alert('Invalid bKash Transaction ID. bKash TrxID must start with "C"');
-        return;
-      }
-
-      const bKashTrxIdRegex = /^C[A-Z0-9]{9,11}$/;
-      if (!bKashTrxIdRegex.test(trimmedTrxId)) {
-        alert('Invalid bKash Transaction ID format. Must be 10-12 characters starting with C');
-        return;
-      }
-
-      setLoading(true);
-
       // Verify payment with backend
-      // For add money, send user email as playerId
       const response = await paymentApi.verify({
         transactionId: trimmedTrxId,
         amount: amountValue,
@@ -65,32 +64,38 @@ function AddMoney() {
         productId: 'add_money',
         productName: `Add ৳${amountValue} to Robo Balance`,
         diamonds: 0,
-        price: amountValue
-      });
+        price: amountValue,
+        // User information for database tracking
+        userEmail: user?.email || '',
+        userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+        userId: user?.uid || '',
+        paymentMethod: 'bkash'
+      }, { signal: controller.signal });
+      
+      clearTimeout(timeoutId);
       
       if (response.success) {
         // Add money to balance after successful payment verification
         const result = await addMoney(amountValue, `Added ৳${amountValue} via bKash (TrxID: ${trimmedTrxId})`);
         
         if (result.success) {
-          alert(`Payment verified successfully! ৳${amountValue} added to your Robo Balance.`);
-          setShowBkashVerification(false);
-          setAmount('');
-          navigate('/');
+          // Success - will be handled by BkashVerification component
+          return;
         } else {
-          alert('Payment verified but failed to add money: ' + result.error);
-          setShowBkashVerification(false);
+          throw new Error('Payment verified but failed to add money: ' + result.error);
         }
       } else {
-        alert('Payment verification failed: ' + response.message);
-        setShowBkashVerification(false);
+        throw new Error(response.message || 'Payment verification failed');
       }
-    } catch (err) {
+    } catch (err: any) {
+      clearTimeout(timeoutId);
       console.error('Payment verification error:', err);
-      alert('Payment verification failed. Please try again.');
-      setShowBkashVerification(false);
-    } finally {
-      setLoading(false);
+      
+      if (err.name === 'AbortError') {
+        throw new Error('Request timeout. Please check your connection and try again.');
+      }
+      
+      throw new Error(err.message || 'Payment verification failed. Please try again.');
     }
   };
 
