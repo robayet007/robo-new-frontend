@@ -14,6 +14,18 @@ interface Slide {
 
 export default function GameHero() {
   const [activeSlide, setActiveSlide] = useState(0)
+  const [isMobile, setIsMobile] = useState(false)
+  const [isTablet, setIsTablet] = useState(false)
+
+  useEffect(() => {
+    const checkSize = () => {
+      setIsMobile(window.innerWidth < 640)
+      setIsTablet(window.innerWidth < 1024)
+    }
+    checkSize()
+    window.addEventListener('resize', checkSize)
+    return () => window.removeEventListener('resize', checkSize)
+  }, [])
 
   const slides: Slide[] = [
     {
@@ -60,10 +72,10 @@ export default function GameHero() {
     position: "relative",
     width: "100%",
     maxWidth: "1200px",
-    height: "500px",
+    height: isMobile ? "250px" : isTablet ? "350px" : "500px",
     margin: "0 auto",
     overflow: "hidden",
-    borderRadius: "12px",
+    borderRadius: "8px",
   }
 
   const slideStyle: React.CSSProperties = {
@@ -76,7 +88,7 @@ export default function GameHero() {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    padding: "0 60px",
+    padding: isMobile ? "0 20px" : isTablet ? "0 40px" : "0 60px",
     transition: "background-image 0.5s ease-in-out",
   }
 
@@ -98,15 +110,15 @@ export default function GameHero() {
   }
 
   const titleStyle: React.CSSProperties = {
-    fontSize: "64px",
+    fontSize: isMobile ? "24px" : isTablet ? "40px" : "64px",
     fontWeight: "bold",
-    margin: "0 0 10px 0",
+    margin: "0 0 8px 0",
     textShadow: "2px 2px 8px rgba(0,0,0,0.8)",
   }
 
   const subtitleStyle: React.CSSProperties = {
-    fontSize: "20px",
-    margin: "0 0 30px 0",
+    fontSize: isMobile ? "12px" : isTablet ? "16px" : "20px",
+    margin: "0 0 20px 0",
     color: "#e0e0e0",
     textShadow: "1px 1px 4px rgba(0,0,0,0.8)",
   }

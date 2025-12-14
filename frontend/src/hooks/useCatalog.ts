@@ -1,51 +1,89 @@
-import { useState, useEffect } from 'react';
-import { productApi, categoryApi } from '../services/api'; // শুধু API functions import করুন
-
-// Local types
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  badge?: string;
-}
-
-export interface Product {
-  id: string;
-  categoryId: string;
-  name: string;
-  diamonds: number;
-  price: number;
-  bonus?: string;
-  tag?: string;
-}
+import { useEffect, useState } from 'react';
+import { productApi, categoryApi } from '../services/api';
+import type { ApiResponse, BackendProduct, BackendCategory } from '../types';
+import type { Category, Product } from '../types';
 
 const STORAGE_KEY = 'rtu_catalog_backup';
 
+// ==================== ENHANCED CATALOG HOOK ====================
 function useCatalog() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  // Load data from backend on mount
   useEffect(() => {
+    // Try to load from localStorage first for instant display
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
+        if (parsed.categories && parsed.categories.length > 0) {
+          setCategories(parsed.categories);
+        }
+        if (parsed.products && parsed.products.length > 0) {
+          setProducts(parsed.products);
+          setLoading(false); // Show cached data immediately
+        }
+      } catch (parseErr) {
+        console.error('Failed to parse localStorage data:', parseErr);
+      }
+    }
+    
+    // Then load fresh data from backend
     loadFromBackend();
-  }, []);
+  }, [retryCount]);
 
   const loadFromBackend = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Load from backend API
-      const [productsRes, categoriesRes] = await Promise.all([
-        productApi.getAll(),
-        categoryApi.getAll()
-      ]);
+      console.log('📦 Loading catalog data from backend...');
+      
+      // Try multiple endpoints for categories
+      let categoriesRes: ApiResponse<BackendCategory[]> | undefined;
+      const categoryEndpoints = [
+        () => categoryApi.getAll(),
+        () => categoryApi.getCategories(),
+        async (): Promise<ApiResponse<BackendCategory[]>> => {
+          // Fallback: extract categories from products
+          const productsRes = await productApi.getAll();
+          if (productsRes.success && productsRes.data) {
+            const uniqueCategories = [...new Set(productsRes.data.map(p => p.categoryId))];
+            return {
+              success: true,
+              data: uniqueCategories.map((catId, index) => ({
+                _id: `temp-${index}`,
+                id: catId,
+                name: `Category ${catId}`,
+                isActive: true
+              }))
+            };
+          }
+          throw new Error('Cannot extract categories');
+        }
+      ];
+      
+      for (const endpoint of categoryEndpoints) {
+        try {
+          categoriesRes = await endpoint();
+          if (categoriesRes.success && categoriesRes.data && categoriesRes.data.length > 0) {
+            console.log(`✅ Categories loaded from ${endpoint.name || 'endpoint'}`);
+            break;
+          }
+        } catch (err) {
+          console.log('Category endpoint failed, trying next...');
+        }
+      }
+      
+      // Load products
+      const productsRes = await productApi.getAll();
       
       if (productsRes.success && productsRes.data) {
-        // TypeScript automatically infers the type from ApiResponse
-        const convertedProducts: Product[] = productsRes.data
+        const backendProducts = productsRes.data;
+        const convertedProducts: Product[] = backendProducts
           .filter(p => p.isActive)
           .map(p => ({
             id: p.id,
@@ -58,7 +96,7 @@ function useCatalog() {
           }));
         setProducts(convertedProducts);
         
-        // Save to localStorage as backup
+        // Save to localStorage
         localStorage.setItem(STORAGE_KEY, JSON.stringify({
           categories,
           products: convertedProducts
@@ -67,8 +105,10 @@ function useCatalog() {
         throw new Error(productsRes.message || 'Failed to load products');
       }
       
-      if (categoriesRes.success && categoriesRes.data) {
-        const convertedCategories: Category[] = categoriesRes.data
+      // Process categories
+      if (categoriesRes?.success && categoriesRes.data) {
+        const backendCategories = categoriesRes.data;
+        const convertedCategories: Category[] = backendCategories
           .filter(c => c.isActive)
           .map(c => ({
             id: c.id,
@@ -78,20 +118,32 @@ function useCatalog() {
           }));
         setCategories(convertedCategories);
       } else {
-        throw new Error(categoriesRes.message || 'Failed to load categories');
+        // Extract categories from products if API failed
+        const uniqueCategories = [...new Set(productsRes.data.map(p => p.categoryId))];
+        const extractedCategories: Category[] = uniqueCategories.map((catId, index) => ({
+          id: catId,
+          name: `Category ${index + 1}`,
+          description: `Products in ${catId}`
+        }));
+        setCategories(extractedCategories);
+        console.warn('Using extracted categories from products');
       }
       
     } catch (err) {
       console.error('Failed to load from backend:', err);
-      setError('Backend connection failed. Using local data.');
+      setError(err instanceof Error ? err.message : 'Backend connection failed. Using local backup.');
       
-      // Use localStorage data as fallback
+      // Try to load from localStorage
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
-          if (parsed.categories) setCategories(parsed.categories);
-          if (parsed.products) setProducts(parsed.products);
+          if (parsed.categories && parsed.categories.length > 0) {
+            setCategories(parsed.categories);
+          }
+          if (parsed.products && parsed.products.length > 0) {
+            setProducts(parsed.products);
+          }
         } catch (parseErr) {
           console.error('Failed to parse localStorage data:', parseErr);
         }
@@ -101,14 +153,13 @@ function useCatalog() {
     }
   };
 
-  const addCategory = async (category: Omit<Category, 'id'>) => {
+  const addCategoryToBackend = async (category: Omit<Category, 'id'>) => {
     try {
       const newCategory: Category = {
         id: crypto.randomUUID(),
         ...category
       };
       
-      // Save to backend
       const response = await categoryApi.create({
         id: newCategory.id,
         name: newCategory.name,
@@ -126,13 +177,6 @@ function useCatalog() {
       }
     } catch (err) {
       console.error('Failed to save category to backend:', err);
-      // Fallback to local storage
-      const newCategory: Category = {
-        id: crypto.randomUUID(),
-        ...category
-      };
-      setCategories(prev => [...prev, newCategory]);
-      saveToStorage();
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to create category' 
@@ -140,32 +184,11 @@ function useCatalog() {
     }
   };
 
-  const updateCategory = async (id: string, updates: Partial<Category>) => {
-    try {
-      const response = await categoryApi.update(id, updates);
-      if (response.success) {
-        setCategories(prev => prev.map(cat => 
-          cat.id === id ? { ...cat, ...updates } : cat
-        ));
-        saveToStorage();
-        return { success: true };
-      }
-      return { success: false, error: response.message };
-    } catch (err) {
-      console.error('Failed to update category:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to update category' 
-      };
-    }
-  };
-
-  const deleteCategory = async (id: string) => {
+  const deleteCategoryFromBackend = async (id: string) => {
     try {
       const response = await categoryApi.delete(id);
       if (response.success) {
         setCategories(prev => prev.filter(cat => cat.id !== id));
-        // Also remove products from this category
         setProducts(prev => prev.filter(product => product.categoryId !== id));
         saveToStorage();
         return { success: true };
@@ -180,18 +203,16 @@ function useCatalog() {
     }
   };
 
-  const addProduct = async (product: Omit<Product, 'id'>) => {
+  const addProductToBackend = async (product: Omit<Product, 'id'>) => {
     try {
       const newProduct: Product = {
         id: crypto.randomUUID(),
         ...product
       };
       
-      // Get category name for backend
       const category = categories.find(c => c.id === product.categoryId);
       
-      // Save to backend
-      const productData = {
+      const response = await productApi.create({
         id: newProduct.id,
         categoryId: newProduct.categoryId,
         name: newProduct.name,
@@ -201,9 +222,7 @@ function useCatalog() {
         tag: newProduct.tag || '',
         categoryName: category?.name || 'Unknown',
         isActive: true
-      };
-      
-      const response = await productApi.create(productData);
+      });
       
       if (response.success) {
         setProducts(prev => [...prev, newProduct]);
@@ -214,13 +233,6 @@ function useCatalog() {
       }
     } catch (err) {
       console.error('Failed to save product to backend:', err);
-      // Fallback to local storage
-      const newProduct: Product = {
-        id: crypto.randomUUID(),
-        ...product
-      };
-      setProducts(prev => [...prev, newProduct]);
-      saveToStorage();
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to create product' 
@@ -228,27 +240,7 @@ function useCatalog() {
     }
   };
 
-  const updateProduct = async (id: string, updates: Partial<Product>) => {
-    try {
-      const response = await productApi.update(id, updates);
-      if (response.success) {
-        setProducts(prev => prev.map(product => 
-          product.id === id ? { ...product, ...updates } : product
-        ));
-        saveToStorage();
-        return { success: true };
-      }
-      return { success: false, error: response.message };
-    } catch (err) {
-      console.error('Failed to update product:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to update product' 
-      };
-    }
-  };
-
-  const deleteProduct = async (id: string) => {
+  const deleteProductFromBackend = async (id: string) => {
     try {
       const response = await productApi.delete(id);
       if (response.success) {
@@ -270,18 +262,21 @@ function useCatalog() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, products }));
   };
 
+  const retryLoad = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
   return { 
     categories, 
     products, 
     loading,
     error,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    refresh: loadFromBackend
+    addCategory: addCategoryToBackend,
+    deleteCategory: deleteCategoryFromBackend,
+    addProduct: addProductToBackend,
+    deleteProduct: deleteProductFromBackend,
+    refresh: loadFromBackend,
+    retry: retryLoad
   };
 }
 
