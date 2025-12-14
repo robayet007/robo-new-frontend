@@ -9,7 +9,6 @@ import { paymentApi } from '../services/api';
 function AddMoney() {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showBkashVerification, setShowBkashVerification] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -195,10 +194,10 @@ function AddMoney() {
 
         <button
           type="submit"
-          disabled={loading || !amount || parseFloat(amount) < 10}
+          disabled={!amount || parseFloat(amount) < 10}
           className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Processing...' : `Pay ৳${amount || '0'} with bKash`}
+          Pay ৳{amount || '0'} with bKash
         </button>
       </form>
 

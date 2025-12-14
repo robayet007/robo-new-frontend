@@ -16,29 +16,41 @@ class SmartAPIManager {
     
     console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
-    // Add default timeout if not already set
-    const timeout = 20000; // 20 seconds default
-    const controller = options.signal || new AbortController();
-    const timeoutId = setTimeout(() => {
-      if (!options.signal) {
-        controller.abort();
-      }
-    }, timeout);
+    // Use provided signal or create new one with timeout
+    let controller: AbortController | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let signalToUse: AbortSignal;
+    
+    if (options.signal) {
+      // Use provided signal (already has timeout from caller)
+      signalToUse = options.signal;
+    } else {
+      // Create new controller with default timeout
+      controller = new AbortController();
+      signalToUse = controller.signal;
+      const timeout = 20000; // 20 seconds default
+      timeoutId = setTimeout(() => {
+        if (controller) {
+          controller.abort();
+          console.warn('⏱️ Request timeout after 20 seconds');
+        }
+      }, timeout);
+    }
     
     try {
       const response = await fetch(url, {
         ...options,
-        signal: controller.signal,
+        signal: signalToUse,
         headers: {
           'Content-Type': 'application/json',
           ...options.headers
         }
       });
       
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       return response;
     } catch (error: any) {
-      clearTimeout(timeoutId);
+      if (timeoutId) clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
         throw new Error('Request timeout. Please check your connection.');
       }

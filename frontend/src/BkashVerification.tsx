@@ -834,7 +834,7 @@ function BkashVerification({
               justifyContent: "center",
               gap: "10px",
               boxShadow:
-                !transactionId.trim() || isVerified
+                !transactionId.trim() || isVerifying
                   ? "none"
                   : "0 6px 20px rgba(226, 19, 110, 0.3)",
               letterSpacing: "0.5px",
