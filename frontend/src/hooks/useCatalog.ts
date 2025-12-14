@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { productApi, categoryApi } from '../services/api';
-import type { ApiResponse, BackendProduct, BackendCategory } from '../types';
+import type { ApiResponse, BackendCategory } from '../types';
 import type { Category, Product } from '../types';
 
 const STORAGE_KEY = 'rtu_catalog_backup';

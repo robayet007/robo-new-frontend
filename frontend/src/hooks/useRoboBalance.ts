@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import useAuth from './useAuth';
 
@@ -30,7 +30,7 @@ function useRoboBalance() {
       // Real-time listener for balance (with fallback for blocked requests)
       const balanceRef = doc(db, 'userBalances', user.uid);
       let unsubscribe: (() => void) | null = null;
-      let fallbackInterval: NodeJS.Timeout | null = null;
+      let fallbackInterval: ReturnType<typeof setInterval> | null = null;
       
       try {
         unsubscribe = onSnapshot(

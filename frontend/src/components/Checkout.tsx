@@ -139,7 +139,7 @@ function Checkout({ products }: { products: Product[] }) {
         productName: product.name || 'Product',
         diamonds: product.diamonds || 0,
         price: product.price,
-        paymentMethod: 'robo', // Important: This tells backend it's a Robo Balance payment
+        paymentMethod: 'robo' as const, // Important: This tells backend it's a Robo Balance payment
         updatedBalance: updatedBalance, // Send updated balance for Telegram
         userEmail: user?.email || '', // User email for Telegram
         userName: user?.displayName || user?.email?.split('@')[0] || 'User', // User name for Telegram

@@ -34,7 +34,7 @@ function useUsers() {
     
     // Real-time listener for users (with error handling for blocked requests)
     let unsubscribe: (() => void) | null = null;
-    let fallbackInterval: NodeJS.Timeout | null = null;
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
     
     try {
       unsubscribe = onSnapshot(

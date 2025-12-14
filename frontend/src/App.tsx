@@ -17,8 +17,8 @@ import useUserRole from './hooks/useUserRole';
 // ==================== MAIN APP ====================
 function App() {
   const catalog = useCatalog();
-  const { user, loading: authLoading, logout } = useAuth();
-  const { isAdmin, loading: roleLoading } = useUserRole();
+  const { user, logout } = useAuth();
+  const { isAdmin } = useUserRole();
 
   // Only show full page loading for catalog (products/categories)
   // Auth and role loading are non-blocking - they load in background
