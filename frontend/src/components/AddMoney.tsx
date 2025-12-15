@@ -153,7 +153,8 @@ function AddMoney() {
         userEmail: user.email,
         userName: user.displayName || user.email.split('@')[0] || 'User',
         userId: user.uid || user.email,
-        paymentMethod: 'bkash'
+        // Narrow to literal type so it matches `"bkash" | "robo"` union
+        paymentMethod: 'bkash' as const,
       };
 
       console.log('📤 Sending payment verification:', paymentData);

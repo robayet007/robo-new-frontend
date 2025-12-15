@@ -5,7 +5,10 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  updatePassword
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -226,6 +229,48 @@ function useAuth() {
     return null;
   };
 
+  // Change current user's password (requires re-auth with old password)
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null);
+      const currentUser = auth.currentUser;
+
+      if (!currentUser || !currentUser.email) {
+        return { success: false, error: 'No authenticated user' };
+      }
+
+      // Reauthenticate with current password
+      const credential = EmailAuthProvider.credential(
+        currentUser.email,
+        currentPassword
+      );
+
+      await reauthenticateWithCredential(currentUser, credential);
+
+      // Update to new password
+      await updatePassword(currentUser, newPassword);
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error changing password:', err);
+      let errorMessage = 'Failed to change password';
+
+      if (err.code === 'auth/wrong-password') {
+        errorMessage = 'Current password is incorrect';
+      } else if (err.code === 'auth/weak-password') {
+        errorMessage = 'New password is too weak';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   return {
     user,
     loading,
@@ -235,6 +280,7 @@ function useAuth() {
     loginWithGoogle,
     logout,
     getToken,
+    changePassword,
   };
 }
 

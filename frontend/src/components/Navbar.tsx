@@ -87,6 +87,13 @@ function Navbar() {
                 </div>
               </>
             )}
+            <Link
+              to="/change-password"
+              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-[10px] sm:text-xs text-slate-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+            >
+              <span className="hidden sm:inline">Change Password</span>
+              <span className="sm:hidden">🔑</span>
+            </Link>
             <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-slate-100">
               {user.photoURL ? (
                 <img 

@@ -8,6 +8,7 @@ import SignUp from './components/SignUp';
 import AdminPanel from './components/AdminPanel';
 import Checkout from './components/Checkout';
 import AddMoney from './components/AddMoney';
+import ChangePassword from './components/ChangePassword';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
 import WhatsAppButton from './components/WhatsAppButton';
@@ -55,6 +56,16 @@ function App() {
         />
         <Route path="/checkout" element={<Checkout products={catalog.products} />} />
         <Route path="/add-money" element={<AddMoney />} />
+        <Route
+          path="/change-password"
+          element={
+            user ? (
+              <ChangePassword />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
         <Route
           path="/login"
           element={
