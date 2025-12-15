@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaYoutube, FaFacebook, FaWhatsapp, FaPhone, FaEnvelope, FaPlayCircle } from 'react-icons/fa';
-import { AiFillInstagram } from 'react-icons/ai';
+import { FaYoutube, FaPlayCircle } from 'react-icons/fa';
 
 const Niyom: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
@@ -15,23 +14,6 @@ const Niyom: React.FC = () => {
     window.addEventListener('resize', checkSize);
     return () => window.removeEventListener('resize', checkSize);
   }, []);
-  // Common contact card style
-  const contactCardStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    borderRadius: '12px',
-    padding: '25px',
-    textDecoration: 'none',
-    transition: 'all 0.3s ease',
-    border: '2px solid transparent',
-  };
-
-  const contactCardHoverStyle: React.CSSProperties = {
-    transform: 'translateY(-5px)',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-  };
-
   // Dynamic styles based on screen size
   const styles = {
     section: {
@@ -149,65 +131,6 @@ const Niyom: React.FC = () => {
       marginRight: '10px',
       fontSize: '1.2rem',
     },
-    contactSection: {
-      backgroundColor: 'white',
-      borderRadius: '12px',
-      padding: isMobile ? '20px' : isTablet ? '30px' : '40px',
-      boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-    },
-    contactGrid: {
-      display: 'grid',
-      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(250px, 1fr))',
-      gap: '15px',
-      marginBottom: '30px',
-    },
-    contactIconContainer: {
-      marginRight: '20px',
-      flexShrink: 0,
-    },
-    contactIcon: {
-      fontSize: isMobile ? '2rem' : '2.5rem',
-    },
-    contactInfo: {
-      flex: '1',
-    },
-    contactTitle: {
-      fontSize: isMobile ? '1rem' : '1.2rem',
-      margin: '0 0 5px 0',
-      color: '#2c3e50',
-    },
-    contactDetail: {
-      fontSize: isMobile ? '1rem' : '1.1rem',
-      margin: '0 0 5px 0',
-      fontWeight: '600',
-      color: '#2c3e50',
-    },
-    contactHint: {
-      fontSize: isMobile ? '0.8rem' : '0.9rem',
-      margin: 0,
-      color: '#7f8c8d',
-    },
-    contactInfoBox: {
-      backgroundColor: '#f0f7ff',
-      borderRadius: '10px',
-      padding: isMobile ? '15px' : '25px',
-      borderLeft: '5px solid #3498db',
-    },
-    contactInfoTitle: {
-      fontSize: isMobile ? '1.1rem' : '1.3rem',
-      color: '#2c3e50',
-      marginBottom: '15px',
-    },
-    contactDetails: {
-      display: 'grid',
-      gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '15px',
-    },
-    contactDetailItem: {
-      margin: '5px 0',
-      color: '#555',
-      fontSize: isMobile ? '0.9rem' : '1rem',
-    },
   };
 
   return (
@@ -232,6 +155,7 @@ const Niyom: React.FC = () => {
               referrerPolicy="strict-origin-when-cross-origin"
               allowFullScreen
               style={styles.videoFrame}
+              loading="lazy"
             ></iframe>
           </div>
           
@@ -277,150 +201,6 @@ const Niyom: React.FC = () => {
         </div>
       </div>
 
-      {/* Contact Section - ICONS WITH COLORS */}
-      <div style={styles.contactSection}>
-        <div style={styles.sectionHeader}>
-          <FaEnvelope style={{...styles.icon, color: '#3498db'}} />
-          <h2 style={styles.sectionTitle}>যোগাযোগ করুন</h2>
-        </div>
-        
-        <div style={styles.contactGrid}>
-          {/* WhatsApp - GREEN */}
-          <a 
-            href="https://wa.me/8801766325020" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{
-              ...contactCardStyle,
-              borderColor: '#25D366',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(37, 211, 102, 0.1)';
-              Object.assign(e.currentTarget.style, contactCardHoverStyle);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.contactIconContainer}>
-              <FaWhatsapp style={{...styles.contactIcon, color: '#25D366'}} />
-            </div>
-            <div style={styles.contactInfo}>
-              <h3 style={styles.contactTitle}>WhatsApp</h3>
-              <p style={styles.contactDetail}>+880 1766-325020</p>
-              <p style={styles.contactHint}>সরাসরি মেসেজ পাঠান</p>
-            </div>
-          </a>
-
-          {/* Phone Call - BLUE */}
-          <a 
-            href="tel:+8801766325020" 
-            style={{
-              ...contactCardStyle,
-              borderColor: '#3498db',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
-              Object.assign(e.currentTarget.style, contactCardHoverStyle);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.contactIconContainer}>
-              <FaPhone style={{...styles.contactIcon, color: '#3498db'}} />
-            </div>
-            <div style={styles.contactInfo}>
-              <h3 style={styles.contactTitle}>ফোন কল</h3>
-              <p style={styles.contactDetail}>01766-325020</p>
-              <p style={styles.contactHint}>সরাসরি কল করুন</p>
-            </div>
-          </a>
-
-          {/* Facebook - FACEBOOK BLUE */}
-          <a 
-            href="https://m.me/yourpage" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{
-              ...contactCardStyle,
-              borderColor: '#1877F2',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(24, 119, 242, 0.1)';
-              Object.assign(e.currentTarget.style, contactCardHoverStyle);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f8f9fa';
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.contactIconContainer}>
-              <FaFacebook style={{...styles.contactIcon, color: '#1877F2'}} />
-            </div>
-            <div style={styles.contactInfo}>
-              <h3 style={styles.contactTitle}>Facebook Messenger</h3>
-              <p style={styles.contactDetail}>মেসেজ পাঠান</p>
-              <p style={styles.contactHint}>ফেসবুক মেসেনজারে</p>
-            </div>
-          </a>
-
-          {/* Instagram - INSTAGRAM GRADIENT */}
-          <a 
-            href="https://instagram.com/yourprofile" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{
-              ...contactCardStyle,
-              border: '2px solid transparent',
-              background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-              color: 'white',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(45deg, #ff9a3d 0%, #ff784c 25%, #ff3855 50%, #ff2a6d 75%, #ff1b8d 100%)';
-              Object.assign(e.currentTarget.style, contactCardHoverStyle);
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)';
-              e.currentTarget.style.transform = 'none';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          >
-            <div style={styles.contactIconContainer}>
-              <AiFillInstagram style={{...styles.contactIcon, color: 'white'}} />
-            </div>
-            <div style={styles.contactInfo}>
-              <h3 style={{...styles.contactTitle, color: 'white'}}>Instagram</h3>
-              <p style={{...styles.contactDetail, color: 'white'}}>DM পাঠান</p>
-              <p style={{...styles.contactHint, color: 'rgba(255,255,255,0.8)'}}>সরাসরি মেসেজ</p>
-            </div>
-          </a>
-        </div>
-        
-        {/* Contact Info Box */}
-        <div style={styles.contactInfoBox}>
-          <h3 style={styles.contactInfoTitle}>📞 যোগাযোগের তথ্য</h3>
-          <div style={styles.contactDetails}>
-            <p style={styles.contactDetailItem}>
-              <strong>ফোন:</strong> 01766-325020
-            </p>
-            <p style={styles.contactDetailItem}>
-              <strong>WhatsApp:</strong> একই নাম্বার
-            </p>
-            <p style={styles.contactDetailItem}>
-              <strong>ইমেইল:</strong> support@example.com
-            </p>
-            <p style={styles.contactDetailItem}>
-              <strong>সময়:</strong> সকাল ৯টা - রাত ১০টা
-            </p>
-          </div>
-        </div>
-      </div>
     </section>
   );
 };

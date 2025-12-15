@@ -39,8 +39,50 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim();
 });
 
+// Helper function to check if request should be cached
+function shouldCache(request) {
+  const url = new URL(request.url);
+  
+  // Don't cache chrome-extension, chrome, or other unsupported schemes
+  if (url.protocol === 'chrome-extension:' || 
+      url.protocol === 'chrome:' || 
+      url.protocol === 'moz-extension:' ||
+      url.protocol === 'edge:' ||
+      !url.protocol.startsWith('http')) {
+    return false;
+  }
+  
+  // Only cache GET requests
+  if (request.method !== 'GET') {
+    return false;
+  }
+  
+  // Don't cache external API calls or WebSocket connections
+  if (url.hostname !== self.location.hostname && 
+      !url.hostname.includes('localhost') &&
+      !url.hostname.includes('127.0.0.1')) {
+    // Allow caching same-origin requests only
+    return false;
+  }
+  
+  return true;
+}
+
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+  // Skip caching for unsupported request schemes
+  if (!shouldCache(event.request)) {
+    // Just fetch without caching
+    event.respondWith(fetch(event.request).catch(() => {
+      // If fetch fails and it's a document request, return offline page
+      if (event.request.destination === 'document') {
+        return caches.match('/index.html');
+      }
+      return new Response('Offline', { status: 503 });
+    }));
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -52,12 +94,25 @@ self.addEventListener('fetch', (event) => {
               return response;
             }
             
+            // Check again if we should cache (double check)
+            if (!shouldCache(event.request)) {
+              return response;
+            }
+            
             // Clone the response
             const responseToCache = response.clone();
             
+            // Cache with error handling
             caches.open(CACHE_NAME)
               .then((cache) => {
-                cache.put(event.request, responseToCache);
+                try {
+                  cache.put(event.request, responseToCache);
+                } catch (error) {
+                  console.warn('Service Worker: Failed to cache request', event.request.url, error);
+                }
+              })
+              .catch((error) => {
+                console.warn('Service Worker: Cache error', error);
               });
             
             return response;

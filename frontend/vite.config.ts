@@ -16,6 +16,20 @@ export default defineConfig({
       },
     },
   },
+  // Server configuration for WebSocket
+  server: {
+    hmr: {
+      // Suppress WebSocket connection errors in console
+      overlay: true,
+      clientPort: 5173,
+    },
+    // Handle WebSocket reconnection gracefully
+    watch: {
+      usePolling: false,
+    },
+  },
+  // Suppress WebSocket warnings in production builds
+  logLevel: 'warn',
 })
 
 

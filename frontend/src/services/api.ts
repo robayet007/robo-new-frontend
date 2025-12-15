@@ -1,9 +1,9 @@
 import type { ApiResponse, BackendProduct, BackendCategory } from '../types';
 
-// ==================== API MANAGER - Render.com Only ====================
+// ==================== API MANAGER - Local Development ====================
 class SmartAPIManager {
-  // Use only Render.com backend
-  static baseURL = 'https://robo-backend-gguf.onrender.com/api';
+  // Use local backend server
+  static baseURL = 'http://localhost:5000/api';
   
   // Get API base URL
   static async getBaseURL(): Promise<string> {
@@ -201,6 +201,123 @@ export const paymentApi = {
   
   getAll: async (limit: number = 50): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/payments?limit=${limit}`);
+    return response.json();
+  }
+};
+
+// Balance Transactions API
+export interface BalanceTransaction {
+  _id?: string;
+  userId: string;
+  userEmail: string;
+  transactionId: string;
+  amount: number;
+  status: 'pending' | 'verified' | 'rejected';
+  description?: string;
+  verifiedAt?: string;
+  rejectedAt?: string;
+  verifiedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const balanceTransactionApi = {
+  // Create a new balance transaction (pending verification)
+  create: async (transactionData: {
+    userId: string;
+    userEmail: string;
+    amount: number;
+    transactionId: string;
+    description?: string;
+  }): Promise<ApiResponse<BalanceTransaction>> => {
+    const response = await SmartAPIManager.smartFetch('/balance/transactions', {
+      method: 'POST',
+      body: JSON.stringify(transactionData)
+    });
+    return response.json();
+  },
+
+  // Verify a transaction (adds amount to balance)
+  verify: async (transactionId: string, verifiedBy?: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/balance/transactions/${transactionId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ verifiedBy: verifiedBy || 'system' })
+    });
+    return response.json();
+  },
+
+  // Reject a transaction
+  reject: async (transactionId: string, reason?: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/balance/transactions/${transactionId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason })
+    });
+    return response.json();
+  },
+
+  // Get user's balance transactions
+  getUserTransactions: async (userId: string, status?: string, limit: number = 50): Promise<ApiResponse<BalanceTransaction[]>> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('limit', limit.toString());
+    const response = await SmartAPIManager.smartFetch(`/balance/transactions/user/${userId}?${params.toString()}`);
+    return response.json();
+  },
+
+  // Get a single transaction by ID
+  getById: async (transactionId: string): Promise<ApiResponse<BalanceTransaction>> => {
+    const response = await SmartAPIManager.smartFetch(`/balance/transactions/${transactionId}`);
+    return response.json();
+  },
+
+  // Get all transactions (admin)
+  getAll: async (status?: string, limit: number = 100): Promise<ApiResponse<BalanceTransaction[]>> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    params.append('limit', limit.toString());
+    const response = await SmartAPIManager.smartFetch(`/balance/transactions?${params.toString()}`);
+    return response.json();
+  }
+};
+
+// Balance API (for user balance)
+export const balanceApi = {
+  // Get user balance
+  getUserBalance: async (userId: string): Promise<ApiResponse> => {
+    try {
+      const response = await SmartAPIManager.smartFetch(`/balance/${userId}`);
+      // 404 is expected if user balance doesn't exist yet - return success: false gracefully
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: 'User balance not found',
+          data: null
+        };
+      }
+      return response.json();
+    } catch (error: any) {
+      // Handle network errors gracefully
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch balance',
+        data: null
+      };
+    }
+  },
+
+  // Sync balance from Firestore
+  sync: async (balanceData: {
+    userId: string;
+    userEmail: string;
+    userName?: string;
+    balance?: number;
+    totalAdded?: number;
+    totalSpent?: number;
+  }): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch('/balance/sync', {
+      method: 'POST',
+      body: JSON.stringify(balanceData)
+    });
     return response.json();
   }
 };

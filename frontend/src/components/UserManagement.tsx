@@ -78,7 +78,7 @@ function UserManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-sky-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
         <p className="ml-3 text-slate-600">Loading users...</p>
       </div>
     );
@@ -139,7 +139,7 @@ function UserManagement() {
               placeholder="Search by email or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400 text-sm"
+              className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
             />
           </div>
         </div>
@@ -200,7 +200,7 @@ function UserManagement() {
       {/* Regular Users Section */}
       <div>
         <h4 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span className="w-2 h-2 rounded-full bg-purple-500"></span>
           Regular Users ({regularUsers.length})
         </h4>
         <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
@@ -217,7 +217,7 @@ function UserManagement() {
                   {user.photoURL ? (
                     <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full" />
                   ) : (
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
                       {user.displayName?.[0] || user.email?.[0] || 'U'}
                     </div>
                   )}
@@ -229,7 +229,7 @@ function UserManagement() {
                 </div>
                 <div className="text-xs sm:text-sm text-slate-700 hidden sm:block truncate">{user.email || '-'}</div>
                 <div>
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-semibold">
+                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] sm:text-xs font-semibold">
                     User
                   </span>
                 </div>
@@ -260,7 +260,7 @@ function UserManagement() {
                           setMessage({ type: 'success', text: 'Current user added to list' });
                         }
                       }}
-                      className="mt-4 px-4 py-2 rounded-xl bg-sky-500 text-white font-semibold hover:bg-sky-600 transition-all"
+                      className="mt-4 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold hover:from-purple-600 hover:to-violet-700 transition-all"
                     >
                       Add Current User to List
                     </button>

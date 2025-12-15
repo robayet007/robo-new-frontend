@@ -240,6 +240,47 @@ function useCatalog() {
     }
   };
 
+  const updateProductInBackend = async (id: string, productData: Partial<Product>) => {
+    try {
+      const existingProduct = products.find(p => p.id === id);
+      if (!existingProduct) {
+        return { success: false, error: 'Product not found' };
+      }
+
+      const category = categories.find(c => c.id === (productData.categoryId || existingProduct.categoryId));
+      
+      const response = await productApi.update(id, {
+        id: id,
+        categoryId: productData.categoryId || existingProduct.categoryId,
+        name: productData.name || existingProduct.name,
+        diamonds: productData.diamonds !== undefined ? productData.diamonds : existingProduct.diamonds,
+        price: productData.price !== undefined ? productData.price : existingProduct.price,
+        bonus: productData.bonus !== undefined ? productData.bonus : existingProduct.bonus || '',
+        tag: productData.tag !== undefined ? productData.tag : existingProduct.tag || '',
+        categoryName: category?.name || 'Unknown',
+        isActive: true
+      });
+      
+      if (response.success) {
+        setProducts(prev => prev.map(product => 
+          product.id === id 
+            ? { ...product, ...productData }
+            : product
+        ));
+        saveToStorage();
+        return { success: true, data: { ...existingProduct, ...productData } };
+      } else {
+        throw new Error(response.message || 'Failed to update product');
+      }
+    } catch (err) {
+      console.error('Failed to update product:', err);
+      return { 
+        success: false, 
+        error: err instanceof Error ? err.message : 'Failed to update product' 
+      };
+    }
+  };
+
   const deleteProductFromBackend = async (id: string) => {
     try {
       const response = await productApi.delete(id);
@@ -274,6 +315,7 @@ function useCatalog() {
     addCategory: addCategoryToBackend,
     deleteCategory: deleteCategoryFromBackend,
     addProduct: addProductToBackend,
+    updateProduct: updateProductInBackend,
     deleteProduct: deleteProductFromBackend,
     refresh: loadFromBackend,
     retry: retryLoad

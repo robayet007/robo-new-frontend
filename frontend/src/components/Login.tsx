@@ -44,7 +44,7 @@ function Login() {
   return (
     <div className="max-w-md mx-auto mt-4 sm:mt-6 md:mt-8 p-4 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border border-slate-200 bg-white shadow-xl">
       <div className="text-center mb-6">
-        <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-400/14 text-sky-700 border border-sky-400/35 font-semibold text-sm mb-4">
+        <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-400/14 text-purple-700 border border-purple-400/35 font-semibold text-sm mb-4">
           Welcome Back
         </p>
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Login</h2>
@@ -62,7 +62,7 @@ function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Enter your email"
-            className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
           />
         </div>
 
@@ -76,7 +76,7 @@ function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password"
-            className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all"
+            className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
           />
         </div>
 
@@ -89,7 +89,7 @@ function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 text-white font-semibold hover:from-sky-500 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-sky-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold hover:from-purple-600 hover:to-violet-700 transition-all duration-200 shadow-lg shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Logging in...' : 'Login'}
         </button>
@@ -121,7 +121,7 @@ function Login() {
 
       <p className="mt-6 text-center text-sm text-slate-600">
         Don't have an account?{' '}
-        <Link to="/signup" className="text-sky-600 hover:text-sky-700 font-semibold">
+        <Link to="/signup" className="text-purple-600 hover:text-purple-700 font-semibold">
           Sign Up
         </Link>
       </p>

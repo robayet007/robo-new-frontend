@@ -33,30 +33,14 @@ export default function GameHero() {
       title: "Free Fire",
       subtitle: "Survive the ultimate 50-player battle royale",
       buttonText: "",
-      image: "https://dl.dir.freefiremobile.com/common/web_event/official2.ff.garena.all/202210/aa959aa3d8790d3a44f7f20f16adfa01.jpg",
+      image: "https://i.ytimg.com/vi/vcltk0h1_zk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDxomYmz3YuwckdpUFK0k7Qkp177Q",
     },
     {
       id: 2,
       title: "Free Fire MAX",
       subtitle: "Experience enhanced graphics and immersive gameplay",
       buttonText: "",
-     image: "https://dl.dir.freefiremobile.com/common/web_event/official2.ff.garena.all/202210/aa959aa3d8790d3a44f7f20f16adfa01.jpg",
-    },
-    {
-      id: 3,
-      title: "New Season",
-      subtitle: "Unlock exclusive rewards and premium characters",
-      buttonText: "",
-            image: "https://dl.dir.freefiremobile.com/common/web_event/official2.ff.garena.all/202210/aa959aa3d8790d3a44f7f20f16adfa01.jpg",
-
-    },
-    {
-      id: 4,
-      title: "Squad Up",
-      subtitle: "Team up with friends and dominate the battlefield",
-      buttonText: "",
-           image: "https://dl.dir.freefiremobile.com/common/web_event/official2.ff.garena.all/202210/aa959aa3d8790d3a44f7f20f16adfa01.jpg",
-
+      image: "https://i.ytimg.com/vi/ACC4-FeWu8Q/maxresdefault.jpg",
     },
   ]
 
@@ -85,10 +69,6 @@ export default function GameHero() {
     backgroundImage: `url(${slides[activeSlide].image})`,
     backgroundSize: "cover",
     backgroundPosition: "center",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    padding: isMobile ? "0 20px" : isTablet ? "0 40px" : "0 60px",
     transition: "background-image 0.5s ease-in-out",
   }
 
@@ -124,7 +104,7 @@ export default function GameHero() {
   }
 
   const buttonStyle: React.CSSProperties = {
-    backgroundColor: "#00bcd4",
+    background: "linear-gradient(135deg, #a855f7, #8b5cf6)",
     color: "white",
     border: "none",
     padding: "15px 35px",
@@ -135,6 +115,7 @@ export default function GameHero() {
     transition: "all 0.3s ease",
     width: "fit-content",
     letterSpacing: "1px",
+    boxShadow: "0 4px 15px rgba(168, 85, 247, 0.4)",
   }
 
   const dotsContainerStyle: React.CSSProperties = {
@@ -150,7 +131,7 @@ export default function GameHero() {
   const dotStyle = (isActive: boolean): React.CSSProperties => ({
     width: isActive ? "30px" : "10px",
     height: "4px",
-    backgroundColor: isActive ? "#00bcd4" : "#666",
+    backgroundColor: isActive ? "#a855f7" : "#666",
     border: "none",
     cursor: "pointer",
     transition: "all 0.3s ease",
@@ -174,25 +155,6 @@ export default function GameHero() {
 
       <div style={containerStyle}>
         <div style={slideStyle} key={activeSlide}>
-          <div style={overlayStyle} />
-          <div style={contentStyle}>
-            <h1 style={titleStyle}>{slides[activeSlide].title}</h1>
-            <p style={subtitleStyle}>{slides[activeSlide].subtitle}</p>
-            <button
-              style={buttonStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#0097a7"
-                e.currentTarget.style.transform = "scale(1.05)"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#00bcd4"
-                e.currentTarget.style.transform = "scale(1)"
-              }}
-            >
-              {slides[activeSlide].buttonText}
-            </button>
-          </div>
-
           <div style={dotsContainerStyle}>
             {slides.map((_, index) => (
               <button

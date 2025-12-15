@@ -11,7 +11,7 @@ function NotFound() {
         </p>
         <Link
           to="/"
-          className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 text-white font-semibold hover:from-sky-500 hover:to-blue-600 transition-all duration-200 shadow-lg shadow-sky-500/30"
+          className="inline-block px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold hover:from-purple-600 hover:to-violet-700 transition-all duration-200 shadow-lg shadow-purple-500/30"
         >
           ← Back to Home
         </Link>
@@ -21,4 +21,8 @@ function NotFound() {
 }
 
 export default NotFound;
+
+
+
+
 

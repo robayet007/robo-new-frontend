@@ -14,6 +14,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     addCategory,
     deleteCategory,
     addProduct,
+    updateProduct,
     deleteProduct,
     refresh,
     retry 
@@ -30,6 +31,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [tag, setTag] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => a.diamonds - b.diamonds || a.name.localeCompare(b.name)),
@@ -108,6 +110,54 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
   };
 
+  const handleEditProduct = (product: typeof products[0]) => {
+    setEditingProduct(product.id);
+    setName(product.name);
+    setDiamonds(product.diamonds.toString());
+    setPrice(product.price.toString());
+    setBonus(product.bonus || '');
+    setTag(product.tag || '');
+    setCategoryId(product.categoryId);
+    // Scroll to form
+    setTimeout(() => {
+      document.querySelector('.product-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setName('');
+    setDiamonds('');
+    setPrice('');
+    setBonus('');
+    setTag('');
+    setCategoryId(categories[0]?.id ?? '');
+  };
+
+  const handleUpdateProduct = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct || !name || !price || !categoryId) {
+      setMessage({ type: 'error', text: 'Product name, price and category are required' });
+      return;
+    }
+
+    const result = await updateProduct(editingProduct, {
+      name: name.trim(),
+      categoryId,
+      diamonds: Number(diamonds) || 0,
+      price: Number(price),
+      bonus: bonus.trim() || undefined,
+      tag: tag.trim() || undefined,
+    });
+
+    if (result.success) {
+      setMessage({ type: 'success', text: 'Product updated in database!' });
+      handleCancelEdit();
+    } else {
+      setMessage({ type: 'error', text: result.error || 'Failed to update product' });
+    }
+  };
+
   const handleRemoveProduct = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this product?')) {
       return;
@@ -116,6 +166,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     const result = await deleteProduct(id);
     if (result.success) {
       setMessage({ type: 'success', text: 'Product deleted from database!' });
+      if (editingProduct === id) {
+        handleCancelEdit();
+      }
     } else {
       setMessage({ type: 'error', text: result.error || 'Failed to delete product' });
     }
@@ -137,7 +190,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
         <div>
-          <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-400/14 text-sky-700 border border-sky-400/35 font-semibold text-sm mb-2">
+          <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-400/14 text-purple-700 border border-purple-400/35 font-semibold text-sm mb-2">
             Admin Dashboard
           </p>
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Admin Panel</h2>
@@ -178,7 +231,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           onClick={() => setActiveTab('products')}
           className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 font-semibold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap ${
             activeTab === 'products'
-              ? 'border-sky-500 text-sky-600'
+              ? 'border-purple-500 text-purple-600'
               : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -188,7 +241,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           onClick={() => setActiveTab('users')}
           className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 font-semibold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap ${
             activeTab === 'users'
-              ? 'border-sky-500 text-sky-600'
+              ? 'border-purple-500 text-purple-600'
               : 'border-transparent text-slate-600 hover:text-slate-900'
           }`}
         >
@@ -224,7 +277,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catName}
                     onChange={(e) => setCatName(e.target.value)}
                     placeholder="Diamond TopUp"
-                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                 </label>
                 <label className="block">
@@ -233,7 +286,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catBadge}
                     onChange={(e) => setCatBadge(e.target.value)}
                     placeholder="Hot"
-                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                 </label>
                 <label className="block">
@@ -242,12 +295,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catDesc}
                     onChange={(e) => setCatDesc(e.target.value)}
                     placeholder="Fast delivery packs"
-                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    className="w-full px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                   />
                 </label>
               </div>
               <button 
-                className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 text-white font-semibold hover:from-sky-500 hover:to-blue-600 transition-all shadow-lg shadow-sky-500/30" 
+                className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold hover:from-purple-600 hover:to-violet-700 transition-all shadow-lg shadow-purple-500/30" 
                 type="submit"
               >
                 Add Category to Database
@@ -265,7 +318,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           <div className="flex items-center gap-2 mb-1">
                             <strong className="text-slate-900">{cat.name}</strong>
                             {cat.badge && (
-                              <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 text-xs font-semibold">
+                              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
                                 {cat.badge}
                               </span>
                             )}
@@ -290,8 +343,21 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
 
-          <form className="p-4 sm:p-5 md:p-6 rounded-xl border border-slate-200 bg-slate-50" onSubmit={handleAddProduct}>
-            <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">Add Product</h3>
+          <form className="product-form p-4 sm:p-5 md:p-6 rounded-xl border border-slate-200 bg-slate-50" onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct}>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                {editingProduct ? 'Edit Product' : 'Add Product'}
+              </h3>
+              {editingProduct && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <label className="block">
                 <span className="block text-sm font-semibold text-slate-700 mb-2">Category *</span>
@@ -365,7 +431,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               className="w-full mt-4 px-4 py-3 rounded-xl bg-gradient-to-r from-sky-400 to-blue-500 text-white font-semibold hover:from-sky-500 hover:to-blue-600 transition-all shadow-lg shadow-sky-500/30" 
               type="submit"
             >
-              Add Product to Database
+              {editingProduct ? 'Update Product in Database' : 'Add Product to Database'}
             </button>
           </form>
 
@@ -375,8 +441,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {sortedProducts.length > 0 ? (
                 sortedProducts.map((item) => (
                   <div key={item.id} className="p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <strong className="text-slate-900">{item.name}</strong>
                           {item.tag && (
@@ -385,21 +451,31 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                             </span>
                           )}
                           {item.bonus && (
-                            <span className="text-xs text-blue-600 font-semibold">({item.bonus})</span>
+                            <span className="text-xs text-violet-600 font-semibold">({item.bonus})</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-600">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-slate-600">
                           <span>Category: {categories.find(c => c.id === item.categoryId)?.name || '-'}</span>
                           <span>Diamonds: {item.diamonds || 'Special'}</span>
                           <span className="font-bold text-slate-900">Price: ৳{item.price}</span>
                         </div>
                       </div>
-                      <button 
-                        className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
-                        onClick={() => handleRemoveProduct(item.id)}
-                      >
-                        Delete
-                      </button>
+                      <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
+                        <button 
+                          className="px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 text-white text-sm font-semibold hover:from-purple-600 hover:to-violet-700 transition-all shadow-md hover:shadow-lg whitespace-nowrap flex-shrink-0" 
+                          onClick={() => handleEditProduct(item)}
+                          type="button"
+                        >
+                          ✏️ Edit
+                        </button>
+                        <button 
+                          className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-all shadow-md hover:shadow-lg whitespace-nowrap flex-shrink-0" 
+                          onClick={() => handleRemoveProduct(item.id)}
+                          type="button"
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -411,7 +487,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
           </div>
 
-          <div className="p-4 sm:p-5 md:p-6 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-blue-50">
+          <div className="p-4 sm:p-5 md:p-6 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-50 to-purple-50">
             <h4 className="text-base sm:text-lg font-bold text-slate-900 mb-3 sm:mb-4">Database Information</h4>
             <div className="grid grid-cols-2 gap-4">
               <div>

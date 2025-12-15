@@ -11,6 +11,19 @@ import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
+// Suppress COOP (Cross-Origin-Opener-Policy) warnings globally
+// These are browser security warnings that don't affect functionality
+const originalError = console.error;
+console.error = (...args: any[]) => {
+  const message = String(args[0] || '');
+  // Suppress COOP-related warnings only
+  if (message.includes('Cross-Origin-Opener-Policy') || 
+      message.includes('window.closed')) {
+    return; // Silently ignore COOP warnings
+  }
+  originalError.apply(console, args);
+};
+
 export interface AuthUser {
   uid: string;
   email: string | null;

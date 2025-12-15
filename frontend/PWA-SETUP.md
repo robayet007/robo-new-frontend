@@ -74,3 +74,7 @@ Use your logo or create icons with:
 - App works even without internet (cached pages)
 - Install button appears automatically when PWA is installable
 
+
+
+
+

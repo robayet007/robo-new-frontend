@@ -10,6 +10,7 @@ import Checkout from './components/Checkout';
 import AddMoney from './components/AddMoney';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
+import WhatsAppButton from './components/WhatsAppButton';
 import useCatalog from './hooks/useCatalog';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
@@ -88,10 +89,8 @@ function App() {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <footer className="mt-4 sm:mt-5 md:mt-7 text-slate-600 text-center text-xs sm:text-sm px-3">
-        <p>Robo Top Up — All data stored in MongoDB database</p>
-      </footer>
       <InstallButton />
+      <WhatsAppButton />
     </div>
   );
 }
