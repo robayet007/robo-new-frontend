@@ -31,12 +31,38 @@ function Checkout({ products }: { products: Product[] }) {
     // Set default payment method based on balance
     // If user has balance and enough for product, default to Robo Pay
     // Otherwise default to bKash Pay
-    if (user && product && !isNaN(balance) && balance > 0 && hasEnoughBalance(product.price)) {
+    const hasEnough = typeof hasEnoughBalance === 'function' && product
+      ? hasEnoughBalance(product.price)
+      : false;
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'initial',
+        hypothesisId: 'H3',
+        location: 'Checkout.tsx:paymentEffect',
+        message: 'Evaluating default payment method',
+        data: {
+          hasUser: !!user,
+          hasProduct: !!product,
+          balance,
+          price: product?.price ?? null,
+          hasEnough,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+
+    if (user && product && !isNaN(balance) && balance > 0 && hasEnough) {
       setPayment('robo');
     } else {
       setPayment('bkash');
     }
-  }, [user, product, balance]);
+  }, [user, product, balance, hasEnoughBalance]);
 
   if (!product) {
     return <Navigate to="/" replace />;
@@ -100,6 +126,27 @@ function Checkout({ products }: { products: Product[] }) {
       alert('Please enter your Free Fire UID');
       return;
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId: 'debug-session',
+        runId: 'initial',
+        hypothesisId: 'H3',
+        location: 'Checkout.tsx:handleRoboBalancePayment',
+        message: 'Starting Robo balance payment',
+        data: {
+          hasUser: !!user,
+          hasUid: !!uid.trim(),
+          balance,
+          price: product.price,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
 
     if (balance < product.price) {
       const shouldAddMoney = confirm(

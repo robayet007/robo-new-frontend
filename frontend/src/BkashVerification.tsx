@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { FaCopy, FaTimes } from "react-icons/fa";
+import { FaCopy } from "react-icons/fa";
 
 type BkashVerificationProps = {
   onVerify: (businessId: string) => Promise<void>;

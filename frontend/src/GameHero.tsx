@@ -155,6 +155,49 @@ export default function GameHero() {
 
       <div style={containerStyle}>
         <div style={slideStyle} key={activeSlide}>
+          <div style={overlayStyle} />
+
+          <div
+            style={{
+              ...contentStyle,
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              padding: isMobile ? "16px" : "32px",
+              maxWidth: isTablet ? "70%" : "50%",
+            }}
+          >
+            <h1 style={titleStyle}>{slides[activeSlide].title}</h1>
+            <p style={subtitleStyle}>{slides[activeSlide].subtitle}</p>
+            {slides[activeSlide].buttonText && (
+              <button
+                type="button"
+                style={buttonStyle}
+                onClick={() => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      sessionId: 'debug-session',
+                      runId: 'initial',
+                      hypothesisId: 'H3',
+                      location: 'GameHero.tsx:buttonClick',
+                      message: 'Hero button clicked',
+                      data: { slideId: slides[activeSlide].id },
+                      timestamp: Date.now(),
+                    }),
+                  }).catch(() => {});
+                  // #endregion
+                }}
+              >
+                {slides[activeSlide].buttonText}
+              </button>
+            )}
+          </div>
+
           <div style={dotsContainerStyle}>
             {slides.map((_, index) => (
               <button
