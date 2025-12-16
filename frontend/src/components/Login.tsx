@@ -7,13 +7,15 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, resetPassword } = useAuth();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     setLoading(true);
     const result = await login(email.trim(), password);
@@ -29,6 +31,7 @@ function Login() {
 
   const handleGoogleLogin = async () => {
     setError('');
+    setSuccess('');
     setLoading(true);
     const result = await loginWithGoogle();
     setLoading(false);
@@ -38,6 +41,24 @@ function Login() {
       navigate('/');
     } else {
       setError(result.error || 'Failed to login with Google');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setSuccess('');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Please enter your email first, then click "Forgot password".');
+      return;
+    }
+    setLoading(true);
+    const result = await resetPassword(trimmedEmail);
+    setLoading(false);
+    if (result.success) {
+      setSuccess('Password reset email sent. Please check your inbox. If you do not see it, please also check your Spam or Promotions folder.');
+    } else if (result.error) {
+      setError(result.error);
     }
   };
 
@@ -78,11 +99,30 @@ function Login() {
             placeholder="Enter your password"
             className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all"
           />
+          <div className="mt-2 text-right">
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              disabled={loading}
+              className="text-xs font-semibold text-purple-600 hover:text-purple-700"
+            >
+              Forgot password?
+            </button>
+          </div>
         </div>
 
-        {error && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{error}</p>
+        {(error || success) && (
+          <div className="space-y-2">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+            {success && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <p className="text-sm font-medium text-emerald-700">{success}</p>
+              </div>
+            )}
           </div>
         )}
 

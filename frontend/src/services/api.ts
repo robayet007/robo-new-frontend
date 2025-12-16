@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } from '../types';
 
 // ==================== API MANAGER - Local Development ====================
 class SmartAPIManager {
@@ -172,11 +172,28 @@ export const paymentApi = {
       console.log('API Response ok:', response.ok);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error response:', errorText);
+        let errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        try {
+          const errorText = await response.text();
+          console.error('API Error response:', errorText);
+          // Try to parse as JSON
+          try {
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+              errorMessage = errorJson.message;
+            } else if (errorJson.error) {
+              errorMessage = errorJson.error;
+            }
+          } catch {
+            // If not JSON, use text
+            errorMessage = errorText.substring(0, 200);
+          }
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
         return {
           success: false,
-          message: `Server error: ${response.status} ${response.statusText} - ${errorText.substring(0, 100)}...`,
+          message: errorMessage,
           data: null
         };
       }
@@ -280,6 +297,21 @@ export const balanceTransactionApi = {
   }
 };
 
+// Purchases / Order History API
+export const purchaseApi = {
+  getUserPurchases: async (
+    userId: string,
+    limit: number = 50
+  ): Promise<ApiResponse<BackendPurchase[]>> => {
+    const params = new URLSearchParams();
+    params.append('limit', limit.toString());
+    const response = await SmartAPIManager.smartFetch(
+      `/balance/${userId}/purchases?${params.toString()}`
+    );
+    return response.json();
+  },
+};
+
 // Balance API (for user balance)
 export const balanceApi = {
   // Get user balance
@@ -301,6 +333,20 @@ export const balanceApi = {
         success: false,
         message: error.message || 'Failed to fetch balance',
         data: null
+      };
+    }
+  },
+
+  // Get all user balances (admin)
+  getAllBalances: async (): Promise<ApiResponse> => {
+    try {
+      const response = await SmartAPIManager.smartFetch('/balance');
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch balances',
+        data: null,
       };
     }
   },

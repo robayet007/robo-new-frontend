@@ -30,21 +30,24 @@ export default function GameHero() {
   const slides: Slide[] = [
     {
       id: 1,
-      title: "Free Fire",
-      subtitle: "Survive the ultimate 50-player battle royale",
+      title: "",
+      subtitle: "",
       buttonText: "",
-      image: "https://i.ytimg.com/vi/vcltk0h1_zk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDxomYmz3YuwckdpUFK0k7Qkp177Q",
+      image:
+        "https://scontent-sin11-1.xx.fbcdn.net/v/t39.30808-6/600106370_122199906206327160_3504858993693350217_n.jpg?stp=dst-jpg_p180x540_tt6&_nc_cat=104&ccb=1-7&_nc_sid=127cfc&_nc_ohc=lvaVtJmCpQgQ7kNvwGsEiUe&_nc_oc=AdkJypWi2O_A_GKS5NBo4p9ANDCXqP3aKAm-j2dKpbQiqRbg1BcdxdtAWCD_altsGIqvw_TSkx0ggIpwMBhYXOgo&_nc_zt=23&_nc_ht=scontent-sin11-1.xx&_nc_gid=UJ_-7fAHStHO8YxevYPrzA&oh=00_AflhmG5_1hSoSmR2llepv_ih_HiHsWcsBdWhOIOgEfkVtg&oe=6946196E",
     },
     {
       id: 2,
-      title: "Free Fire MAX",
-      subtitle: "Experience enhanced graphics and immersive gameplay",
+      title: "",
+      subtitle: "",
       buttonText: "",
-      image: "https://i.ytimg.com/vi/ACC4-FeWu8Q/maxresdefault.jpg",
+      image:
+        "https://i.ytimg.com/vi/eU58nuJM2uA/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAaMCPxt1MftlPON6VknbQk3szbUQ",
     },
   ]
 
   useEffect(() => {
+    if (slides.length <= 1) return
     const interval = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % slides.length)
     }, 5000)
@@ -56,7 +59,8 @@ export default function GameHero() {
     position: "relative",
     width: "100%",
     maxWidth: "1200px",
-    height: isMobile ? "250px" : isTablet ? "350px" : "500px",
+    // একটু বেশি height রেখেছি যেন পুরো ব্যানার ইমেজ পরিষ্কার দেখা যায়
+    height: isMobile ? "260px" : isTablet ? "380px" : "520px",
     margin: "0 auto",
     overflow: "hidden",
     borderRadius: "8px",
@@ -67,8 +71,13 @@ export default function GameHero() {
     width: "100%",
     height: "100%",
     backgroundImage: `url(${slides[activeSlide].image})`,
+    // দুই দিকেই পুরো ব্যানার ভরাট করার জন্য এখন cover ব্যবহার করছি
     backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundPosition: "center center",
+    backgroundRepeat: "no-repeat",
+    backgroundColor: "#000",
+    // ইমেজকে একটু উজ্জ্বল/সেটুরেটেড করা
+    filter: "brightness(1.18) saturate(1.1)",
     transition: "background-image 0.5s ease-in-out",
   }
 
@@ -78,7 +87,8 @@ export default function GameHero() {
     left: 0,
     right: 0,
     bottom: 0,
-    background: "linear-gradient(to right, rgba(0,0,0,0.6), rgba(0,0,0,0.2))",
+    // আগে অনেক ডার্ক ছিল, এখন লাইট করেছি যাতে ছবি বেশি ব্রাইট দেখা যায়
+    background: "linear-gradient(to right, rgba(0,0,0,0.28), rgba(0,0,0,0.06))",
     zIndex: 1,
   }
 
@@ -166,48 +176,35 @@ export default function GameHero() {
               flexDirection: "column",
               justifyContent: "center",
               padding: isMobile ? "16px" : "32px",
-              maxWidth: isTablet ? "70%" : "50%",
+              maxWidth: isTablet ? "70%" : "60%",
             }}
           >
             <h1 style={titleStyle}>{slides[activeSlide].title}</h1>
-            <p style={subtitleStyle}>{slides[activeSlide].subtitle}</p>
+            {slides[activeSlide].subtitle && (
+              <p style={subtitleStyle}>{slides[activeSlide].subtitle}</p>
+            )}
             {slides[activeSlide].buttonText && (
               <button
                 type="button"
                 style={buttonStyle}
-                onClick={() => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      sessionId: 'debug-session',
-                      runId: 'initial',
-                      hypothesisId: 'H3',
-                      location: 'GameHero.tsx:buttonClick',
-                      message: 'Hero button clicked',
-                      data: { slideId: slides[activeSlide].id },
-                      timestamp: Date.now(),
-                    }),
-                  }).catch(() => {});
-                  // #endregion
-                }}
               >
                 {slides[activeSlide].buttonText}
               </button>
             )}
           </div>
 
-          <div style={dotsContainerStyle}>
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                style={dotStyle(index === activeSlide)}
-                onClick={() => setActiveSlide(index)}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
+          {slides.length > 1 && (
+            <div style={dotsContainerStyle}>
+              {slides.map((_, index) => (
+                <button
+                  key={index}
+                  style={dotStyle(index === activeSlide)}
+                  onClick={() => setActiveSlide(index)}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

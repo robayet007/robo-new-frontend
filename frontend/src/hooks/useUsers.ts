@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  query, 
+import {
+  collection,
+  doc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  query,
   where,
-  onSnapshot 
+  onSnapshot,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import type { AuthUser } from './useAuth';
@@ -18,6 +18,8 @@ export interface AppUser extends AuthUser {
   role: UserRole;
   createdAt: number;
   lastLogin?: number;
+  // Latest known balance from payments (updatedBalance) if available
+  lastBalance?: number;
 }
 
 const USERS_COLLECTION = 'users';
@@ -28,10 +30,10 @@ function useUsers() {
 
   useEffect(() => {
     console.log('🔄 Initializing users fetch from Firebase Firestore...');
-    
+
     // Initial load
     loadUsers();
-    
+
     // Real-time listener for users (with error handling for blocked requests)
     let unsubscribe: (() => void) | null = null;
     let fallbackInterval: ReturnType<typeof setInterval> | null = null;
@@ -42,13 +44,13 @@ function useUsers() {
         (snapshot) => {
           const usersList: AppUser[] = [];
           snapshot.forEach((docSnap) => {
-            const data = docSnap.data();
+            const data = docSnap.data() as any;
             usersList.push({
               uid: data.uid,
               email: data.email,
               displayName: data.displayName,
               photoURL: data.photoURL,
-              role: data.role || 'user',
+              role: (data.role as UserRole) || 'user',
               createdAt: data.createdAt || Date.now(),
               lastLogin: data.lastLogin,
             });
@@ -56,7 +58,7 @@ function useUsers() {
           console.log(`✅ Users fetched from Firestore: ${usersList.length} users found`);
           setUsers(usersList);
           setLoading(false);
-          
+
           // Clear fallback interval if real-time listener is working
           if (fallbackInterval) {
             clearInterval(fallbackInterval);
@@ -106,21 +108,22 @@ function useUsers() {
       console.log('📡 Fetching users from Firebase Firestore...');
       const q = query(collection(db, USERS_COLLECTION));
       const querySnapshot = await getDocs(q);
+
       const usersList: AppUser[] = [];
-      
+
       querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
+        const data = docSnap.data() as any;
         usersList.push({
           uid: data.uid,
           email: data.email,
           displayName: data.displayName,
           photoURL: data.photoURL,
-          role: data.role || 'user',
+          role: (data.role as UserRole) || 'user',
           createdAt: data.createdAt || Date.now(),
           lastLogin: data.lastLogin,
         });
       });
-      
+
       console.log(`✅ Successfully loaded ${usersList.length} users from Firestore`);
       setUsers(usersList);
     } catch (error) {

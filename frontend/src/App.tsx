@@ -9,12 +9,14 @@ import AdminPanel from './components/AdminPanel';
 import Checkout from './components/Checkout';
 import AddMoney from './components/AddMoney';
 import ChangePassword from './components/ChangePassword';
+import OrderHistory from './components/OrderHistory';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
 import WhatsAppButton from './components/WhatsAppButton';
 import useCatalog from './hooks/useCatalog';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
+import FFIdInfo from './components/FFIdInfo';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -61,6 +63,26 @@ function App() {
           element={
             user ? (
               <ChangePassword />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            user ? (
+              <OrderHistory />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/ff-info"
+          element={
+            user ? (
+              <FFIdInfo />
             ) : (
               <Navigate to="/login" replace />
             )

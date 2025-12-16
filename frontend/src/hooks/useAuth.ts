@@ -8,7 +8,8 @@ import {
   updateProfile,
   reauthenticateWithCredential,
   EmailAuthProvider,
-  updatePassword
+  updatePassword,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
@@ -271,6 +272,31 @@ function useAuth() {
     }
   };
 
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null);
+      if (!email) {
+        return { success: false, error: 'Please enter your email first' };
+      }
+      await sendPasswordResetEmail(auth, email);
+      return { success: true };
+    } catch (err: any) {
+      console.error('Error sending password reset email:', err);
+      let errorMessage = 'Failed to send password reset email';
+
+      if (err.code === 'auth/user-not-found') {
+        errorMessage = 'No user found with this email';
+      } else if (err.code === 'auth/invalid-email') {
+        errorMessage = 'Invalid email address';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   return {
     user,
     loading,
@@ -281,6 +307,7 @@ function useAuth() {
     logout,
     getToken,
     changePassword,
+    resetPassword,
   };
 }
 

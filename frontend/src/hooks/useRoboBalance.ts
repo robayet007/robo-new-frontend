@@ -1,5 +1,6 @@
 // hooks/useRoboBalance.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { balanceApi } from '../services/api';
 import useAuth from './useAuth';
 
@@ -7,28 +8,13 @@ export default function useRoboBalance() {
   const { user } = useAuth();
   const [backendBalance, setBackendBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   const fetchBalance = useCallback(async () => {
     if (!user?.uid) {
       setBackendBalance(0);
       setIsLoading(false);
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'initial',
-          hypothesisId: 'H1',
-          location: 'useRoboBalance.ts:earlyReturn',
-          message: 'fetchBalance called without authenticated user',
-          data: { hasUser: !!user },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
-
       return;
     }
 
@@ -38,61 +24,13 @@ export default function useRoboBalance() {
 
       if (response.success && response.data?.balance !== undefined) {
         setBackendBalance(response.data.balance);
-
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: 'debug-session',
-            runId: 'initial',
-            hypothesisId: 'H1',
-            location: 'useRoboBalance.ts:success',
-            message: 'Fetched user balance successfully',
-            data: { hasUser: !!user, balance: response.data.balance },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
       } else {
         // If user balance not found, set to 0
         setBackendBalance(0);
-
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: 'debug-session',
-            runId: 'initial',
-            hypothesisId: 'H2',
-            location: 'useRoboBalance.ts:notFound',
-            message: 'User balance not found, defaulting to 0',
-            data: { hasUser: !!user },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
       }
     } catch (error) {
       console.error('Failed to fetch balance:', error);
       setBackendBalance(0);
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: 'debug-session',
-          runId: 'initial',
-          hypothesisId: 'H2',
-          location: 'useRoboBalance.ts:error',
-          message: 'Error while fetching user balance, defaulting to 0',
-          data: { hasUser: !!user },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +38,66 @@ export default function useRoboBalance() {
 
   useEffect(() => {
     fetchBalance();
-  }, [fetchBalance]);
+    
+    // ✅ Socket.IO real-time updates
+    if (user?.uid) {
+      // Connect to Socket.IO server
+      // Use same base URL as API
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+      const socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+      });
+
+      socket.on('connect', () => {
+        console.log('✅ Socket.IO connected:', socket.id);
+        // Join user-specific room
+        socket.emit('join-user-room', user.uid);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('❌ Socket.IO disconnected');
+      });
+
+      // Listen for balance updates
+      socket.on('balance-updated', (data: {
+        userId: string;
+        balance: number;
+        previousBalance: number;
+        amount: number;
+        transactionId: string;
+        timestamp: string;
+      }) => {
+        console.log('📡 Real-time balance update received:', data);
+        if (data.userId === user.uid) {
+          // Update balance immediately
+          setBackendBalance(data.balance);
+          setIsLoading(false);
+        }
+      });
+
+      socketRef.current = socket;
+
+      // Fallback: Still poll every 10 seconds as backup (reduced frequency)
+      pollingIntervalRef.current = setInterval(() => {
+        fetchBalance();
+      }, 10000); // Poll every 10 seconds as backup
+    }
+
+    // Cleanup on unmount or user change
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [fetchBalance, user?.uid]); // Only depend on fetchBalance and user.uid, not isLoading
 
   const getCurrentBalance = () => {
     return backendBalance !== null ? backendBalance : 0;
@@ -125,22 +122,6 @@ export default function useRoboBalance() {
 
     const newBalance = current - amount;
     setBackendBalance(newBalance);
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/eab5df58-3135-4efe-ad19-feee35996b24', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: 'debug-session',
-        runId: 'initial',
-        hypothesisId: 'H3',
-        location: 'useRoboBalance.ts:deductMoney',
-        message: 'Deducted money from Robo balance (client-side)',
-        data: { amount, previousBalance: current, newBalance },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
 
     return { success: true, newBalance };
   };

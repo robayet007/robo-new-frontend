@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
+import useRoboBalance from '../hooks/useRoboBalance';
 import BkashVerification from '../BkashVerification';
 import { paymentApi } from '../services/api';
 
@@ -9,83 +10,17 @@ function AddMoney() {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
   const [showBkashVerification, setShowBkashVerification] = useState(false);
-  const [balance, setBalance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [balanceLoading, setBalanceLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const {
+    backendBalance,
+    loading: balanceLoading,
+    refreshBalance,
+  } = useRoboBalance();
 
-  // ✅ সরাসরি API কল করে ব্যালেন্স ফেচ করি user-এর email ব্যবহার করে
-  const fetchBalance = async () => {
-    console.log('🔍 fetchBalance called with user:', user);
-    
-    if (!user?.email) {
-      console.log('⚠️ No user email found, setting balance to 0');
-      setBalance(0);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setBalanceLoading(true);
-      const userEmail = user.email;
-      console.log('📧 Fetching balance for email:', userEmail);
-      
-      // Encode email for URL
-      const encodedEmail = encodeURIComponent(userEmail);
-      const apiUrl = `http://localhost:3000/api/balance/by-email/${encodedEmail}`;
-      console.log('🌐 API URL:', apiUrl);
-      
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      console.log('📊 API Response Status:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        console.error('❌ API Error:', response.status, response.statusText);
-        throw new Error(`Failed to fetch balance: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('📦 API Response Data:', JSON.stringify(data, null, 2));
-      
-      if (data.success && data.data) {
-        const userBalance = data.data.balance;
-        console.log('✅ Balance found:', userBalance);
-        setBalance(userBalance);
-      } else {
-        console.log('ℹ️ No balance data found in response, setting to 0');
-        setBalance(0);
-      }
-    } catch (error: any) {
-      console.error('❌ Error fetching balance:', error);
-      console.log('⚠️ Setting balance to 0 due to error');
-      setBalance(0);
-    } finally {
-      console.log('🏁 Balance fetch completed');
-      setLoading(false);
-      setBalanceLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    console.log('🔄 useEffect triggered, user:', user);
-    if (user?.email) {
-      console.log('📝 User email available:', user.email);
-      fetchBalance();
-    } else {
-      console.log('👤 No user or email found');
-      setLoading(false);
-      setBalance(0);
-    }
-  }, [user?.email]);
-
-  // ✅ currentBalance safe way এ define করুন
-  const currentBalance = balance !== null && balance !== undefined ? balance : 0;
+  // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
+  const currentBalance =
+    backendBalance !== null && backendBalance !== undefined ? backendBalance : 0;
   console.log('💰 Current balance value:', currentBalance);
 
   const predefinedAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -168,9 +103,9 @@ function AddMoney() {
       if (response.success) {
         setShowBkashVerification(false);
 
-        // ✅ ব্যালেন্স রিফ্রেশ করি
+        // ✅ ব্যালেন্স রিফ্রেশ করি (navbar + সব জায়গায় same hook)
         console.log('🔄 Refreshing balance after successful payment');
-        await fetchBalance();
+        await refreshBalance();
 
         console.log(`✅ Balance updated successfully. Added: ৳${amountValue}`);
         
@@ -229,7 +164,7 @@ function AddMoney() {
     );
   }
 
-  if (loading) {
+  if (balanceLoading && !showBkashVerification) {
     console.log('⏳ Loading state...');
     return (
       <div className="max-w-md p-6 mx-auto mt-8 text-center bg-white border shadow-xl rounded-2xl border-slate-200">
@@ -261,7 +196,7 @@ function AddMoney() {
             <p className="text-sm font-semibold text-slate-700">Current Balance</p>
             <button
               type="button"
-              onClick={fetchBalance}
+              onClick={refreshBalance}
               disabled={balanceLoading}
               className="text-xs font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -336,14 +271,12 @@ function AddMoney() {
             <span className="text-lg">💡</span> How to Pay
           </h3>
           <ol className="pl-5 space-y-2 text-sm text-blue-700 list-decimal">
-            <li>Send money to our bKash Merchant number</li>
-            <li>Enter the bKash Transaction ID (starting with C)</li>
-            <li>Your balance will be updated instantly</li>
+            {/* <li>Send money to our bKash Merchant number</li> */}
+            {/* <li>Enter the bKash Transaction ID (starting with C)</li> */}
+            {/* <li>Your balance will be updated instantly</li> */}
           </ol>
           <div className="p-2 mt-3 bg-blue-100 rounded-lg">
-            <p className="text-xs font-medium text-blue-800">
-              API Endpoint: GET /api/balance/by-email/{user.email?.substring(0, 10)}...
-            </p>
+            
           </div>
         </div>
 

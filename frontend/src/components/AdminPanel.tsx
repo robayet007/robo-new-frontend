@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
 import UserManagement from './UserManagement';
+import AdminOrders from './AdminOrders';
 
-type TabType = 'products' | 'users';
+type TabType = 'products' | 'users' | 'orders';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -194,7 +195,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             Admin Dashboard
           </p>
           <h2 className="text-2xl font-bold text-slate-900 mb-1">Admin Panel</h2>
-          <p className="text-slate-600 text-sm">Manage products, categories, and users</p>
+          <p className="text-slate-600 text-sm">
+            Manage products, categories, users, and full order history
+          </p>
           {error && (
             <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200">
               <p className="text-red-600 text-sm">{error}</p>
@@ -247,6 +250,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         >
           User Management
         </button>
+        <button
+          onClick={() => setActiveTab('orders')}
+          className={`px-3 sm:px-4 md:px-6 py-2 sm:py-3 font-semibold text-xs sm:text-sm transition-all border-b-2 whitespace-nowrap ${
+            activeTab === 'orders'
+              ? 'border-purple-500 text-purple-600'
+              : 'border-transparent text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Order History
+        </button>
       </div>
 
       {message && (
@@ -262,6 +275,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {/* Tab Content */}
       {activeTab === 'users' ? (
         <UserManagement />
+      ) : activeTab === 'orders' ? (
+        <AdminOrders />
       ) : (
         <div className="space-y-6">
 

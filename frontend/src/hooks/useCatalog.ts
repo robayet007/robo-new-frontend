@@ -147,6 +147,15 @@ function useCatalog() {
         } catch (parseErr) {
           console.error('Failed to parse localStorage data:', parseErr);
         }
+      } else {
+        // If no localStorage backup, set empty arrays to prevent infinite loading
+        console.warn('No cached data available. Setting empty catalog.');
+        if (categories.length === 0) {
+          setCategories([]);
+        }
+        if (products.length === 0) {
+          setProducts([]);
+        }
       }
     } finally {
       setLoading(false);
