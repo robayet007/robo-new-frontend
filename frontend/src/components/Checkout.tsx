@@ -14,7 +14,6 @@ function Checkout({ products }: { products: Product[] }) {
   const {
     balance,
     hasEnoughBalance,
-    deductMoney,
     refresh,
     getCurrentBalance,
     loading: balanceLoading,
