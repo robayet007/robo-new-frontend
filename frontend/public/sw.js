@@ -1,5 +1,5 @@
 // Service Worker for Robo Top Up PWA
-const CACHE_NAME = 'robo-topup-v1';
+const CACHE_NAME = 'robo-topup-v2';
 const urlsToCache = [
   '/',
   '/index.html',
