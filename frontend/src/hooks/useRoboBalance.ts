@@ -1,14 +1,16 @@
 // hooks/useRoboBalance.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { balanceApi } from '../services/api';
 import useAuth from './useAuth';
+import { io, Socket } from "socket.io-client";
 
 export default function useRoboBalance() {
   const { user } = useAuth();
   const [backendBalance, setBackendBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // ✅ 添加缺失的 socketRef 定义
   const socketRef = useRef<Socket | null>(null);
 
   const fetchBalance = useCallback(async () => {
@@ -39,10 +41,16 @@ export default function useRoboBalance() {
   useEffect(() => {
     fetchBalance();
     
-    // ✅ Socket.IO real-time updates
+    // ✅ Real-time balance polling - refresh every 3 seconds
+    // This ensures balance updates across all tabs/devices
     if (user?.uid) {
+      // 先清理之前的连接
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      
       // Connect to Socket.IO server
-      // Use same base URL as API
       const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
@@ -88,10 +96,10 @@ export default function useRoboBalance() {
 
     // Cleanup on unmount or user change
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
+      // 使用可选链操作符安全地清理
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+      
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;

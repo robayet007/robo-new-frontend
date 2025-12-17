@@ -305,7 +305,7 @@ function AddMoney() {
               <li>• Only use bKash Personal to Merchant payment</li>
               <li>• Transaction ID must start with "C"</li>
               <li>• Balance updates automatically after verification</li>
-              <li>• Contact support if you face any issues</li>
+              <li> if you need contact support call 01766325020</li>
             </ul>
             <div className="p-2 mt-3 rounded-lg bg-slate-100">
               <p className="text-xs text-slate-600">
