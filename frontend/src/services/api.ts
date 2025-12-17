@@ -21,7 +21,8 @@ class SmartAPIManager {
   
   // Simple fetch to Render backend with timeout
   static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
-    const url = `${this.baseURL}${path}`;
+    const baseURL = this.getBaseURL();
+    const url = `${baseURL}${path}`;
     
     console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
