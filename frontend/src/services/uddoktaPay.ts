@@ -1,14 +1,9 @@
 // Uddokta Pay API Integration - Using Backend Proxy
-// Get backend base URL - automatically detect production or local
+// Get backend base URL - always use Render backend URL
 function getBackendBaseURL(): string {
-  // Check if we're in production (Vercel deployment)
-  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    // Production - use Render backend URL
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
-    return `${backendUrl}/api`;
-  }
-  // Local development
-  return 'http://localhost:5000/api';
+  // Always use Render backend URL
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
+  return `${backendUrl}/api`;
 }
 
 async function smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
@@ -44,17 +39,10 @@ async function smartFetch(path: string, options: RequestInit = {}): Promise<Resp
 
 // Get backend URL for webhook
 export const getBackendWebhookUrl = (): string => {
-  // For Uddokta Pay webhook, we ALWAYS need a publicly accessible URL
-  // Localhost won't work - Uddokta Pay server can't reach localhost
-  // Use production URL even in development, or use ngrok/tunneling service
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 
-    (window.location.hostname === 'localhost' 
-      ? 'https://robo-backend-sbms.onrender.com' // Use production URL even in dev for webhook
-      : 'https://robo-backend-sbms.onrender.com');
-  
+  // Always use Render backend URL for webhook
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
   const webhookUrl = `${backendUrl}/api/payments/uddokta/webhook`;
-  console.log('🔗 Webhook URL (must be publicly accessible):', webhookUrl);
-  console.log('⚠️ Note: Localhost webhooks will not work. Use production URL or ngrok.');
+  console.log('🔗 Webhook URL:', webhookUrl);
   return webhookUrl;
 };
 
@@ -196,5 +184,6 @@ export const verifyUddoktaPayPayment = async (
     throw new Error(error.message || 'Failed to verify payment');
   }
 };
+
 
 

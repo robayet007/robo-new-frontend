@@ -50,8 +50,8 @@ export default function useRoboBalance() {
         socketRef.current = null;
       }
       
-      // Connect to Socket.IO server
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+      // Connect to Socket.IO server (Render backend)
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://robo-backend-sbms.onrender.com';
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,

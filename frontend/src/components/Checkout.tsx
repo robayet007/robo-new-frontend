@@ -98,15 +98,7 @@ function Checkout({ products }: { products: Product[] }) {
         console.log('   1. Payment is still processing - wait a few seconds');
         console.log('   2. Webhook will handle verification automatically (in production)');
         console.log('   3. Check Uddokta Pay dashboard for invoice_id');
-        console.log('   4. In local development, webhook may not work - use manual verification');
-        
-        // In local development, show message about webhook
-        if (window.location.hostname === 'localhost') {
-          console.log('🔧 Local Development Mode:');
-          console.log('   - Webhook may not work (localhost not accessible)');
-          console.log('   - Payment will be verified via webhook in production');
-          console.log('   - Or check Uddokta Pay dashboard and verify manually');
-        }
+        console.log('   4. Payment will be verified via webhook');
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

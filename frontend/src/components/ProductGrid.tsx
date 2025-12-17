@@ -86,7 +86,7 @@ function ProductGrid({ categories, products }: { categories: Category[]; product
           <div className="py-8 text-center col-span-full">
             <div className="inline-block w-12 h-12 mb-4 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
             <p className="text-slate-600">Loading products...</p>
-            <p className="mt-2 text-sm text-slate-500">If this takes too long, check your backend connection at http://localhost:5000</p>
+            <p className="mt-2 text-sm text-slate-500">If this takes too long, check your backend connection</p>
           </div>
         ) : filtered.length === 0 && products.length > 0 ? (
           <div className="py-4 text-center col-span-full">

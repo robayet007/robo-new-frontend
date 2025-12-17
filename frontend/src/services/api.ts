@@ -2,16 +2,11 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } fr
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
-  // Get API base URL - automatically detect production or local
+  // Get API base URL - always use Render backend URL
   static getBaseURL(): string {
-    // Check if we're in production (Vercel deployment)
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Production - use Render backend URL
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
-      return `${backendUrl}/api`;
-    }
-    // Local development
-    return 'http://localhost:5000/api';
+    // Always use Render backend URL
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
+    return `${backendUrl}/api`;
   }
   
   // Get API base URL (async for compatibility)
