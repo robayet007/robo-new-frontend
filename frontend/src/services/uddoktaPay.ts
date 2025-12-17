@@ -3,8 +3,8 @@
 function getBackendBaseURL(): string {
   // Check if we're in production (Vercel deployment)
   if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-    // Production - use Vercel backend URL
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robotopup-backend.vercel.app';
+    // Production - use Render backend URL
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
     return `${backendUrl}/api`;
   }
   // Local development
@@ -49,8 +49,8 @@ export const getBackendWebhookUrl = (): string => {
   // Use production URL even in development, or use ngrok/tunneling service
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 
     (window.location.hostname === 'localhost' 
-      ? 'https://robotopup-backend.vercel.app' // Use production URL even in dev for webhook
-      : 'https://robotopup-backend.vercel.app');
+      ? 'https://robo-backend-sbms.onrender.com' // Use production URL even in dev for webhook
+      : 'https://robo-backend-sbms.onrender.com');
   
   const webhookUrl = `${backendUrl}/api/payments/uddokta/webhook`;
   console.log('🔗 Webhook URL (must be publicly accessible):', webhookUrl);

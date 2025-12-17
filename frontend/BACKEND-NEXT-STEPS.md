@@ -3,7 +3,7 @@
 ## Current Status:
 
 ✅ **Frontend**: Deployed on Vercel (https://robotopup.vercel.app)
-✅ **Backend**: Currently using Render backend (https://robo-backend-gguf.onrender.com)
+✅ **Backend**: Currently using Render backend (https://robo-backend-sbms.onrender.com)
 ✅ **Backend Code**: Ready for Vercel deployment
 
 ## Options for Backend Deployment:
@@ -46,7 +46,7 @@ static endpoints: APIEndpoint[] = [
     type: 'https' 
   },
   { 
-    url: 'https://robo-backend-gguf.onrender.com/api',  // Fallback
+    url: 'https://robo-backend-sbms.onrender.com/api',  // Fallback
     name: 'Render', 
     priority: 2, 
     type: 'https' 
@@ -95,7 +95,7 @@ Since Render backend is already working, I recommend:
 ## What to Check:
 
 1. **Backend Health**: 
-   - Visit: https://robo-backend-gguf.onrender.com/api/health
+   - Visit: https://robo-backend-sbms.onrender.com/api/health
    - Should return status OK
 
 2. **Frontend API Calls**:

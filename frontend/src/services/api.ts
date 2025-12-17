@@ -6,8 +6,8 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Check if we're in production (Vercel deployment)
     if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Production - use Vercel backend URL
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robotopup-backend.vercel.app';
+      // Production - use Render backend URL
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
       return `${backendUrl}/api`;
     }
     // Local development
