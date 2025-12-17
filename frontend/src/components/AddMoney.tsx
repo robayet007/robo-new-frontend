@@ -120,7 +120,7 @@ function AddMoney() {
           player_id: user.email,
           diamonds: 0,
           price: amountValue,
-          payment_type: 'add_money',
+          payment_type: 'add_money' as const,
         },
         redirect_url: redirectUrl,
         cancel_url: cancelUrl,

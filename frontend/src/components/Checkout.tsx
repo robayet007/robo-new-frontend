@@ -319,7 +319,7 @@ function Checkout({ products }: { products: Product[] }) {
           player_id: uid,
           diamonds: product.diamonds,
           price: product.price,
-          payment_type: 'purchase',
+          payment_type: 'purchase' as const,
         },
         redirect_url: redirectUrl,
         cancel_url: cancelUrl,
