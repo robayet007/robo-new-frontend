@@ -1,13 +1,22 @@
 import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } from '../types';
 
-// ==================== API MANAGER - Local Development ====================
+// ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
-  // Use local backend server
-  static baseURL = 'http://localhost:5000/api';
+  // Get API base URL - automatically detect production or local
+  static getBaseURL(): string {
+    // Check if we're in production (Vercel deployment)
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      // Production - use Vercel backend URL
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robotopup-backend.vercel.app';
+      return `${backendUrl}/api`;
+    }
+    // Local development
+    return 'http://localhost:5000/api';
+  }
   
-  // Get API base URL
-  static async getBaseURL(): Promise<string> {
-    return this.baseURL;
+  // Get API base URL (async for compatibility)
+  static async getBaseURLAsync(): Promise<string> {
+    return this.getBaseURL();
   }
   
   // Simple fetch to Render backend with timeout
@@ -147,7 +156,7 @@ export const paymentApi = {
     productName?: string;
     diamonds?: number;
     price?: number;
-    paymentMethod?: 'bkash' | 'robo';
+    paymentMethod?: 'bkash' | 'robo' | 'uddokta';
     updatedBalance?: number; // For Robo Balance payments, send the remaining balance
     userEmail?: string; // User email for database tracking
     userName?: string; // User name for database tracking

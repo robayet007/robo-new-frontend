@@ -83,6 +83,7 @@ function OrderHistory() {
               : 'Unknown date';
 
             const isRobo = order.paymentMethod === 'robo';
+            const paymentMethod = order.paymentMethod;
             const amount = (order.amount ?? order.price) ?? 0;
 
             return (
@@ -112,8 +113,12 @@ function OrderHistory() {
                     ৳{amount.toFixed(2)}
                   </p>
                   <p className="mt-1 text-xs">
-                    <span className={isRobo ? 'text-purple-600' : 'text-rose-600'}>
-                      {isRobo ? 'Robo Pay' : 'bKash'}
+                    <span className={
+                      isRobo ? 'text-purple-600' : 
+                      paymentMethod === 'uddokta' ? 'text-blue-600' : 
+                      'text-rose-600'
+                    }>
+                      {isRobo ? 'Robo Pay' : paymentMethod === 'uddokta' ? 'Uddokta Pay' : 'bKash'}
                     </span>
                     <span className="text-slate-400"> • </span>
                     <span

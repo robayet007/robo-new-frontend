@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import BkashVerification from '../BkashVerification';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { paymentApi } from '../services/api';
+import { createUddoktaPayCheckout, verifyUddoktaPayPayment, getBackendWebhookUrl } from '../services/uddoktaPay';
 import type { Product } from '../types';
 import useRoboBalance from '../hooks/useRoboBalance';
 import useAuth from '../hooks/useAuth';
@@ -27,9 +27,9 @@ function Checkout({ products }: { products: Product[] }) {
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
   const [ffNameError, setFfNameError] = useState<string | null>(null);
-  const [payment, setPayment] = useState<'robo' | 'bkash'>('bkash');
-  const [showBkashVerification, setShowBkashVerification] = useState(false);
+  const [payment, setPayment] = useState<'robo' | 'uddokta'>('uddokta');
   const [processing, setProcessing] = useState(false);
+  const [searchParams] = useSearchParams();
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [paymentResult, setPaymentResult] = useState<{
     status: 'success' | 'warning';
@@ -42,10 +42,80 @@ function Checkout({ products }: { products: Product[] }) {
     if (!products.length) navigate('/');
   }, [products, navigate]);
 
+  // Handle Uddokta Pay callback after payment
+  useEffect(() => {
+    // Check all possible parameter names that Uddokta Pay might use
+    const invoiceId = searchParams.get('invoice_id') || 
+                      searchParams.get('invoiceId') || 
+                      searchParams.get('invoice') ||
+                      searchParams.get('transaction_id') ||
+                      searchParams.get('transactionId');
+    
+    const status = searchParams.get('status') || 
+                   searchParams.get('payment_status');
+    
+    console.log('🔍 Uddokta Pay Callback - URL Params:', {
+      invoice_id: searchParams.get('invoice_id'),
+      invoiceId: searchParams.get('invoiceId'),
+      invoice: searchParams.get('invoice'),
+      transaction_id: searchParams.get('transaction_id'),
+      transactionId: searchParams.get('transactionId'),
+      status: searchParams.get('status'),
+      payment_status: searchParams.get('payment_status'),
+      allParams: Object.fromEntries(searchParams.entries()),
+      fullURL: window.location.href
+    });
+    
+    if (invoiceId) {
+      console.log('✅ Invoice ID found:', invoiceId);
+      console.log('📊 Status:', status);
+      
+      // If status is COMPLETED or if no status but invoice_id exists, process it
+      // Uddokta Pay might not send status in redirect URL, so we verify anyway
+      if (status === 'COMPLETED' || !status) {
+        console.log('🚀 Processing payment callback...');
+        // Use setTimeout to ensure component is fully mounted
+        setTimeout(() => {
+          handleUddoktaPayCallback(invoiceId);
+        }, 100);
+      } else {
+        console.log('⚠️ Payment status is not COMPLETED:', status);
+      }
+    } else {
+      console.log('ℹ️ No invoice_id found in URL parameters');
+      console.log('📋 Full URL:', window.location.href);
+      console.log('📋 All search params:', Array.from(searchParams.entries()));
+      
+      // Check if cancelled
+      if (searchParams.get('cancelled') === 'true') {
+        console.log('❌ Payment was cancelled');
+        alert('Payment was cancelled. Please try again.');
+      } else {
+        // Check if payment was successful but invoice_id not in URL
+        // Uddokta Pay might redirect without invoice_id in some cases
+        console.log('⚠️ Payment completed but invoice_id not found in URL');
+        console.log('💡 Possible reasons:');
+        console.log('   1. Payment is still processing - wait a few seconds');
+        console.log('   2. Webhook will handle verification automatically (in production)');
+        console.log('   3. Check Uddokta Pay dashboard for invoice_id');
+        console.log('   4. In local development, webhook may not work - use manual verification');
+        
+        // In local development, show message about webhook
+        if (window.location.hostname === 'localhost') {
+          console.log('🔧 Local Development Mode:');
+          console.log('   - Webhook may not work (localhost not accessible)');
+          console.log('   - Payment will be verified via webhook in production');
+          console.log('   - Or check Uddokta Pay dashboard and verify manually');
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   useEffect(() => {
     // Set default payment method based on balance
     // If user has balance and enough for product, default to Robo Pay
-    // Otherwise default to bKash Pay
+    // Otherwise default to Uddokta Pay
     const hasEnough = typeof hasEnoughBalance === 'function' && product
       ? hasEnoughBalance(product.price)
       : false;
@@ -53,7 +123,7 @@ function Checkout({ products }: { products: Product[] }) {
     if (user && product && !isNaN(balance) && balance > 0 && hasEnough) {
       setPayment('robo');
     } else {
-      setPayment('bkash');
+      setPayment('uddokta');
     }
   }, [user, product, balance, hasEnoughBalance]);
 
@@ -109,51 +179,166 @@ function Checkout({ products }: { products: Product[] }) {
     setRefreshingBalance(false);
   };
 
-  const handleBkashVerify = async (businessId: string) => {
+  // Handle Uddokta Pay callback after payment
+  const handleUddoktaPayCallback = async (invoiceId: string) => {
+    console.log('🔄 handleUddoktaPayCallback called with invoiceId:', invoiceId);
+    
+    if (!uid.trim()) {
+      console.warn('⚠️ UID is empty, cannot process payment');
+      alert('Please enter your Free Fire UID');
+      return;
+    }
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      console.error('❌ Invalid invoice ID:', invoiceId);
+      alert('Invalid payment transaction ID. Please contact support.');
+      return;
+    }
+
+    setProcessing(true);
     try {
-      const trimmedTrxId = businessId.trim().toUpperCase();
-      if (!trimmedTrxId.startsWith('C')) {
-        alert('Invalid bKash Transaction ID. bKash TrxID must start with "C"');
-        return;
-      }
-
-      const bKashTrxIdRegex = /^C[A-Z0-9]{9,11}$/;
-      if (!bKashTrxIdRegex.test(trimmedTrxId)) {
-        alert('Invalid bKash Transaction ID format. Must be 10-12 characters starting with C');
-        return;
-      }
-
-      const response = await paymentApi.verify({
-        transactionId: trimmedTrxId,
-        amount: product.price,
-        playerId: uid,
-        productId: product.id,
-        productName: product.name,
-        diamonds: product.diamonds,
-        price: product.price,
-        paymentMethod: 'bkash',
-        userEmail: user?.email || '',
-        userName: user?.displayName || user?.email?.split('@')[0] || 'User',
-        userId: user?.uid || ''
-      });
+      console.log('🔍 Verifying payment with Uddokta Pay API...');
+      // Verify payment with Uddokta Pay
+      const verifyResponse = await verifyUddoktaPayPayment(invoiceId.trim());
       
-      if (response.success) {
-        alert('Payment verified successfully! Transaction ID: ' + trimmedTrxId);
-        setShowBkashVerification(false);
-        navigate('/');
+      console.log('📥 Uddokta Pay verification response:', verifyResponse);
+      
+      if (verifyResponse.status && verifyResponse.payment?.status === 'COMPLETED') {
+        console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
+        
+        // Payment successful, now verify with our backend
+        const paymentData = {
+          transactionId: invoiceId.trim().toUpperCase(),
+          amount: product.price,
+          playerId: uid.trim(),
+          productId: product.id,
+          productName: product.name,
+          diamonds: product.diamonds,
+          price: product.price,
+          paymentMethod: 'uddokta' as const,
+          userEmail: user?.email || '',
+          userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+          userId: user?.uid || ''
+        };
+        
+        console.log('📤 Sending payment verification to backend:', paymentData);
+        
+        const response = await paymentApi.verify(paymentData);
+        
+        console.log('📥 Backend verification response:', response);
+        
+        if (response.success) {
+          console.log('✅ Payment successfully processed!');
+          
+          // Refresh balance after successful payment
+          try {
+            await refresh();
+          } catch (refreshError) {
+            console.warn('Balance refresh failed:', refreshError);
+          }
+          
+          setPaymentResult({
+            status: 'success',
+            message: 'Your top-up was successful! 💎 Your diamonds will arrive shortly.',
+            amount: product.price,
+            remaining: balance,
+          });
+          // Clear URL params after a delay to show success message
+          setTimeout(() => {
+            navigate('/checkout?productId=' + product.id, { replace: true });
+          }, 2000);
+          } else {
+            console.error('❌ Backend verification failed:', response.message);
+            
+            // Check if it's a duplicate transaction error
+            if (response.message?.includes('already exists') || response.message?.includes('already verified')) {
+              console.log('ℹ️ Payment already processed, showing success');
+              setPaymentResult({
+                status: 'success',
+                message: 'Payment already processed! Your order is being processed.',
+                amount: product.price,
+                remaining: balance,
+              });
+              setTimeout(() => {
+                navigate('/checkout?productId=' + product.id, { replace: true });
+              }, 2000);
+            } else {
+              // Show detailed error
+              const errorMsg = response.message || 'Payment verification failed';
+              console.error('Full error response:', response);
+              alert(`Payment verification failed: ${errorMsg}\n\nTransaction ID: ${invoiceId}\n\nPlease contact support if this issue persists.`);
+            }
+          }
       } else {
-        alert('Payment verification failed: ' + response.message);
-        setShowBkashVerification(false);
+        const paymentStatus = verifyResponse.payment?.status || 'UNKNOWN';
+        console.error('❌ Payment status is not COMPLETED:', paymentStatus);
+        alert(`Payment verification failed. Status: ${paymentStatus}. Please try again or contact support.`);
       }
-    } catch (err) {
-      console.error('Payment verification error:', err);
-      alert('Payment verification failed. Please try again.');
-      setShowBkashVerification(false);
+    } catch (err: any) {
+      console.error('❌ Payment verification error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        invoiceId: invoiceId
+      });
+      alert('Payment verification failed: ' + (err.message || 'Please try again. If the problem persists, contact support with transaction ID: ' + invoiceId));
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const handleBkashClose = () => {
-    setShowBkashVerification(false);
+  // Handle Uddokta Pay checkout
+  const handleUddoktaPayPayment = async () => {
+    if (!uid.trim()) {
+      alert('Please enter your Free Fire UID');
+      return;
+    }
+
+    if (!user?.email) {
+      alert('Please login to continue');
+      navigate('/login');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const baseUrl = window.location.origin;
+      const redirectUrl = `${baseUrl}/checkout?productId=${product.id}`;
+      const cancelUrl = `${baseUrl}/checkout?productId=${product.id}&cancelled=true`;
+      const webhookUrl = getBackendWebhookUrl();
+
+      const checkoutRequest = {
+        full_name: user.displayName || user.email.split('@')[0] || 'User',
+        email: user.email,
+        amount: product.price.toString(),
+        metadata: {
+          user_id: user.uid,
+          order_id: `ORDER_${Date.now()}`,
+          product_id: product.id,
+          product_name: product.name,
+          player_id: uid,
+          diamonds: product.diamonds,
+          price: product.price,
+          payment_type: 'purchase',
+        },
+        redirect_url: redirectUrl,
+        cancel_url: cancelUrl,
+        webhook_url: webhookUrl,
+      };
+
+      const checkoutResponse = await createUddoktaPayCheckout(checkoutRequest);
+      
+      if (checkoutResponse.status && checkoutResponse.payment_url) {
+        // Redirect to Uddokta Pay payment page
+        window.location.href = checkoutResponse.payment_url;
+      } else {
+        throw new Error(checkoutResponse.message || 'Failed to create payment');
+      }
+    } catch (err: any) {
+      console.error('Uddokta Pay checkout error:', err);
+      alert('Payment failed: ' + (err.message || 'Please try again.'));
+      setProcessing(false);
+    }
   };
 
   const handleRoboBalancePayment = async () => {
@@ -294,13 +479,6 @@ function Checkout({ products }: { products: Product[] }) {
     }
   };
 
-  if (showBkashVerification) {
-    return <BkashVerification 
-      onVerify={handleBkashVerify} 
-      onClose={handleBkashClose} 
-      amount={product.price}
-    />;
-  }
 
   const requiredAmount = product.price;
   const hasEnough = user && !balanceLoading && hasEnoughBalance(requiredAmount);
@@ -436,26 +614,26 @@ function Checkout({ products }: { products: Product[] }) {
             <p className="mt-2 text-xs text-slate-600">Wallet Pay</p>
           </button>
 
-          {/* bKash Pay / Instant Payment */}
+          {/* Uddokta Pay / Instant Payment */}
           <button
-            onClick={() => setPayment('bkash')}
+            onClick={() => setPayment('uddokta')}
             className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              payment === 'bkash' 
+              payment === 'uddokta' 
                 ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
                 : 'border-slate-200 hover:border-purple-300'
             }`}
           >
-            {payment === 'bkash' && (
+            {payment === 'uddokta' && (
               <div className="absolute flex items-center justify-center w-6 h-6 bg-red-500 rounded-full -top-2 -left-2">
                 <FaCheck className="text-xs text-white" />
               </div>
             )}
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-pink-500 to-rose-600">
-                <span className="text-xl font-bold text-white">bK</span>
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600">
+                <span className="text-xl font-bold text-white">UP</span>
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-bold text-purple-600">bKash</p>
+                <p className="text-sm font-bold text-purple-600">Uddokta Pay</p>
                 <p className="text-xs text-slate-500">ইনস্ট্যান্ট পে</p>
               </div>
             </div>
@@ -514,7 +692,7 @@ function Checkout({ products }: { products: Product[] }) {
             if (payment === 'robo') {
               handleRoboBalancePayment();
             } else {
-              setShowBkashVerification(true);
+              handleUddoktaPayPayment();
             }
           }}
           disabled={!uid.trim() || processing || balanceLoading}

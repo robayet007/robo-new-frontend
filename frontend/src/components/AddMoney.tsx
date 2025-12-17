@@ -1,22 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
-import BkashVerification from '../BkashVerification';
 import { paymentApi } from '../services/api';
+import { createUddoktaPayCheckout, verifyUddoktaPayPayment, getBackendWebhookUrl } from '../services/uddoktaPay';
 
 function AddMoney() {
   const [amount, setAmount] = useState('');
   const [error, setError] = useState('');
-  const [showBkashVerification, setShowBkashVerification] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const {
     backendBalance,
     loading: balanceLoading,
     refreshBalance,
   } = useRoboBalance();
+
+  // Handle Uddokta Pay callback after payment
+  useEffect(() => {
+    // Check all possible parameter names that Uddokta Pay might use
+    const invoiceId = searchParams.get('invoice_id') || 
+                      searchParams.get('invoiceId') || 
+                      searchParams.get('invoice') ||
+                      searchParams.get('transaction_id') ||
+                      searchParams.get('transactionId');
+    
+    const status = searchParams.get('status') || 
+                   searchParams.get('payment_status');
+    
+    console.log('🔍 Uddokta Pay Callback (AddMoney) - URL Params:', {
+      invoice_id: searchParams.get('invoice_id'),
+      invoiceId: searchParams.get('invoiceId'),
+      invoice: searchParams.get('invoice'),
+      transaction_id: searchParams.get('transaction_id'),
+      transactionId: searchParams.get('transactionId'),
+      status: searchParams.get('status'),
+      payment_status: searchParams.get('payment_status'),
+      allParams: Object.fromEntries(searchParams.entries())
+    });
+    
+    if (invoiceId) {
+      console.log('✅ Invoice ID found:', invoiceId);
+      console.log('📊 Status:', status);
+      
+      // If status is COMPLETED or if no status but invoice_id exists, process it
+      if (status === 'COMPLETED' || !status) {
+        console.log('🚀 Processing payment callback...');
+        handleUddoktaPayCallback(invoiceId);
+      } else {
+        console.log('⚠️ Payment status is not COMPLETED:', status);
+      }
+    } else {
+      console.log('ℹ️ No invoice_id found in URL parameters');
+    }
+  }, [searchParams]);
 
   // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
   const currentBalance =
@@ -41,94 +81,147 @@ function AddMoney() {
       return;
     }
 
+    if (!user?.email) {
+      setError('Please login to continue');
+      navigate('/login');
+      return;
+    }
+
     console.log('💸 Proceeding to payment with amount:', amountValue);
-    // Show bKash verification modal
-    setShowBkashVerification(true);
+    await handleUddoktaPayPayment(amountValue);
   };
 
-  const handleBkashVerify = async (transactionId: string): Promise<void> => {
-    const amountValue = parseFloat(amount);
-    console.log('🔐 Verifying bKash payment:', { transactionId, amountValue });
+  // Handle Uddokta Pay payment
+  const handleUddoktaPayPayment = async (amountValue: number) => {
+    if (!user?.email) {
+      setError('Please login to continue');
+      navigate('/login');
+      return;
+    }
+
+    setProcessing(true);
+    setError('');
     
-    // Validate transaction ID format
-    const trimmedTrxId = transactionId.trim().toUpperCase();
-    if (!trimmedTrxId.startsWith('C')) {
-      throw new Error('Invalid bKash Transaction ID. bKash TrxID must start with "C"');
-    }
-
-    const bKashTrxIdRegex = /^C[A-Z0-9]{9,11}$/;
-    if (!bKashTrxIdRegex.test(trimmedTrxId)) {
-      throw new Error('Invalid bKash Transaction ID format. Must be 10-12 characters starting with C');
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
-
     try {
-      // ✅ Ensure user email is available
-      if (!user?.email) {
-        throw new Error('User email not found. Please login again.');
-      }
+      const baseUrl = window.location.origin;
+      const redirectUrl = `${baseUrl}/add-money`;
+      const cancelUrl = `${baseUrl}/add-money?cancelled=true`;
+      const webhookUrl = getBackendWebhookUrl();
 
-      console.log('👤 User info for payment:', {
+      const checkoutRequest = {
+        full_name: user.displayName || user.email.split('@')[0] || 'User',
         email: user.email,
-        displayName: user.displayName,
-        uid: user.uid
-      });
-
-      // ✅ Verify payment
-      const paymentData = {
-        transactionId: trimmedTrxId,
-        amount: amountValue,
-        playerId: user.email,
-        productId: 'add_money',
-        productName: `Add ৳${amountValue} to Robo Balance`,
-        diamonds: 0,
-        price: amountValue,
-        userEmail: user.email,
-        userName: user.displayName || user.email.split('@')[0] || 'User',
-        userId: user.uid || user.email,
-        // Narrow to literal type so it matches `"bkash" | "robo"` union
-        paymentMethod: 'bkash' as const,
+        amount: amountValue.toString(),
+        metadata: {
+          user_id: user.uid,
+          order_id: `ADD_MONEY_${Date.now()}`,
+          product_id: 'add_money',
+          product_name: `Add ৳${amountValue} to Robo Balance`,
+          player_id: user.email,
+          diamonds: 0,
+          price: amountValue,
+          payment_type: 'add_money',
+        },
+        redirect_url: redirectUrl,
+        cancel_url: cancelUrl,
+        webhook_url: webhookUrl,
       };
 
-      console.log('📤 Sending payment verification:', paymentData);
+      const checkoutResponse = await createUddoktaPayCheckout(checkoutRequest);
       
-      const response = await paymentApi.verify(paymentData, { signal: controller.signal });
-      
-      clearTimeout(timeoutId);
-      
-      console.log('📥 Payment verification response:', response);
-      
-      if (response.success) {
-        setShowBkashVerification(false);
-
-        // ✅ ব্যালেন্স রিফ্রেশ করি (navbar + সব জায়গায় same hook)
-        console.log('🔄 Refreshing balance after successful payment');
-        await refreshBalance();
-
-        console.log(`✅ Balance updated successfully. Added: ৳${amountValue}`);
-        
-        navigate('/');
-        return;
+      if (checkoutResponse.status && checkoutResponse.payment_url) {
+        // Redirect to Uddokta Pay payment page
+        window.location.href = checkoutResponse.payment_url;
       } else {
-        throw new Error(response.message || 'Payment verification failed');
+        throw new Error(checkoutResponse.message || 'Failed to create payment');
       }
     } catch (err: any) {
-      clearTimeout(timeoutId);
-      console.error('❌ Payment verification error:', err);
-      
-      if (err.name === 'AbortError') {
-        throw new Error('Request timeout. Please check your connection and try again.');
-      }
-      
-      throw new Error(err.message || 'Payment verification failed. Please try again.');
+      console.error('Uddokta Pay checkout error:', err);
+      setError('Payment failed: ' + (err.message || 'Please try again.'));
+      setProcessing(false);
     }
   };
 
-  const handleBkashClose = () => {
-    console.log('❌ bKash verification closed');
-    setShowBkashVerification(false);
+  // Handle Uddokta Pay callback after payment
+  const handleUddoktaPayCallback = async (invoiceId: string) => {
+    console.log('🔄 handleUddoktaPayCallback (AddMoney) called with invoiceId:', invoiceId);
+    
+    const amountValue = parseFloat(amount);
+    if (!amountValue || isNaN(amountValue)) {
+      console.warn('⚠️ Invalid amount:', amount);
+      setError('Invalid amount');
+      return;
+    }
+
+    if (!invoiceId || invoiceId.trim() === '') {
+      console.error('❌ Invalid invoice ID:', invoiceId);
+      setError('Invalid payment transaction ID. Please contact support.');
+      return;
+    }
+
+    setProcessing(true);
+    setError('');
+    
+    try {
+      console.log('🔍 Verifying payment with Uddokta Pay API...');
+      // Verify payment with Uddokta Pay
+      const verifyResponse = await verifyUddoktaPayPayment(invoiceId.trim());
+      
+      console.log('📥 Uddokta Pay verification response:', verifyResponse);
+      
+      if (verifyResponse.status && verifyResponse.payment?.status === 'COMPLETED') {
+        console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
+        
+        // Payment successful, now verify with our backend
+        const paymentData = {
+          transactionId: invoiceId.trim().toUpperCase(),
+          amount: amountValue,
+          playerId: user?.email || '',
+          productId: 'add_money',
+          productName: `Add ৳${amountValue} to Robo Balance`,
+          diamonds: 0,
+          price: amountValue,
+          userEmail: user?.email || '',
+          userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+          userId: user?.uid || user?.email || '',
+          paymentMethod: 'uddokta' as const,
+        };
+
+        console.log('📤 Sending payment verification to backend:', paymentData);
+        const response = await paymentApi.verify(paymentData);
+        
+        console.log('📥 Backend verification response:', response);
+        
+        if (response.success) {
+          // ✅ ব্যালেন্স রিফ্রেশ করি
+          console.log('🔄 Refreshing balance after successful payment');
+          await refreshBalance();
+
+          console.log(`✅ Balance updated successfully. Added: ৳${amountValue}`);
+          
+          // Clear URL params and show success
+          navigate('/add-money', { replace: true });
+          alert(`✅ Payment successful! ৳${amountValue} added to your balance.`);
+          setAmount('');
+        } else {
+          throw new Error(response.message || 'Payment verification failed');
+        }
+      } else {
+        const paymentStatus = verifyResponse.payment?.status || 'UNKNOWN';
+        console.error('❌ Payment status is not COMPLETED:', paymentStatus);
+        throw new Error(`Payment verification failed. Status: ${paymentStatus}. Please try again or contact support.`);
+      }
+    } catch (err: any) {
+      console.error('❌ Payment verification error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        invoiceId: invoiceId
+      });
+      setError(err.message || 'Payment verification failed. Please try again. If the problem persists, contact support with transaction ID: ' + invoiceId);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleQuickAmount = (quickAmount: number) => {
@@ -137,15 +230,6 @@ function AddMoney() {
     setError('');
   };
 
-  if (showBkashVerification) {
-    return (
-      <BkashVerification 
-        onVerify={handleBkashVerify} 
-        onClose={handleBkashClose} 
-        amount={parseFloat(amount) || 0}
-      />
-    );
-  }
 
   if (!user) {
     console.log('👤 No user found, showing login prompt');
@@ -164,7 +248,7 @@ function AddMoney() {
     );
   }
 
-  if (balanceLoading && !showBkashVerification) {
+  if (balanceLoading) {
     console.log('⏳ Loading state...');
     return (
       <div className="max-w-md p-6 mx-auto mt-8 text-center bg-white border shadow-xl rounded-2xl border-slate-200">
@@ -290,10 +374,10 @@ function AddMoney() {
           </button>
           <button
             type="submit"
-            disabled={!amount || parseFloat(amount) < 10 || balanceLoading}
+            disabled={!amount || parseFloat(amount) < 10 || balanceLoading || processing}
             className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue to bKash
+            {processing ? 'Processing...' : 'Continue to Payment'}
           </button>
         </div>
 
@@ -302,10 +386,10 @@ function AddMoney() {
             <p className="font-semibold text-slate-700">📢 Important:</p>
             <ul className="mt-1 space-y-1">
               <li>• Minimum deposit: ৳10</li>
-              <li>• Only use bKash Personal to Merchant payment</li>
-              <li>• Transaction ID must start with "C"</li>
-              <li>• Balance updates automatically after verification</li>
-              <li> if you need contact support call 01766325020</li>
+              <li>• Secure payment via Uddokta Pay</li>
+              <li>• Balance updates automatically after payment</li>
+              <li>• Multiple payment methods supported</li>
+              <li>• If you need help, contact support</li>
             </ul>
             <div className="p-2 mt-3 rounded-lg bg-slate-100">
               <p className="text-xs text-slate-600">
