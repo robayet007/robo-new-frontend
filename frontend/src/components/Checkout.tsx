@@ -36,6 +36,11 @@ function Checkout({ products }: { products: Product[] }) {
     message: string;
     amount: number;
     remaining: number;
+    transactionId?: string;
+    productName?: string;
+    paymentMethod?: string;
+    ffName?: string | null;
+    playerId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -119,7 +124,7 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [user, product, balance, hasEnoughBalance]);
 
-  // Auto-fetch FF name when UID changes (with small debounce)
+  // Auto-fetch FF name when UID changes (with retry mechanism)
   useEffect(() => {
     const trimmed = uid.trim();
     setFfName(null);
@@ -134,31 +139,82 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
+    let retryCount = 0;
+    const maxRetries = 10; // Maximum 10 retries
+    let isCancelled = false;
+    let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const fetchFFName = async (attempt: number = 0): Promise<void> => {
+      if (isCancelled) return;
+
       try {
         setFfNameLoading(true);
+        setFfNameError(null);
+        
         const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
           trimmed
         )}&region=BD`;
+        
+        console.log(`🔍 Fetching FF name (Attempt ${attempt + 1}/${maxRetries}) for UID: ${trimmed}`);
+        
         const resp = await fetch(url);
+        
         if (!resp.ok) {
           throw new Error('UID info not found');
         }
+        
         const json = await resp.json();
         const nickname = json?.basicInfo?.nickname;
+        
         if (!nickname) {
           throw new Error('Name not found for this UID');
         }
+        
+        // Success! Name found
+        console.log(`✅ FF Name found: ${nickname}`);
         setFfName(nickname);
-      } catch (err: any) {
-        setFfName(null);
-        setFfNameError(err?.message || 'Failed to fetch name');
-      } finally {
+        setFfNameError(null);
         setFfNameLoading(false);
+        return; // Stop retrying
+        
+      } catch (err: any) {
+        if (isCancelled) return;
+        
+        console.log(`❌ Attempt ${attempt + 1} failed:`, err.message);
+        
+        // If we haven't reached max retries, retry
+        if (attempt < maxRetries - 1) {
+          // Exponential backoff: 1s, 2s, 3s, 4s, 5s, then 5s intervals
+          const delay = Math.min(1000 * (attempt + 1), 5000);
+          console.log(`⏳ Retrying in ${delay}ms...`);
+          
+          setFfNameError(`Searching... (${attempt + 1}/${maxRetries})`);
+          
+          retryTimeoutId = setTimeout(() => {
+            fetchFFName(attempt + 1);
+          }, delay);
+        } else {
+          // Max retries reached
+          console.log(`❌ Max retries (${maxRetries}) reached. Giving up.`);
+          setFfName(null);
+          setFfNameError('Name not found. Please check your UID or try again.');
+          setFfNameLoading(false);
+        }
       }
+    };
+
+    // Initial delay before first attempt (debounce)
+    const timeoutId = setTimeout(() => {
+      fetchFFName(0);
     }, 600); // 0.6s debounce
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timeoutId);
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+    };
   }, [uid]);
 
   if (!product) {
@@ -234,6 +290,11 @@ function Checkout({ products }: { products: Product[] }) {
             message: 'Your top-up was successful! 💎 Your diamonds will arrive shortly.',
             amount: product.price,
             remaining: balance,
+            transactionId: invoiceId.trim().toUpperCase(),
+            productName: product.name,
+            paymentMethod: 'Uddokta Pay',
+            ffName: ffName,
+            playerId: uid.trim(),
           });
           // Clear URL params after a delay to show success message
           setTimeout(() => {
@@ -250,6 +311,9 @@ function Checkout({ products }: { products: Product[] }) {
                 message: 'Payment already processed! Your order is being processed.',
                 amount: product.price,
                 remaining: balance,
+                transactionId: invoiceId.trim().toUpperCase(),
+                productName: product.name,
+                paymentMethod: 'Uddokta Pay',
               });
               setTimeout(() => {
                 navigate('/checkout?productId=' + product.id, { replace: true });
@@ -441,6 +505,11 @@ function Checkout({ products }: { products: Product[] }) {
           message: 'Your top-up was successful! 💎 Your diamonds will arrive shortly.',
           amount: product.price,
           remaining: actualBalance,
+          transactionId: paymentPayload.transactionId,
+          productName: product.name,
+          paymentMethod: 'Robo Balance',
+          ffName: ffName,
+          playerId: uid.trim(),
         });
       } else {
         // Backend rejected the payment
@@ -457,6 +526,9 @@ function Checkout({ products }: { products: Product[] }) {
           message: errorMessage,
           amount: product.price,
           remaining: actualBalance,
+          transactionId: paymentPayload.transactionId,
+          productName: product.name,
+          paymentMethod: 'Robo Balance',
         });
       }
       
@@ -477,54 +549,135 @@ function Checkout({ products }: { products: Product[] }) {
 
   return (
     <div className="relative max-w-2xl px-4 py-6 mx-auto">
-      {/* Nice payment result popup instead of browser alert */}
+      {/* Payment Completed Modal - Enhanced UI */}
       {paymentResult && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-sm p-5 mx-4 text-center bg-white shadow-2xl rounded-2xl sm:p-6">
-            <div className="flex justify-center mb-3">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                  paymentResult.status === 'success'
-                    ? 'bg-emerald-100 text-emerald-600'
-                    : 'bg-amber-100 text-amber-600'
-                }`}
-              >
-                <span className="text-2xl">✓</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+            {/* Header with Success Icon */}
+            <div className="text-center pt-8 pb-4 px-6">
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <FaCheck className="text-3xl text-emerald-600" />
+                </div>
               </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Payment Completed!</h2>
+              
+              {/* Free Fire Player Name Display */}
+              {paymentResult.ffName ? (
+                <p className="text-sm text-slate-600 mb-1">
+                  Player: <span className="font-semibold text-slate-800">{paymentResult.ffName}</span>
+                </p>
+              ) : paymentResult.playerId ? (
+                <p className="text-sm text-slate-600 mb-1">
+                  Free Fire ID: <span className="font-semibold text-slate-800">{paymentResult.playerId}</span>
+                </p>
+              ) : user?.displayName && (
+                <p className="text-sm text-slate-600 mb-1">
+                  Hello, <span className="font-semibold text-slate-800">{user.displayName}</span>
+                </p>
+              )}
+              
+              {/* Transaction ID with Copy */}
+              {paymentResult.transactionId && (
+                <div className="mt-3 mb-2">
+                  <p className="text-xs text-slate-500 mb-1">Transaction ID</p>
+                  <div className="flex items-center justify-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+                    <span className="text-xs font-mono text-slate-700 break-all">
+                      {paymentResult.transactionId}
+                    </span>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(paymentResult.transactionId || '');
+                          alert('Transaction ID copied!');
+                        } catch (err) {
+                          console.error('Failed to copy:', err);
+                        }
+                      }}
+                      className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded transition-colors"
+                      title="Copy Transaction ID"
+                    >
+                      <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            <h3 className="mb-1 text-lg font-bold text-slate-900">
-              {paymentResult.status === 'success'
-                ? 'Top-up Successful'
-                : 'Top-up Completed'}
-            </h3>
-            <p className="mb-3 text-sm text-slate-600">{paymentResult.message}</p>
-            <div className="mb-4 rounded-xl bg-slate-50 border border-slate-200 px-3 py-2.5 text-left text-sm">
-              <p className="flex justify-between font-semibold text-slate-800">
-                <span>Paid</span>
-                <span>৳{paymentResult.amount.toFixed(2)}</span>
-              </p>
-              <p className="flex justify-between mt-1 text-xs text-slate-600">
-                <span>Remaining balance</span>
-                <span>৳{paymentResult.remaining.toFixed(2)}</span>
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row">
+
+            {/* Payment Details Section */}
+            <div className="px-6 pb-6">
+              <div className="space-y-3 border-t border-slate-200 pt-4">
+                {/* Selected Product */}
+                {paymentResult.productName && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600">Selected Product</span>
+                    <span className="text-sm font-semibold text-slate-800">{paymentResult.productName}</span>
+                  </div>
+                )}
+                
+                {/* Game */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Game</span>
+                  <span className="text-sm font-semibold text-slate-800">Free Fire</span>
+                </div>
+                
+                {/* Player ID / Free Fire ID */}
+                {paymentResult.playerId && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600">Player ID</span>
+                    <span className="text-sm font-semibold text-slate-800">{paymentResult.playerId}</span>
+                  </div>
+                )}
+                
+                {/* Payment Method */}
+                {paymentResult.paymentMethod && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-600">Payment Method</span>
+                    <span className="text-sm font-semibold text-slate-800">{paymentResult.paymentMethod}</span>
+                  </div>
+                )}
+                
+                {/* Transaction Time */}
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-600">Transaction Time</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    {new Date().toLocaleString('en-US', {
+                      month: '2-digit',
+                      day: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      hour12: true
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Amount Summary */}
+              <div className="mt-4 pt-4 border-t border-slate-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-semibold text-slate-700">Paid</span>
+                  <span className="text-base font-bold text-slate-900">৳{paymentResult.amount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-slate-600">Remaining balance</span>
+                  <span className="text-sm font-semibold text-slate-700">৳{paymentResult.remaining.toFixed(2)}</span>
+                </div>
+              </div>
+
+              {/* Action Button */}
               <button
                 type="button"
                 onClick={() => {
                   setPaymentResult(null);
                   navigate('/');
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white text-sm font-semibold shadow-md hover:from-purple-600 hover:to-violet-700 transition-all"
+                className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                Go to Home
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentResult(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all"
-              >
-                Stay on page
+                Back to Home Page
               </button>
             </div>
           </div>
@@ -549,9 +702,13 @@ function Checkout({ products }: { products: Product[] }) {
           />
           <div className="mt-2 text-xs text-slate-600">
             {ffNameLoading && (
-              <span className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-full bg-slate-100 text-slate-700">
-                UID থেকে নাম লোড হচ্ছে...
-              </span>
+              <div className="inline-flex items-center gap-2 px-2 py-1 text-[11px] font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>{ffNameError?.includes('Searching') ? ffNameError : 'UID থেকে নাম খুঁজছি...'}</span>
+              </div>
             )}
             {!ffNameLoading && ffName && (
               <div className="inline-flex items-center px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700">
@@ -560,10 +717,42 @@ function Checkout({ products }: { products: Product[] }) {
                 <span className="text-emerald-800">{ffName}</span>
               </div>
             )}
-            {!ffNameLoading && !ffName && ffNameError && (
-              <span className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-full bg-red-50 text-red-600 border border-red-200">
-                UID থেকে নাম পাওয়া যায়নি
-              </span>
+            {!ffNameLoading && !ffName && ffNameError && !ffNameError.includes('Searching') && (
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-1 text-[11px] font-medium rounded-full bg-red-50 text-red-600 border border-red-200">
+                  {ffNameError}
+                </span>
+                <button
+                  onClick={async () => {
+                    // Manual retry
+                    setFfNameError(null);
+                    setFfNameLoading(true);
+                    try {
+                      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
+                        uid.trim()
+                      )}&region=BD`;
+                      const resp = await fetch(url);
+                      if (!resp.ok) {
+                        throw new Error('UID info not found');
+                      }
+                      const json = await resp.json();
+                      const nickname = json?.basicInfo?.nickname;
+                      if (!nickname) {
+                        throw new Error('Name not found for this UID');
+                      }
+                      setFfName(nickname);
+                      setFfNameError(null);
+                    } catch (err: any) {
+                      setFfNameError(err?.message || 'Failed to fetch name');
+                    } finally {
+                      setFfNameLoading(false);
+                    }
+                  }}
+                  className="text-[10px] px-2 py-1 text-blue-600 hover:text-blue-700 hover:underline"
+                >
+                  Retry
+                </button>
+              </div>
             )}
           </div>
         </div>
