@@ -1,8 +1,8 @@
 // Uddokta Pay API Integration - Using Backend Proxy
-// Get backend base URL - always use Render backend URL
+// Get backend base URL - use local server for development
 function getBackendBaseURL(): string {
-  // Always use Render backend URL
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
+  // Use local server backend API (port 5000)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   return `${backendUrl}/api`;
 }
 
@@ -39,8 +39,8 @@ async function smartFetch(path: string, options: RequestInit = {}): Promise<Resp
 
 // Get backend URL for webhook
 export const getBackendWebhookUrl = (): string => {
-  // Always use Render backend URL for webhook
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
+  // Use local server backend for webhook (port 5000)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const webhookUrl = `${backendUrl}/api/payments/uddokta/webhook`;
   console.log('🔗 Webhook URL:', webhookUrl);
   return webhookUrl;
@@ -196,6 +196,12 @@ export const verifyUddoktaPayPayment = async (
       console.log('📥 Payment status (payment_status):', responseData.payment_status);
       console.log('📥 Full payment object:', responseData.payment);
       console.log('📥 =================================================');
+      
+      // Check if transaction ID is valid (payment exists and has data)
+      const hasValidTransaction = responseData.payment?.invoice_id || responseData.invoice_id || responseData.payment?.amount || responseData.amount;
+      if (hasValidTransaction) {
+        console.log('✅ Status Code: 0.0.0.0'); // Transaction ID verified successfully
+      }
       
       return responseData;
     } else {

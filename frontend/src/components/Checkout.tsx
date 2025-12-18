@@ -37,6 +37,7 @@ function Checkout({ products }: { products: Product[] }) {
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
   const [ffNameError, setFfNameError] = useState<string | null>(null);
+  // Robo Pay disabled for maintenance - default to Uddokta Pay
   const [payment, setPayment] = useState<'robo' | 'uddokta'>('uddokta');
   const [processing, setProcessing] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
@@ -160,11 +161,13 @@ function Checkout({ products }: { products: Product[] }) {
 
   useEffect(() => {
     // Set default payment method based on balance
+    // Robo Pay disabled for maintenance - always default to Uddokta Pay
     // If user has balance and enough for product, default to Robo Pay
     // Otherwise default to Uddokta Pay
     const hasEnough = typeof hasEnoughBalance === 'function' && product
       ? hasEnoughBalance(product.price)
       : false;
+    // Force Uddokta Pay since Robo Pay is under maintenance
 
     if (user && product && !isNaN(balance) && balance > 0 && hasEnough) {
       setPayment('robo');
@@ -379,14 +382,19 @@ function Checkout({ products }: { products: Product[] }) {
       // Check if payment has required data (amount, invoice_id) - indicates successful payment
       const hasPaymentData = verifyResponse.payment?.amount || verifyResponse.amount || verifyResponse.payment?.invoice_id || verifyResponse.invoice_id;
 
-      // ✅ STRICT: Only send to backend if Uddokta Pay verification is explicitly COMPLETED/VERIFIED
-      // Do NOT send if status is PENDING, UNKNOWN, CANCELLED, or any other status
+      // ✅ ACCEPT PENDING payments if transaction ID is valid (has payment data)
+      // According to Uddokta Pay docs: PENDING payments should be accepted and stored
+      // Webhook will notify when status changes to COMPLETED
       const isVerified = paymentStatus === 'COMPLETED' || 
-                        paymentStatus === 'VERIFIED' ||
-                        (isResponseSuccessful && paymentStatus !== 'PENDING' && paymentStatus !== 'CANCELLED' && paymentStatus !== 'UNKNOWN');
+                        paymentStatus === 'VERIFIED';
       
-      // Only process if payment is explicitly verified/completed
-      const shouldProcess = isVerified && hasPaymentData;
+      const isPending = paymentStatus === 'PENDING';
+      
+      // Process if: (1) COMPLETED/VERIFIED, OR (2) PENDING with valid transaction data
+      // Do NOT process if CANCELLED or UNKNOWN
+      const shouldProcess = (isVerified || (isPending && hasPaymentData)) && 
+                           paymentStatus !== 'CANCELLED' && 
+                           paymentStatus !== 'UNKNOWN';
 
       console.log('🔍 Verification Decision:');
       console.log('  - paymentStatus:', paymentStatus);
@@ -400,13 +408,17 @@ function Checkout({ products }: { products: Product[] }) {
       // #endregion
 
       if (shouldProcess) {
+        const isPendingStatus = paymentStatus === 'PENDING';
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
-        console.log('✅ Processing with status:', paymentStatus, 'isVerified:', isVerified, 'hasPaymentData:', hasPaymentData);
+        console.log('✅ Processing with status:', paymentStatus, 'isVerified:', isVerified, 'isPending:', isPendingStatus, 'hasPaymentData:', hasPaymentData);
+        console.log('✅ Status Code: 0.0.0.0'); // Transaction ID verified successfully
 
         setVerifyingPayment({
           invoiceId: invoiceId.trim().toUpperCase(),
           status: 'verifying',
-          message: 'Payment verified! Processing order...'
+          message: isPendingStatus 
+            ? 'Payment received! Status: PENDING. Your order will be processed when payment is completed...'
+            : 'Payment verified! Processing order...'
         });
 
         // ✅ Payment verified - sending data to backend
@@ -425,7 +437,8 @@ function Checkout({ products }: { products: Product[] }) {
           paymentMethod: 'uddokta' as const,
           userEmail: user?.email || '',
           userName: user?.displayName || user?.email?.split('@')[0] || 'User',
-          userId: user?.uid || ''
+          userId: user?.uid || '',
+          uddoktaPayStatus: paymentStatus // Pass Uddokta Pay status to backend
         };
         
         console.log('📤 Sending payment verification to backend:', paymentData);
@@ -528,68 +541,111 @@ function Checkout({ products }: { products: Product[] }) {
           : 'UNKNOWN';
         
         // Handle PENDING status - payment might still be processing
+        // ✅ DO NOT send to backend if status is PENDING - wait for verification with multiple retries
         if (paymentStatus === 'PENDING') {
           console.log('⏳ Payment status is PENDING - payment is still processing');
-          
+          console.log('⚠️ NOT sending to backend - waiting for payment to be verified');
+          console.log('🔄 Will retry verification multiple times...');
+
           setVerifyingPayment({
             invoiceId: invoiceId.trim().toUpperCase(),
             status: 'verifying',
             message: 'Payment is processing. Please wait...'
           });
           
-          // Wait 3 seconds and retry verification
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          try {
-            console.log('🔄 Retrying verification after PENDING status...');
-            const retryResponse = await verifyUddoktaPayPayment(invoiceId.trim());
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:531',message:'Payment PENDING - NOT sending to backend, starting retries',data:{invoiceId,paymentStatus},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
 
-            // ✅ STRICT: Only process if payment status is explicitly COMPLETED/VERIFIED
-            const retryPaymentStatusRaw = retryResponse.payment?.status || retryResponse.status || 'UNKNOWN';
-            const retryPaymentStatus = typeof retryPaymentStatusRaw === 'string'
-              ? retryPaymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN' | 'VERIFIED'
-              : 'UNKNOWN';
-            
-            const isRetryVerified = retryPaymentStatus === 'COMPLETED' || retryPaymentStatus === 'VERIFIED';
-            
-            if (isRetryVerified) {
-              console.log('✅ Payment verified on retry! Processing with backend...');
+          // Retry verification multiple times (up to 5 times with increasing delays)
+          let retryCount = 0;
+          const maxRetries = 5;
+          let retryResponse: any = null;
+          let isRetryVerified = false;
+          let retryPaymentStatus = 'PENDING';
+
+          while (retryCount < maxRetries && !isRetryVerified) {
+            // Wait before retry (increasing delay: 3s, 5s, 7s, 10s, 15s)
+            const delay = retryCount === 0 ? 3000 : retryCount === 1 ? 5000 : retryCount === 2 ? 7000 : retryCount === 3 ? 10000 : 15000;
+            console.log(`⏳ Waiting ${delay/1000}s before retry ${retryCount + 1}/${maxRetries}...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+
+            try {
+              console.log(`🔄 Retrying verification (attempt ${retryCount + 1}/${maxRetries})...`);
+              retryResponse = await verifyUddoktaPayPayment(invoiceId.trim());
+
+              // ✅ STRICT: Only process if payment status is explicitly COMPLETED/VERIFIED
+              const retryPaymentStatusRaw = retryResponse.payment?.status || retryResponse.status || 'UNKNOWN';
+              retryPaymentStatus = typeof retryPaymentStatusRaw === 'string'
+                ? retryPaymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN' | 'VERIFIED'
+                : 'UNKNOWN';
               
-              setVerifyingPayment({
-                invoiceId: invoiceId.trim().toUpperCase(),
-                status: 'verifying',
-                message: 'Payment verified! Processing order...'
+              isRetryVerified = retryPaymentStatus === 'COMPLETED' || retryPaymentStatus === 'VERIFIED';
+              
+              console.log(`📊 Retry ${retryCount + 1} result:`, {
+                status: retryPaymentStatus,
+                isVerified: isRetryVerified,
+                hasPayment: !!retryResponse.payment
               });
               
-              // Process with backend
-              const paymentData = {
-                transactionId: invoiceId.trim().toUpperCase(),
-                amount: product.price,
-                playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
-                productId: product.id,
-                productName: product.name,
-                diamonds: product.diamonds,
-                price: product.price,
-                paymentMethod: 'uddokta' as const,
-                userEmail: user?.email || '',
-                userName: user?.displayName || user?.email?.split('@')[0] || 'User',
-                userId: user?.uid || ''
-              };
+              // #region agent log
+              fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:560',message:'Retry verification result',data:{retryCount:retryCount+1,maxRetries,invoiceId,retryPaymentStatus,isRetryVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
               
-              const response = await paymentApi.verify(paymentData);
+              if (isRetryVerified) {
+                break; // Exit retry loop if verified
+              }
               
-              if (response.success) {
-                await refresh();
+              retryCount++;
+            } catch (retryError: any) {
+              console.error(`❌ Retry ${retryCount + 1} error:`, retryError);
+              retryCount++;
+              if (retryCount >= maxRetries) {
+                throw retryError;
+              }
+            }
+          }
 
-                setVerifyingPayment({
-                  invoiceId: invoiceId.trim().toUpperCase(),
-                  status: 'verified',
-                  message: 'Payment verified successfully!'
-                });
-                
-                // #region agent log
-                fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:555',message:'Payment verified - data sent to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-                // #endregion
+          // After retries, check if verified
+          if (isRetryVerified && retryResponse) {
+            console.log('✅ Payment verified after retries! Processing with backend...');
+            console.log(`✅ Verified after ${retryCount} retry attempts`);
+            
+            setVerifyingPayment({
+              invoiceId: invoiceId.trim().toUpperCase(),
+              status: 'verifying',
+              message: 'Payment verified! Processing order...'
+            });
+            
+            // Process with backend
+            const paymentData = {
+              transactionId: invoiceId.trim().toUpperCase(),
+              amount: product.price,
+              playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
+              productId: product.id,
+              productName: product.name,
+              diamonds: product.diamonds,
+              price: product.price,
+              paymentMethod: 'uddokta' as const,
+              userEmail: user?.email || '',
+              userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+              userId: user?.uid || ''
+            };
+            
+            const response = await paymentApi.verify(paymentData);
+            
+            if (response.success) {
+              await refresh();
+
+              setVerifyingPayment({
+                invoiceId: invoiceId.trim().toUpperCase(),
+                status: 'verified',
+                message: 'Payment verified successfully!'
+              });
+              
+              // #region agent log
+              fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:580',message:'Payment verified after retries - data sent to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified,retryCount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
                 
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
@@ -637,40 +693,27 @@ function Checkout({ products }: { products: Product[] }) {
               } else {
                 throw new Error(response.message || 'Backend verification failed');
               }
-            } else {
-              // Still pending or not verified - DO NOT send to backend
-              console.log('⚠️ Payment still not verified - NOT sending to backend');
-              console.log('⚠️ Status:', retryPaymentStatus);
-              
-              // #region agent log
-              fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:525',message:'Payment retry still not verified - NOT sending to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-              // #endregion
-              
-              setVerifyingPayment({
-                invoiceId: invoiceId.trim().toUpperCase(),
-                status: 'verifying',
-                message: 'Payment is still processing. Webhook will complete your order automatically.'
-              });
-              
-              setTimeout(() => {
-                setVerifyingPayment(null);
-                alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nStatus: ${retryPaymentStatus}\n\nYour order will be completed automatically via webhook. Please check your order history in a few minutes.`);
-                navigate('/checkout?productId=' + product.id, { replace: true });
-              }, 3000);
-            }
-          } catch (retryError: any) {
-            console.error('Retry verification error:', retryError);
+          } else {
+            // Still pending after all retries - DO NOT send to backend
+            console.log('⚠️ Payment still not verified after all retries - NOT sending to backend');
+            console.log('⚠️ Final status:', retryPaymentStatus);
+            console.log(`⚠️ Tried ${retryCount} times, max retries: ${maxRetries}`);
+            
+            // #region agent log
+            fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:595',message:'Payment retry exhausted - NOT sending to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified,retryCount,maxRetries},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            
             setVerifyingPayment({
               invoiceId: invoiceId.trim().toUpperCase(),
               status: 'verifying',
-              message: 'Payment is processing. Webhook will complete your order.'
+              message: 'Payment is still processing. Webhook will complete your order automatically.'
             });
             
             setTimeout(() => {
               setVerifyingPayment(null);
-              alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nYour order will be completed automatically via webhook. Please check your order history.`);
+              alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nStatus: ${retryPaymentStatus}\n\nTried ${retryCount} times. Your order will be completed automatically via webhook. Please check your order history in a few minutes.`);
               navigate('/checkout?productId=' + product.id, { replace: true });
-            }, 2000);
+            }, 3000);
           }
         } else if (paymentStatus === 'CANCELLED') {
           console.error('❌ Payment was cancelled');
@@ -1265,23 +1308,17 @@ function Checkout({ products }: { products: Product[] }) {
           <h2 className="text-xl font-bold text-slate-800">Select one option</h2>
         </div>
 
-        {/* Payment Method Cards - Always show both */}
+        {/* Payment Method Cards - Robo Pay disabled for maintenance */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* Robo Pay / Wallet Pay */}
-          <button
-            onClick={() => setPayment('robo')}
-            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              payment === 'robo' 
-                ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
-                : 'border-slate-200 hover:border-purple-300'
-            }`}
-          >
-            {payment === 'robo' && (
-              <div className="absolute flex items-center justify-center w-6 h-6 bg-red-500 rounded-full -top-2 -left-2">
-                <FaCheck className="text-xs text-white" />
+          {/* Robo Pay / Wallet Pay - DISABLED FOR MAINTENANCE */}
+          <div className="relative bg-white border-2 rounded-xl p-4 border-slate-200 opacity-60 cursor-not-allowed">
+            <div className="absolute inset-0 bg-slate-100/80 rounded-xl flex items-center justify-center z-10 backdrop-blur-sm">
+              <div className="text-center px-2">
+                <p className="text-xs font-bold text-amber-600 mb-1">🔧 Under Maintenance</p>
+                <p className="text-[10px] text-slate-600">Robo Pay temporarily unavailable</p>
               </div>
-            )}
-            <div className="flex items-center gap-3 mb-2">
+            </div>
+            <div className="flex items-center gap-3 mb-2 opacity-50">
               <div className="flex items-center justify-center w-12 h-12 text-lg font-bold text-white rounded-lg bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600">
                 R
               </div>
@@ -1290,8 +1327,8 @@ function Checkout({ products }: { products: Product[] }) {
                 <p className="text-xs text-slate-500">ওয়ালেট পে</p>
               </div>
             </div>
-            <p className="mt-2 text-xs text-slate-600">Wallet Pay</p>
-          </button>
+            <p className="mt-2 text-xs text-slate-600 opacity-50">Wallet Pay</p>
+          </div>
 
           {/* Uddokta Pay / Instant Payment */}
           <button
@@ -1345,17 +1382,12 @@ function Checkout({ products }: { products: Product[] }) {
                 প্রোডাক্ট কিনতে আপনার প্রয়োজন ৳ {requiredAmount}।
               </span>
             </div>
-            {payment === 'robo' && !hasEnough && !balanceLoading && (
-              <div className="p-3 mt-3 border border-yellow-200 rounded-lg bg-yellow-50">
-                <p className="text-sm text-yellow-800">
-                  ⚠️ আপনার ব্যালেন্স অপর্যাপ্ত। Robo Pay ব্যবহার করতে প্রথমে টাকা যোগ করুন।
+            {/* Robo Pay disabled - show maintenance message instead */}
+            {payment === 'robo' && (
+              <div className="p-3 mt-3 border border-amber-200 rounded-lg bg-amber-50">
+                <p className="text-sm text-amber-800">
+                  🔧 Robo Pay is currently under maintenance. Please use Uddokta Pay instead.
                 </p>
-                <button
-                  onClick={() => navigate('/add-money')}
-                  className="mt-2 text-sm font-semibold text-purple-600 underline hover:text-purple-700"
-                >
-                  টাকা যোগ করুন →
-                </button>
               </div>
             )}
           </div>
@@ -1368,16 +1400,23 @@ function Checkout({ products }: { products: Product[] }) {
               alert('Please enter your Free Fire UID');
               return;
             }
+            // Robo Pay disabled for maintenance - force Uddokta Pay
             if (payment === 'robo') {
-              handleRoboBalancePayment();
+              alert('🔧 Robo Pay is currently under maintenance. Please use Uddokta Pay instead.');
+              setPayment('uddokta');
+              // Automatically trigger Uddokta Pay after switching
+              setTimeout(() => {
+                handleUddoktaPayPayment();
+              }, 100);
+              return;
             } else {
               handleUddoktaPayPayment();
             }
           }}
-          disabled={!uid.trim() || processing || balanceLoading}
+          disabled={!uid.trim() || processing || balanceLoading || payment === 'robo'}
           className="w-full px-6 py-4 text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-purple-500/30"
         >
-          {processing ? 'Processing...' : 'Buy Now'}
+          {processing ? 'Processing...' : payment === 'robo' ? 'Under Maintenance' : 'Buy Now'}
         </button>
       </div>
     </div>

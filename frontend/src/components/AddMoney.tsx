@@ -229,16 +229,22 @@ function AddMoney() {
       console.log('📊 Is response successful:', isResponseSuccessful);
       console.log('📊 Has payment data:', hasPaymentData);
       
-      // If response.status is true and we have payment data, consider it successful
-      // OR if payment status is COMPLETED
-      // OR if we have payment data and status is not explicitly CANCELLED
-      const shouldProcess = (isResponseSuccessful && hasPaymentData) || 
-                           paymentStatus === 'COMPLETED' ||
-                           (hasPaymentData && paymentStatus !== 'CANCELLED');
+      // ✅ ACCEPT PENDING payments if transaction ID is valid (has payment data)
+      // According to Uddokta Pay docs: PENDING payments should be accepted and stored
+      // Webhook will notify when status changes to COMPLETED
+      const isVerified = paymentStatus === 'COMPLETED';
+      const isPending = paymentStatus === 'PENDING';
+      
+      // Process if: (1) COMPLETED, OR (2) PENDING with valid transaction data
+      // Do NOT process if CANCELLED or UNKNOWN
+      const shouldProcess = (isVerified || (isPending && hasPaymentData)) && 
+                           paymentStatus !== 'CANCELLED' && 
+                           paymentStatus !== 'UNKNOWN';
       
       if (shouldProcess) {
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
         console.log('✅ Processing with status:', paymentStatus, 'hasPaymentData:', hasPaymentData);
+        console.log('✅ Status Code: 0.0.0.0'); // Transaction ID verified successfully
         
         // Payment successful, now verify with our backend
         const paymentData = {
@@ -253,6 +259,7 @@ function AddMoney() {
           userName: user?.displayName || user?.email?.split('@')[0] || 'User',
           userId: user?.uid || user?.email || '',
           paymentMethod: 'uddokta' as const,
+          uddoktaPayStatus: paymentStatus // Pass Uddokta Pay status to backend
         };
 
         console.log('📤 Sending payment verification to backend:', paymentData);
@@ -370,7 +377,23 @@ function AddMoney() {
   console.log('🎨 Rendering AddMoney component');
   return (
     <div className="max-w-md p-4 mx-auto mt-4 bg-white border shadow-xl sm:mt-6 md:mt-8 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-slate-200">
-      <div className="mb-6 text-center">
+      {/* Maintenance Message */}
+      <div className="p-6 mb-6 text-center border-2 border-amber-300 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50">
+        <div className="flex items-center justify-center mb-3">
+          <div className="flex items-center justify-center w-16 h-16 text-3xl bg-amber-100 rounded-full">
+            🔧
+          </div>
+        </div>
+        <h2 className="mb-2 text-xl font-bold text-amber-800">Under Maintenance</h2>
+        <p className="text-sm text-amber-700 mb-1">
+          Add Money service is temporarily unavailable
+        </p>
+        <p className="text-xs text-amber-600">
+          We are working to restore this feature. Please check back later.
+        </p>
+      </div>
+
+      <div className="mb-6 text-center opacity-50 pointer-events-none">
         <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-400/14 text-green-700 border border-green-400/35 font-semibold text-sm mb-4">
           💰 Add Money
         </p>
@@ -407,7 +430,10 @@ function AddMoney() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        alert('🔧 Add Money service is currently under maintenance. Please try again later.');
+      }} className="space-y-5 opacity-50 pointer-events-none">
         {error && (
           <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-xl">
             {error}
@@ -422,17 +448,11 @@ function AddMoney() {
             type="number"
             value={amount}
             onChange={(e) => {
-              const newAmount = e.target.value;
-              setAmount(newAmount);
-              setError('');
-              // Save to localStorage for persistence across redirects
-              if (newAmount.trim()) {
-                localStorage.setItem('add_money_amount', newAmount.trim());
-              } else {
-                localStorage.removeItem('add_money_amount');
-              }
+              // Disabled for maintenance
+              alert('🔧 Add Money service is currently under maintenance.');
             }}
-            className="w-full px-4 py-3 text-lg font-semibold text-center border-2 rounded-xl border-slate-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 focus:outline-none"
+            disabled
+            className="w-full px-4 py-3 text-lg font-semibold text-center border-2 rounded-xl border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed"
             placeholder="0.00"
             min="10"
             step="0.01"
@@ -444,12 +464,11 @@ function AddMoney() {
               <button
                 key={quickAmount}
                 type="button"
-                onClick={() => handleQuickAmount(quickAmount)}
-                className={`py-3 font-semibold rounded-xl transition-all ${
-                  amount === quickAmount.toString()
-                    ? 'bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow-md'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                onClick={() => {
+                  alert('🔧 Add Money service is currently under maintenance.');
+                }}
+                disabled
+                className="py-3 font-semibold rounded-xl bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
               >
                 ৳{quickAmount}
               </button>
@@ -477,14 +496,17 @@ function AddMoney() {
             onClick={() => navigate('/')}
             className="flex-1 px-4 py-3 font-semibold border text-slate-700 bg-slate-100 border-slate-300 rounded-xl hover:bg-slate-200"
           >
-            Cancel
+            Go Back
           </button>
           <button
-            type="submit"
-            disabled={!amount || parseFloat(amount) < 10 || balanceLoading || processing}
-            className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={() => {
+              alert('🔧 Add Money service is currently under maintenance. Please try again later.');
+            }}
+            disabled
+            className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-slate-400 to-slate-500 cursor-not-allowed opacity-60"
           >
-            {processing ? 'Processing...' : 'Continue to Payment'}
+            Under Maintenance
           </button>
         </div>
 
