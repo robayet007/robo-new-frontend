@@ -654,8 +654,10 @@ function Checkout({ products }: { products: Product[] }) {
           console.error('❌ Payment status is not COMPLETED:', finalPaymentStatus);
           console.error('❌ Full response:', verifyResponse);
           
+          // ✅ Payment verification failed - DO NOT send data to backend
+          // Only send to backend if verification is successful
           // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:614',message:'Payment status not COMPLETED',data:{finalPaymentStatus,paymentStatus,verifyResponse,hasPayment:!!verifyResponse.payment,responseKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:654',message:'Payment verification failed - NOT sending to backend',data:{finalPaymentStatus,verifyResponse,hasPayment:!!verifyResponse.payment,responseKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
           // #endregion
           
           setVerifyingPayment({
