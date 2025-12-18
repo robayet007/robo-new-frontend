@@ -84,7 +84,7 @@ export interface UddoktaPayVerifyResponse {
     full_name: string;
     email: string;
     amount: string;
-    status: 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN';
+    status: 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN' | 'pending' | 'cancelled' | 'completed';
     payment_method: string;
     created_at: string;
     metadata?: any;

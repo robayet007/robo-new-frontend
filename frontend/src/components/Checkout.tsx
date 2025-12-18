@@ -342,11 +342,16 @@ function Checkout({ products }: { products: Product[] }) {
       // Check payment status - Uddokta Pay might return status in different formats
       // The response might be flat (not nested in payment object)
       // Try multiple possible locations for status
-      const paymentStatus = verifyResponse.payment?.status || 
-                           verifyResponse.status || 
-                           verifyResponse.payment_status ||
-                           (verifyResponse.payment && typeof verifyResponse.payment === 'object' ? verifyResponse.payment.status : null) ||
-                           'UNKNOWN';
+      const paymentStatusRaw = verifyResponse.payment?.status || 
+                              verifyResponse.status || 
+                              verifyResponse.payment_status ||
+                              (verifyResponse.payment && typeof verifyResponse.payment === 'object' ? verifyResponse.payment.status : null) ||
+                              'UNKNOWN';
+      
+      // Normalize status to uppercase for comparison
+      const paymentStatus = typeof paymentStatusRaw === 'string' 
+        ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
+        : 'UNKNOWN';
       
       // Also check if response.status is a boolean (true = success)
       const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';
@@ -494,10 +499,14 @@ function Checkout({ products }: { products: Product[] }) {
             }
           }
       } else {
-        const paymentStatus = verifyResponse.payment?.status || 'UNKNOWN';
+        const paymentStatusRaw = verifyResponse.payment?.status || 'UNKNOWN';
+        // Normalize to uppercase for comparison
+        const paymentStatus = typeof paymentStatusRaw === 'string' 
+          ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
+          : 'UNKNOWN';
         
         // Handle PENDING status - payment might still be processing
-        if (paymentStatus === 'PENDING' || paymentStatus === 'pending') {
+        if (paymentStatus === 'PENDING') {
           console.log('⏳ Payment status is PENDING - payment is still processing');
           
           setVerifyingPayment({
