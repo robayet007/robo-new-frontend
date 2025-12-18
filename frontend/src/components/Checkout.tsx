@@ -373,28 +373,30 @@ function Checkout({ products }: { products: Product[] }) {
       
       // Check if payment has required data (amount, invoice_id) - indicates successful payment
       const hasPaymentData = verifyResponse.payment?.amount || verifyResponse.amount || verifyResponse.payment?.invoice_id || verifyResponse.invoice_id;
+
+      // ✅ STRICT: Only send to backend if Uddokta Pay verification is explicitly COMPLETED/VERIFIED
+      // Do NOT send if status is PENDING, UNKNOWN, CANCELLED, or any other status
+      const isVerified = paymentStatus === 'COMPLETED' || 
+                        paymentStatus === 'VERIFIED' ||
+                        (isResponseSuccessful && paymentStatus !== 'PENDING' && paymentStatus !== 'CANCELLED' && paymentStatus !== 'UNKNOWN');
       
-      // If response.status is true and we have payment data, consider it successful
-      // OR if payment status is COMPLETED
-      // OR if we have payment data and status is not explicitly CANCELLED
-      const shouldProcess = (isResponseSuccessful && hasPaymentData) || 
-                           paymentStatus === 'COMPLETED' ||
-                           (hasPaymentData && paymentStatus !== 'CANCELLED');
-      
+      // Only process if payment is explicitly verified/completed
+      const shouldProcess = isVerified && hasPaymentData;
+
       if (shouldProcess) {
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
-        console.log('✅ Processing with status:', paymentStatus, 'hasPaymentData:', hasPaymentData);
-        
+        console.log('✅ Processing with status:', paymentStatus, 'isVerified:', isVerified, 'hasPaymentData:', hasPaymentData);
+
         setVerifyingPayment({
           invoiceId: invoiceId.trim().toUpperCase(),
           status: 'verifying',
           message: 'Payment verified! Processing order...'
         });
-        
-        // Payment successful, now verify with our backend
+
+        // ✅ Payment verified - sending data to backend
         // #region agent log
         const finalUid = uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '';
-        fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:295',message:'Creating payment data with UID',data:{uid,finalUid,uidLength:finalUid.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:395',message:'Payment verified - sending data to backend',data:{uid,finalUid,paymentStatus,isVerified,hasPaymentData},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
         // #endregion
         const paymentData = {
           transactionId: invoiceId.trim().toUpperCase(),
@@ -413,9 +415,13 @@ function Checkout({ products }: { products: Product[] }) {
         console.log('📤 Sending payment verification to backend:', paymentData);
         
         const response = await paymentApi.verify(paymentData);
-        
+
         console.log('📥 Backend verification response:', response);
         
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:415',message:'Backend verification response received',data:{success:response.success,message:response.message,paymentStatus,isVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+
         if (response.success) {
           console.log('✅ Payment successfully processed!');
           
@@ -521,9 +527,17 @@ function Checkout({ products }: { products: Product[] }) {
           try {
             console.log('🔄 Retrying verification after PENDING status...');
             const retryResponse = await verifyUddoktaPayPayment(invoiceId.trim());
+
+            // ✅ STRICT: Only process if payment status is explicitly COMPLETED/VERIFIED
+            const retryPaymentStatusRaw = retryResponse.payment?.status || retryResponse.status || 'UNKNOWN';
+            const retryPaymentStatus = typeof retryPaymentStatusRaw === 'string'
+              ? retryPaymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN' | 'VERIFIED'
+              : 'UNKNOWN';
             
-            if (retryResponse.status && retryResponse.payment?.status === 'COMPLETED') {
-              console.log('✅ Payment completed on retry! Processing with backend...');
+            const isRetryVerified = retryPaymentStatus === 'COMPLETED' || retryPaymentStatus === 'VERIFIED';
+            
+            if (isRetryVerified) {
+              console.log('✅ Payment verified on retry! Processing with backend...');
               
               setVerifyingPayment({
                 invoiceId: invoiceId.trim().toUpperCase(),
@@ -550,12 +564,16 @@ function Checkout({ products }: { products: Product[] }) {
               
               if (response.success) {
                 await refresh();
-                
+
                 setVerifyingPayment({
                   invoiceId: invoiceId.trim().toUpperCase(),
                   status: 'verified',
                   message: 'Payment verified successfully!'
                 });
+                
+                // #region agent log
+                fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:555',message:'Payment verified - data sent to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                // #endregion
                 
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 
@@ -604,7 +622,14 @@ function Checkout({ products }: { products: Product[] }) {
                 throw new Error(response.message || 'Backend verification failed');
               }
             } else {
-              // Still pending or failed
+              // Still pending or not verified - DO NOT send to backend
+              console.log('⚠️ Payment still not verified - NOT sending to backend');
+              console.log('⚠️ Status:', retryPaymentStatus);
+              
+              // #region agent log
+              fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:525',message:'Payment retry still not verified - NOT sending to backend',data:{invoiceId,retryPaymentStatus,isRetryVerified},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
+              
               setVerifyingPayment({
                 invoiceId: invoiceId.trim().toUpperCase(),
                 status: 'verifying',
@@ -613,7 +638,7 @@ function Checkout({ products }: { products: Product[] }) {
               
               setTimeout(() => {
                 setVerifyingPayment(null);
-                alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nStatus: ${retryResponse.payment?.status || paymentStatus}\n\nYour order will be completed automatically via webhook. Please check your order history in a few minutes.`);
+                alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nStatus: ${retryPaymentStatus}\n\nYour order will be completed automatically via webhook. Please check your order history in a few minutes.`);
                 navigate('/checkout?productId=' + product.id, { replace: true });
               }, 3000);
             }
