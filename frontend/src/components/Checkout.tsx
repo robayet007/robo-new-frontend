@@ -379,7 +379,7 @@ function Checkout({ products }: { products: Product[] }) {
       // OR if we have payment data and status is not explicitly CANCELLED
       const shouldProcess = (isResponseSuccessful && hasPaymentData) || 
                            paymentStatus === 'COMPLETED' ||
-                           (hasPaymentData && paymentStatus !== 'CANCELLED' && paymentStatus !== 'cancelled');
+                           (hasPaymentData && paymentStatus !== 'CANCELLED');
       
       if (shouldProcess) {
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
@@ -631,7 +631,7 @@ function Checkout({ products }: { products: Product[] }) {
               navigate('/checkout?productId=' + product.id, { replace: true });
             }, 2000);
           }
-        } else if (paymentStatus === 'CANCELLED' || paymentStatus === 'cancelled') {
+        } else if (paymentStatus === 'CANCELLED') {
           console.error('❌ Payment was cancelled');
           
           setVerifyingPayment({
