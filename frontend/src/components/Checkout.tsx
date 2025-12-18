@@ -349,8 +349,8 @@ function Checkout({ products }: { products: Product[] }) {
                               'UNKNOWN';
       
       // Normalize status to uppercase for comparison
-      const paymentStatus = typeof paymentStatusRaw === 'string' 
-        ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
+      const paymentStatus = typeof paymentStatusRaw === 'string'
+        ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'VERIFIED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
         : 'UNKNOWN';
       
       // Also check if response.status is a boolean (true = success)
@@ -508,7 +508,7 @@ function Checkout({ products }: { products: Product[] }) {
         const paymentStatusRaw = verifyResponse.payment?.status || 'UNKNOWN';
         // Normalize to uppercase for comparison
         const paymentStatus = typeof paymentStatusRaw === 'string' 
-          ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
+          ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'VERIFIED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
           : 'UNKNOWN';
         
         // Handle PENDING status - payment might still be processing
