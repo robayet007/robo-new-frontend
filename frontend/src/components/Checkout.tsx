@@ -139,7 +139,6 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
 
-    let retryCount = 0;
     const maxRetries = 10; // Maximum 10 retries
     let isCancelled = false;
     let retryTimeoutId: ReturnType<typeof setTimeout> | null = null;
