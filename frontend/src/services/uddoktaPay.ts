@@ -76,18 +76,27 @@ export interface UddoktaPayVerifyRequest {
 }
 
 export interface UddoktaPayVerifyResponse {
-  status: boolean;
-  message: string;
-  payment: {
+  status: boolean | string;
+  message?: string;
+  payment_status?: string;
+  payment?: {
     invoice_id: string;
     full_name: string;
     email: string;
     amount: string;
-    status: 'COMPLETED' | 'PENDING' | 'CANCELLED';
+    status: 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN';
     payment_method: string;
     created_at: string;
     metadata?: any;
   };
+  // Allow for flat response structure (status at root level)
+  invoice_id?: string;
+  full_name?: string;
+  email?: string;
+  amount?: string;
+  payment_method?: string;
+  created_at?: string;
+  metadata?: any;
 }
 
 // Create payment checkout (via backend proxy)
