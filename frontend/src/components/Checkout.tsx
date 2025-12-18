@@ -342,30 +342,35 @@ function Checkout({ products }: { products: Product[] }) {
       // Check payment status - Uddokta Pay might return status in different formats
       // The response might be flat (not nested in payment object)
       // Try multiple possible locations for status
-      const paymentStatusRaw = verifyResponse.payment?.status || 
-                              verifyResponse.status || 
+      const paymentStatusRaw = verifyResponse.payment?.status ||
+                              verifyResponse.status ||
                               verifyResponse.payment_status ||
                               (verifyResponse.payment && typeof verifyResponse.payment === 'object' ? verifyResponse.payment.status : null) ||
                               'UNKNOWN';
-      
+
       // Normalize status to uppercase for comparison
       const paymentStatus = typeof paymentStatusRaw === 'string'
         ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'VERIFIED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
         : 'UNKNOWN';
-      
+
       // Also check if response.status is a boolean (true = success)
       const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';
-      
-      console.log('📊 Detected payment status:', paymentStatus);
+
+      console.log('📊 ========== VERIFICATION RESPONSE ANALYSIS ==========');
+      console.log('📊 Full verifyResponse:', JSON.stringify(verifyResponse, null, 2));
+      console.log('📊 Detected payment status (raw):', paymentStatusRaw);
+      console.log('📊 Detected payment status (normalized):', paymentStatus);
       console.log('📊 Response status (boolean):', verifyResponse.status);
       console.log('📊 Is response successful:', isResponseSuccessful);
       console.log('📊 Has payment object:', !!verifyResponse.payment);
+      console.log('📊 Payment object:', verifyResponse.payment);
       console.log('📊 Response structure:', {
         hasStatus: 'status' in verifyResponse,
         hasPayment: 'payment' in verifyResponse,
         paymentKeys: verifyResponse.payment ? Object.keys(verifyResponse.payment) : [],
         allKeys: Object.keys(verifyResponse)
       });
+      console.log('📊 ===================================================');
       
       // #region agent log
       fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:345',message:'Payment status check',data:{paymentStatus,isCompleted:paymentStatus === 'COMPLETED',isResponseSuccessful,responseStatus:verifyResponse.status,paymentObjectStatus:verifyResponse.payment?.status,hasPayment:!!verifyResponse.payment,responseKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
@@ -382,6 +387,17 @@ function Checkout({ products }: { products: Product[] }) {
       
       // Only process if payment is explicitly verified/completed
       const shouldProcess = isVerified && hasPaymentData;
+
+      console.log('🔍 Verification Decision:');
+      console.log('  - paymentStatus:', paymentStatus);
+      console.log('  - isResponseSuccessful:', isResponseSuccessful);
+      console.log('  - hasPaymentData:', hasPaymentData);
+      console.log('  - isVerified:', isVerified);
+      console.log('  - shouldProcess:', shouldProcess);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:384',message:'Verification decision',data:{invoiceId,paymentStatus,isResponseSuccessful,hasPaymentData,isVerified,shouldProcess,fullResponse:verifyResponse},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
 
       if (shouldProcess) {
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');

@@ -183,17 +183,23 @@ export const verifyUddoktaPayPayment = async (
     }
 
     const data = await response.json();
-    console.log('📥 Backend verification response (raw):', data);
+    console.log('📥 ========== BACKEND VERIFICATION RESPONSE ==========');
+    console.log('📥 Backend verification response (raw):', JSON.stringify(data, null, 2));
     
     if (data.success && data.data) {
       const responseData = data.data;
-      console.log('📥 Uddokta Pay response data:', responseData);
+      console.log('📥 Uddokta Pay response data:', JSON.stringify(responseData, null, 2));
       console.log('📥 Response keys:', Object.keys(responseData));
       console.log('📥 Has payment object:', !!responseData.payment);
-      console.log('📥 Payment status:', responseData.payment?.status || responseData.status);
+      console.log('📥 Payment status (from payment object):', responseData.payment?.status);
+      console.log('📥 Payment status (from root):', responseData.status);
+      console.log('📥 Payment status (payment_status):', responseData.payment_status);
+      console.log('📥 Full payment object:', responseData.payment);
+      console.log('📥 =================================================');
       
       return responseData;
     } else {
+      console.error('❌ Backend verification failed:', data);
       throw new Error(data.message || 'Failed to verify payment');
     }
   } catch (error: any) {
