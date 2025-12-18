@@ -23,14 +23,28 @@ function Checkout({ products }: { products: Product[] }) {
     new URLSearchParams(location.search).get('productId') ??
     '';
   const product = products.find((p) => p.id === productId) ?? products[0];
-  const [uid, setUid] = useState('');
+  const [searchParams] = useSearchParams();
+  
+  // #region agent log
+  // Initialize UID from localStorage to persist across redirects
+  const [uid, setUid] = useState(() => {
+    const savedUid = localStorage.getItem('checkout_uid') || '';
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:26',message:'UID state initialization',data:{savedUid,fromLocalStorage:!!localStorage.getItem('checkout_uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    return savedUid;
+  });
+  // #endregion
+  
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
   const [ffNameError, setFfNameError] = useState<string | null>(null);
   const [payment, setPayment] = useState<'robo' | 'uddokta'>('uddokta');
   const [processing, setProcessing] = useState(false);
-  const [searchParams] = useSearchParams();
   const [refreshingBalance, setRefreshingBalance] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState<{
+    invoiceId: string;
+    status: 'verifying' | 'verified' | 'failed';
+    message?: string;
+  } | null>(null);
   const [paymentResult, setPaymentResult] = useState<{
     status: 'success' | 'warning';
     message: string;
@@ -46,6 +60,30 @@ function Checkout({ products }: { products: Product[] }) {
   useEffect(() => {
     if (!products.length) navigate('/');
   }, [products, navigate]);
+
+  // Restore UID from localStorage or URL params on mount and when searchParams change
+  useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:64',message:'Component mount - checking UID restoration',data:{currentUid:uid,localStorageUid:localStorage.getItem('checkout_uid'),urlUid:searchParams.get('uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Priority: URL param > localStorage > current state
+    const urlUid = searchParams.get('uid');
+    const localUid = localStorage.getItem('checkout_uid');
+    const savedUid = urlUid || localUid || '';
+    
+    if (savedUid && savedUid !== uid) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:71',message:'Restoring UID on mount',data:{savedUid,fromLocalStorage:!!localUid,fromUrl:!!urlUid,currentUid:uid},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      setUid(savedUid);
+      // Also save to localStorage if it came from URL
+      if (urlUid) {
+        localStorage.setItem('checkout_uid', urlUid);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only run when searchParams change (after redirect)
 
   // Handle Uddokta Pay callback after payment
   useEffect(() => {
@@ -75,16 +113,27 @@ function Checkout({ products }: { products: Product[] }) {
       console.log('✅ Invoice ID found:', invoiceId);
       console.log('📊 Status:', status);
       
-      // If status is COMPLETED or if no status but invoice_id exists, process it
-      // Uddokta Pay might not send status in redirect URL, so we verify anyway
-      if (status === 'COMPLETED' || !status) {
+      // Process payment if:
+      // 1. Status is COMPLETED
+      // 2. Status is PENDING (Uddokta Pay might send pending even when payment is done)
+      // 3. No status but invoice_id exists (verify anyway)
+      // We always verify via API to get the actual payment status
+      if (status === 'COMPLETED' || status === 'pending' || status === 'PENDING' || !status) {
         console.log('🚀 Processing payment callback...');
+        console.log('ℹ️ URL status:', status, '- Will verify actual status via API');
         // Use setTimeout to ensure component is fully mounted
         setTimeout(() => {
           handleUddoktaPayCallback(invoiceId);
         }, 100);
+      } else if (status === 'CANCELLED' || status === 'cancelled') {
+        console.log('❌ Payment was cancelled');
+        alert('Payment was cancelled. Please try again.');
       } else {
-        console.log('⚠️ Payment status is not COMPLETED:', status);
+        console.log('⚠️ Payment status is:', status, '- Still verifying via API...');
+        // Even if status is unknown, try to verify via API
+        setTimeout(() => {
+          handleUddoktaPayCallback(invoiceId);
+        }, 100);
       }
     } else {
       console.log('ℹ️ No invoice_id found in URL parameters');
@@ -230,8 +279,27 @@ function Checkout({ products }: { products: Product[] }) {
   const handleUddoktaPayCallback = async (invoiceId: string) => {
     console.log('🔄 handleUddoktaPayCallback called with invoiceId:', invoiceId);
     
-    if (!uid.trim()) {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:246',message:'handleUddoktaPayCallback entry',data:{invoiceId,uid,uidLength:uid.length,uidTrimmed:uid.trim(),localStorageUid:localStorage.getItem('checkout_uid'),urlUid:searchParams.get('uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Try to restore UID from localStorage or URL if state is empty
+    let currentUid = uid.trim();
+    if (!currentUid) {
+      currentUid = localStorage.getItem('checkout_uid') || searchParams.get('uid') || '';
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:252',message:'UID restored from storage',data:{restoredUid:currentUid,fromLocalStorage:!!localStorage.getItem('checkout_uid'),fromUrl:!!searchParams.get('uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      if (currentUid) {
+        setUid(currentUid);
+      }
+    }
+    
+    if (!currentUid) {
       console.warn('⚠️ UID is empty, cannot process payment');
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:260',message:'UID validation failed',data:{uid,currentUid,localStorageUid:localStorage.getItem('checkout_uid'),urlUid:searchParams.get('uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       alert('Please enter your Free Fire UID');
       return;
     }
@@ -242,22 +310,91 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
 
+    // Show verification UI immediately
+    setVerifyingPayment({
+      invoiceId: invoiceId.trim().toUpperCase(),
+      status: 'verifying',
+      message: 'Verifying payment...'
+    });
     setProcessing(true);
+
+    // Small delay to ensure UI is visible
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     try {
       console.log('🔍 Verifying payment with Uddokta Pay API...');
+      setVerifyingPayment({
+        invoiceId: invoiceId.trim().toUpperCase(),
+        status: 'verifying',
+        message: 'Verifying with Uddokta Pay...'
+      });
+
       // Verify payment with Uddokta Pay
       const verifyResponse = await verifyUddoktaPayPayment(invoiceId.trim());
       
       console.log('📥 Uddokta Pay verification response:', verifyResponse);
+      console.log('📥 Full response structure:', JSON.stringify(verifyResponse, null, 2));
       
-      if (verifyResponse.status && verifyResponse.payment?.status === 'COMPLETED') {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:333',message:'Uddokta Pay verification response received',data:{verifyResponse,hasStatus:!!verifyResponse.status,hasPayment:!!verifyResponse.payment,paymentStatus:verifyResponse.payment?.status,allKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      // Check payment status - Uddokta Pay might return status in different formats
+      // The response might be flat (not nested in payment object)
+      // Try multiple possible locations for status
+      const paymentStatus = verifyResponse.payment?.status || 
+                           verifyResponse.status || 
+                           verifyResponse.payment_status ||
+                           (verifyResponse.payment && typeof verifyResponse.payment === 'object' ? verifyResponse.payment.status : null) ||
+                           'UNKNOWN';
+      
+      // Also check if response.status is a boolean (true = success)
+      const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';
+      
+      console.log('📊 Detected payment status:', paymentStatus);
+      console.log('📊 Response status (boolean):', verifyResponse.status);
+      console.log('📊 Is response successful:', isResponseSuccessful);
+      console.log('📊 Has payment object:', !!verifyResponse.payment);
+      console.log('📊 Response structure:', {
+        hasStatus: 'status' in verifyResponse,
+        hasPayment: 'payment' in verifyResponse,
+        paymentKeys: verifyResponse.payment ? Object.keys(verifyResponse.payment) : [],
+        allKeys: Object.keys(verifyResponse)
+      });
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:345',message:'Payment status check',data:{paymentStatus,isCompleted:paymentStatus === 'COMPLETED',isResponseSuccessful,responseStatus:verifyResponse.status,paymentObjectStatus:verifyResponse.payment?.status,hasPayment:!!verifyResponse.payment,responseKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      // Check if payment has required data (amount, invoice_id) - indicates successful payment
+      const hasPaymentData = verifyResponse.payment?.amount || verifyResponse.amount || verifyResponse.payment?.invoice_id || verifyResponse.invoice_id;
+      
+      // If response.status is true and we have payment data, consider it successful
+      // OR if payment status is COMPLETED
+      // OR if we have payment data and status is not explicitly CANCELLED
+      const shouldProcess = (isResponseSuccessful && hasPaymentData) || 
+                           paymentStatus === 'COMPLETED' ||
+                           (hasPaymentData && paymentStatus !== 'CANCELLED' && paymentStatus !== 'cancelled');
+      
+      if (shouldProcess) {
         console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
+        console.log('✅ Processing with status:', paymentStatus, 'hasPaymentData:', hasPaymentData);
+        
+        setVerifyingPayment({
+          invoiceId: invoiceId.trim().toUpperCase(),
+          status: 'verifying',
+          message: 'Payment verified! Processing order...'
+        });
         
         // Payment successful, now verify with our backend
+        // #region agent log
+        const finalUid = uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '';
+        fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:295',message:'Creating payment data with UID',data:{uid,finalUid,uidLength:finalUid.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         const paymentData = {
           transactionId: invoiceId.trim().toUpperCase(),
           amount: product.price,
-          playerId: uid.trim(),
+          playerId: finalUid,
           productId: product.id,
           productName: product.name,
           diamonds: product.diamonds,
@@ -277,12 +414,21 @@ function Checkout({ products }: { products: Product[] }) {
         if (response.success) {
           console.log('✅ Payment successfully processed!');
           
+          setVerifyingPayment({
+            invoiceId: invoiceId.trim().toUpperCase(),
+            status: 'verified',
+            message: 'Payment verified successfully!'
+          });
+          
           // Refresh balance after successful payment
           try {
             await refresh();
           } catch (refreshError) {
             console.warn('Balance refresh failed:', refreshError);
           }
+          
+          // Wait a moment to show verified status
+          await new Promise(resolve => setTimeout(resolve, 1000));
           
           setPaymentResult({
             status: 'success',
@@ -293,8 +439,10 @@ function Checkout({ products }: { products: Product[] }) {
             productName: product.name,
             paymentMethod: 'Uddokta Pay',
             ffName: ffName,
-            playerId: uid.trim(),
+            playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
           });
+          setVerifyingPayment(null);
+          
           // Clear URL params after a delay to show success message
           setTimeout(() => {
             navigate('/checkout?productId=' + product.id, { replace: true });
@@ -305,6 +453,15 @@ function Checkout({ products }: { products: Product[] }) {
             // Check if it's a duplicate transaction error
             if (response.message?.includes('already exists') || response.message?.includes('already verified')) {
               console.log('ℹ️ Payment already processed, showing success');
+              
+              setVerifyingPayment({
+                invoiceId: invoiceId.trim().toUpperCase(),
+                status: 'verified',
+                message: 'Payment already processed!'
+              });
+              
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
               setPaymentResult({
                 status: 'success',
                 message: 'Payment already processed! Your order is being processed.',
@@ -314,6 +471,8 @@ function Checkout({ products }: { products: Product[] }) {
                 productName: product.name,
                 paymentMethod: 'Uddokta Pay',
               });
+              setVerifyingPayment(null);
+              
               setTimeout(() => {
                 navigate('/checkout?productId=' + product.id, { replace: true });
               }, 2000);
@@ -321,13 +480,186 @@ function Checkout({ products }: { products: Product[] }) {
               // Show detailed error
               const errorMsg = response.message || 'Payment verification failed';
               console.error('Full error response:', response);
-              alert(`Payment verification failed: ${errorMsg}\n\nTransaction ID: ${invoiceId}\n\nPlease contact support if this issue persists.`);
+              
+              setVerifyingPayment({
+                invoiceId: invoiceId.trim().toUpperCase(),
+                status: 'failed',
+                message: errorMsg
+              });
+              
+              setTimeout(() => {
+                setVerifyingPayment(null);
+                alert(`Payment verification failed: ${errorMsg}\n\nTransaction ID: ${invoiceId}\n\nPlease contact support if this issue persists.`);
+              }, 2000);
             }
           }
       } else {
         const paymentStatus = verifyResponse.payment?.status || 'UNKNOWN';
-        console.error('❌ Payment status is not COMPLETED:', paymentStatus);
-        alert(`Payment verification failed. Status: ${paymentStatus}. Please try again or contact support.`);
+        
+        // Handle PENDING status - payment might still be processing
+        if (paymentStatus === 'PENDING' || paymentStatus === 'pending') {
+          console.log('⏳ Payment status is PENDING - payment is still processing');
+          
+          setVerifyingPayment({
+            invoiceId: invoiceId.trim().toUpperCase(),
+            status: 'verifying',
+            message: 'Payment is processing. Please wait...'
+          });
+          
+          // Wait 3 seconds and retry verification
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          try {
+            console.log('🔄 Retrying verification after PENDING status...');
+            const retryResponse = await verifyUddoktaPayPayment(invoiceId.trim());
+            
+            if (retryResponse.status && retryResponse.payment?.status === 'COMPLETED') {
+              console.log('✅ Payment completed on retry! Processing with backend...');
+              
+              setVerifyingPayment({
+                invoiceId: invoiceId.trim().toUpperCase(),
+                status: 'verifying',
+                message: 'Payment verified! Processing order...'
+              });
+              
+              // Process with backend
+              const paymentData = {
+                transactionId: invoiceId.trim().toUpperCase(),
+                amount: product.price,
+                playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
+                productId: product.id,
+                productName: product.name,
+                diamonds: product.diamonds,
+                price: product.price,
+                paymentMethod: 'uddokta' as const,
+                userEmail: user?.email || '',
+                userName: user?.displayName || user?.email?.split('@')[0] || 'User',
+                userId: user?.uid || ''
+              };
+              
+              const response = await paymentApi.verify(paymentData);
+              
+              if (response.success) {
+                await refresh();
+                
+                setVerifyingPayment({
+                  invoiceId: invoiceId.trim().toUpperCase(),
+                  status: 'verified',
+                  message: 'Payment verified successfully!'
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                setPaymentResult({
+                  status: 'success',
+                  message: 'Your top-up was successful! 💎 Your diamonds will arrive shortly.',
+                  amount: product.price,
+                  remaining: balance,
+                  transactionId: invoiceId.trim().toUpperCase(),
+                  productName: product.name,
+                  paymentMethod: 'Uddokta Pay',
+                  ffName: ffName,
+                  playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
+                });
+                setVerifyingPayment(null);
+                
+                setTimeout(() => {
+                  navigate('/checkout?productId=' + product.id, { replace: true });
+                }, 2000);
+              } else if (response.message?.includes('already exists') || response.message?.includes('already verified')) {
+                await refresh();
+                
+                setVerifyingPayment({
+                  invoiceId: invoiceId.trim().toUpperCase(),
+                  status: 'verified',
+                  message: 'Payment already processed!'
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                setPaymentResult({
+                  status: 'success',
+                  message: 'Payment already processed! Your order is being processed.',
+                  amount: product.price,
+                  remaining: balance,
+                  transactionId: invoiceId.trim().toUpperCase(),
+                  productName: product.name,
+                  paymentMethod: 'Uddokta Pay',
+                });
+                setVerifyingPayment(null);
+                
+                setTimeout(() => {
+                  navigate('/checkout?productId=' + product.id, { replace: true });
+                }, 2000);
+              } else {
+                throw new Error(response.message || 'Backend verification failed');
+              }
+            } else {
+              // Still pending or failed
+              setVerifyingPayment({
+                invoiceId: invoiceId.trim().toUpperCase(),
+                status: 'verifying',
+                message: 'Payment is still processing. Webhook will complete your order automatically.'
+              });
+              
+              setTimeout(() => {
+                setVerifyingPayment(null);
+                alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nStatus: ${retryResponse.payment?.status || paymentStatus}\n\nYour order will be completed automatically via webhook. Please check your order history in a few minutes.`);
+                navigate('/checkout?productId=' + product.id, { replace: true });
+              }, 3000);
+            }
+          } catch (retryError: any) {
+            console.error('Retry verification error:', retryError);
+            setVerifyingPayment({
+              invoiceId: invoiceId.trim().toUpperCase(),
+              status: 'verifying',
+              message: 'Payment is processing. Webhook will complete your order.'
+            });
+            
+            setTimeout(() => {
+              setVerifyingPayment(null);
+              alert(`Your payment is being processed. Transaction ID: ${invoiceId}\n\nYour order will be completed automatically via webhook. Please check your order history.`);
+              navigate('/checkout?productId=' + product.id, { replace: true });
+            }, 2000);
+          }
+        } else if (paymentStatus === 'CANCELLED' || paymentStatus === 'cancelled') {
+          console.error('❌ Payment was cancelled');
+          
+          setVerifyingPayment({
+            invoiceId: invoiceId.trim().toUpperCase(),
+            status: 'failed',
+            message: 'Payment was cancelled'
+          });
+          
+          setTimeout(() => {
+            setVerifyingPayment(null);
+            alert('Payment was cancelled. Please try again.');
+          }, 2000);
+        } else {
+          // Get status from multiple possible locations
+          const finalPaymentStatus = verifyResponse.payment?.status || 
+                                    verifyResponse.status || 
+                                    verifyResponse.payment_status ||
+                                    paymentStatus ||
+                                    'UNKNOWN';
+          console.error('❌ Payment status is not COMPLETED:', finalPaymentStatus);
+          console.error('❌ Full response:', verifyResponse);
+          
+          // #region agent log
+          fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:614',message:'Payment status not COMPLETED',data:{finalPaymentStatus,paymentStatus,verifyResponse,hasPayment:!!verifyResponse.payment,responseKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+          // #endregion
+          
+          setVerifyingPayment({
+            invoiceId: invoiceId.trim().toUpperCase(),
+            status: 'failed',
+            message: `Payment status: ${finalPaymentStatus}`
+          });
+          
+          setTimeout(() => {
+            setVerifyingPayment(null);
+            alert(`Payment verification failed. Status: ${finalPaymentStatus}. Please try again or contact support.`);
+          }, 2000);
+        }
       }
     } catch (err: any) {
       console.error('❌ Payment verification error:', err);
@@ -336,7 +668,17 @@ function Checkout({ products }: { products: Product[] }) {
         stack: err.stack,
         invoiceId: invoiceId
       });
-      alert('Payment verification failed: ' + (err.message || 'Please try again. If the problem persists, contact support with transaction ID: ' + invoiceId));
+      
+      setVerifyingPayment({
+        invoiceId: invoiceId.trim().toUpperCase(),
+        status: 'failed',
+        message: err.message || 'Verification failed'
+      });
+      
+      setTimeout(() => {
+        setVerifyingPayment(null);
+        alert('Payment verification failed: ' + (err.message || 'Please try again. If the problem persists, contact support with transaction ID: ' + invoiceId));
+      }, 2000);
     } finally {
       setProcessing(false);
     }
@@ -344,6 +686,10 @@ function Checkout({ products }: { products: Product[] }) {
 
   // Handle Uddokta Pay checkout
   const handleUddoktaPayPayment = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:578',message:'handleUddoktaPayPayment entry',data:{uid,uidLength:uid.length,uidTrimmed:uid.trim()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    
     if (!uid.trim()) {
       alert('Please enter your Free Fire UID');
       return;
@@ -355,11 +701,18 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
 
+    // Save UID to localStorage before redirect
+    // #region agent log
+    localStorage.setItem('checkout_uid', uid.trim());
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:592',message:'Saving UID to localStorage before redirect',data:{uid:uid.trim(),saved:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
     setProcessing(true);
     try {
       const baseUrl = window.location.origin;
-      const redirectUrl = `${baseUrl}/checkout?productId=${product.id}`;
-      const cancelUrl = `${baseUrl}/checkout?productId=${product.id}&cancelled=true`;
+      // Include UID in redirect URL to restore it after redirect
+      const redirectUrl = `${baseUrl}/checkout?productId=${product.id}&uid=${encodeURIComponent(uid.trim())}`;
+      const cancelUrl = `${baseUrl}/checkout?productId=${product.id}&cancelled=true&uid=${encodeURIComponent(uid.trim())}`;
       const webhookUrl = getBackendWebhookUrl();
 
       const checkoutRequest = {
@@ -371,7 +724,7 @@ function Checkout({ products }: { products: Product[] }) {
           order_id: `ORDER_${Date.now()}`,
           product_id: product.id,
           product_name: product.name,
-          player_id: uid,
+          player_id: uid.trim(),
           diamonds: product.diamonds,
           price: product.price,
           payment_type: 'purchase' as const,
@@ -384,6 +737,9 @@ function Checkout({ products }: { products: Product[] }) {
       const checkoutResponse = await createUddoktaPayCheckout(checkoutRequest);
       
       if (checkoutResponse.status && checkoutResponse.payment_url) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:620',message:'Redirecting to Uddokta Pay',data:{uid:uid.trim(),savedToLocalStorage:!!localStorage.getItem('checkout_uid'),redirectUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
         // Redirect to Uddokta Pay payment page
         window.location.href = checkoutResponse.payment_url;
       } else {
@@ -447,7 +803,7 @@ function Checkout({ products }: { products: Product[] }) {
       const paymentPayload = {
         transactionId: `ROBO_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique transaction ID
         amount: product.price,
-        playerId: uid,
+        playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
         productId: product.id,
         productName: product.name || 'Product',
         diamonds: product.diamonds || 0,
@@ -508,7 +864,7 @@ function Checkout({ products }: { products: Product[] }) {
           productName: product.name,
           paymentMethod: 'Robo Balance',
           ffName: ffName,
-          playerId: uid.trim(),
+          playerId: (uid.trim() || localStorage.getItem('checkout_uid') || searchParams.get('uid') || '').trim(),
         });
       } else {
         // Backend rejected the payment
@@ -548,6 +904,88 @@ function Checkout({ products }: { products: Product[] }) {
 
   return (
     <div className="relative max-w-2xl px-4 py-6 mx-auto">
+      {/* Payment Verification Modal */}
+      {verifyingPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="text-center pt-8 pb-6 px-6">
+              {verifyingPayment.status === 'verifying' && (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+                      <FaSyncAlt className="text-3xl text-blue-600 animate-spin" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Verifying Payment</h2>
+                  <p className="text-sm text-slate-600 mb-4">{verifyingPayment.message}</p>
+                </>
+              )}
+              
+              {verifyingPayment.status === 'verified' && (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <FaCheck className="text-3xl text-emerald-600" />
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Payment Verified!</h2>
+                  <p className="text-sm text-slate-600 mb-4">{verifyingPayment.message}</p>
+                </>
+              )}
+              
+              {verifyingPayment.status === 'failed' && (
+                <>
+                  <div className="flex justify-center mb-4">
+                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">Verification Failed</h2>
+                  <p className="text-sm text-red-600 mb-4">{verifyingPayment.message}</p>
+                </>
+              )}
+              
+              {/* Transaction ID Display */}
+              <div className="mt-4 mb-4">
+                <p className="text-xs text-slate-500 mb-2">Transaction ID</p>
+                <div className="flex items-center justify-center gap-2 bg-slate-50 rounded-lg px-3 py-2">
+                  <span className="text-xs font-mono text-slate-700 break-all">
+                    {verifyingPayment.invoiceId}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(verifyingPayment.invoiceId);
+                        alert('Transaction ID copied!');
+                      } catch (err) {
+                        console.error('Failed to copy:', err);
+                      }
+                    }}
+                    className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded transition-colors"
+                    title="Copy Transaction ID"
+                  >
+                    <svg className="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              {verifyingPayment.status === 'verifying' && (
+                <div className="mt-4">
+                  <div className="w-full bg-slate-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">Please wait while we verify your payment...</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Payment Completed Modal - Enhanced UI */}
       {paymentResult && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -695,7 +1133,16 @@ function Checkout({ products }: { products: Product[] }) {
           <input
             type="text"
             value={uid}
-            onChange={(e) => setUid(e.target.value)}
+            onChange={(e) => {
+              const newUid = e.target.value;
+              setUid(newUid);
+              // Save to localStorage for persistence across redirects
+              if (newUid.trim()) {
+                localStorage.setItem('checkout_uid', newUid.trim());
+              } else {
+                localStorage.removeItem('checkout_uid');
+              }
+            }}
             placeholder="এখানে আপনার গেমের আইডি কোড লিখুন"
             className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
           />

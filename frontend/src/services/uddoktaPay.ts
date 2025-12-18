@@ -174,8 +174,16 @@ export const verifyUddoktaPayPayment = async (
     }
 
     const data = await response.json();
+    console.log('📥 Backend verification response (raw):', data);
+    
     if (data.success && data.data) {
-      return data.data;
+      const responseData = data.data;
+      console.log('📥 Uddokta Pay response data:', responseData);
+      console.log('📥 Response keys:', Object.keys(responseData));
+      console.log('📥 Has payment object:', !!responseData.payment);
+      console.log('📥 Payment status:', responseData.payment?.status || responseData.status);
+      
+      return responseData;
     } else {
       throw new Error(data.message || 'Failed to verify payment');
     }
