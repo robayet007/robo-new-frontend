@@ -553,14 +553,15 @@ function Checkout({ products }: { products: Product[] }) {
             }
           }
       } else {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'Checkout.tsx:539',message:'Not processing payment after verify',data:{invoiceId:invoiceId.trim(),paymentStatus,hasPaymentData,isVerified,isPending},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion
         const paymentStatusRaw = verifyResponse.payment?.status || 'UNKNOWN';
         // Normalize to uppercase for comparison
         const paymentStatus = typeof paymentStatusRaw === 'string' 
           ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'VERIFIED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
           : 'UNKNOWN';
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'Checkout.tsx:539',message:'Not processing payment after verify',data:{invoiceId:invoiceId.trim(),paymentStatus,paymentStatusRaw},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         
         // Handle PENDING status - payment might still be processing
         // ✅ DO NOT send to backend if status is PENDING - wait for verification with multiple retries
