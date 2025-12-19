@@ -5,7 +5,7 @@ class SmartAPIManager {
   // Get API base URL - use AWS backend
   static getBaseURL(): string {
     // Use AWS backend API
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://15.134.216.212';
+    const backendUrl ='http://15.134.216.212';
     return `${backendUrl}/api`;
   }
   
