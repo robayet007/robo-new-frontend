@@ -2,10 +2,10 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } fr
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
-  // Get API base URL - use local server for development
+  // Get API base URL - use Render backend
   static getBaseURL(): string {
-    // Use local server backend API (port 5000)
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    // Use Render backend API
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
     return `${backendUrl}/api`;
   }
   
