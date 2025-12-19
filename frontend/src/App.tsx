@@ -23,7 +23,7 @@ function App() {
   const catalog = useCatalog();
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
-
+  // some changesw
   // Only show full page loading for catalog (products/categories)
   // Auth and role loading are non-blocking - they load in background
   if (catalog.loading) {
