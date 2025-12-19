@@ -214,9 +214,15 @@ function AddMoney() {
                               'UNKNOWN';
       
       // Normalize status to uppercase for comparison
-      const paymentStatus = typeof paymentStatusRaw === 'string' 
-        ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
-        : 'UNKNOWN';
+      type PaymentStatusType = 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN';
+      let paymentStatus: PaymentStatusType = 'UNKNOWN';
+      
+      if (typeof paymentStatusRaw === 'string') {
+        const upperStatus = paymentStatusRaw.toUpperCase();
+        if (upperStatus === 'COMPLETED' || upperStatus === 'PENDING' || upperStatus === 'CANCELLED' || upperStatus === 'UNKNOWN') {
+          paymentStatus = upperStatus as PaymentStatusType;
+        }
+      }
       
       // Also check if response.status is a boolean (true = success)
       const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';

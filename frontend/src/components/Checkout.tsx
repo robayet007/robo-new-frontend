@@ -349,9 +349,15 @@ function Checkout({ products }: { products: Product[] }) {
                               'UNKNOWN';
 
       // Normalize status to uppercase for comparison
-      const paymentStatus = typeof paymentStatusRaw === 'string'
-        ? paymentStatusRaw.toUpperCase() as 'COMPLETED' | 'VERIFIED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN'
-        : 'UNKNOWN';
+      type PaymentStatusType = 'COMPLETED' | 'PENDING' | 'VERIFIED' | 'CANCELLED' | 'UNKNOWN';
+      let paymentStatus: PaymentStatusType = 'UNKNOWN';
+      
+      if (typeof paymentStatusRaw === 'string') {
+        const upperStatus = paymentStatusRaw.toUpperCase();
+        if (upperStatus === 'COMPLETED' || upperStatus === 'PENDING' || upperStatus === 'VERIFIED' || upperStatus === 'CANCELLED' || upperStatus === 'UNKNOWN') {
+          paymentStatus = upperStatus as PaymentStatusType;
+        }
+      }
 
       // Also check if response.status is a boolean (true = success)
       const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';
@@ -992,7 +998,6 @@ function Checkout({ products }: { products: Product[] }) {
 
 
   const requiredAmount = product.price;
-  const hasEnough = user && !balanceLoading && hasEnoughBalance(requiredAmount);
 
   return (
     <div className="relative max-w-2xl px-4 py-6 mx-auto">
