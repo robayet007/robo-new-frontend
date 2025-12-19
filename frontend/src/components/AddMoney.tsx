@@ -377,23 +377,7 @@ function AddMoney() {
   console.log('🎨 Rendering AddMoney component');
   return (
     <div className="max-w-md p-4 mx-auto mt-4 bg-white border shadow-xl sm:mt-6 md:mt-8 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-slate-200">
-      {/* Maintenance Message */}
-      <div className="p-6 mb-6 text-center border-2 border-amber-300 rounded-xl bg-gradient-to-r from-amber-50 to-yellow-50">
-        <div className="flex items-center justify-center mb-3">
-          <div className="flex items-center justify-center w-16 h-16 text-3xl bg-amber-100 rounded-full">
-            🔧
-          </div>
-        </div>
-        <h2 className="mb-2 text-xl font-bold text-amber-800">Under Maintenance</h2>
-        <p className="text-sm text-amber-700 mb-1">
-          Add Money service is temporarily unavailable
-        </p>
-        <p className="text-xs text-amber-600">
-          We are working to restore this feature. Please check back later.
-        </p>
-      </div>
-
-      <div className="mb-6 text-center opacity-50 pointer-events-none">
+      <div className="mb-6 text-center">
         <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-400/14 text-green-700 border border-green-400/35 font-semibold text-sm mb-4">
           💰 Add Money
         </p>
@@ -430,10 +414,7 @@ function AddMoney() {
         </div>
       </div>
 
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        alert('🔧 Add Money service is currently under maintenance. Please try again later.');
-      }} className="space-y-5 opacity-50 pointer-events-none">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-xl">
             {error}
@@ -447,12 +428,9 @@ function AddMoney() {
           <input
             type="number"
             value={amount}
-            onChange={(e) => {
-              // Disabled for maintenance
-              alert('🔧 Add Money service is currently under maintenance.');
-            }}
-            disabled
-            className="w-full px-4 py-3 text-lg font-semibold text-center border-2 rounded-xl border-slate-300 bg-slate-100 text-slate-400 cursor-not-allowed"
+            onChange={(e) => setAmount(e.target.value)}
+            disabled={processing}
+            className="w-full px-4 py-3 text-lg font-semibold text-center border-2 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
             placeholder="0.00"
             min="10"
             step="0.01"
@@ -464,17 +442,16 @@ function AddMoney() {
               <button
                 key={quickAmount}
                 type="button"
-                onClick={() => {
-                  alert('🔧 Add Money service is currently under maintenance.');
-                }}
-                disabled
-                className="py-3 font-semibold rounded-xl bg-slate-100 text-slate-400 cursor-not-allowed opacity-50"
+                onClick={() => handleQuickAmount(quickAmount)}
+                disabled={processing}
+                className="py-3 font-semibold rounded-xl bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 hover:from-purple-200 hover:to-violet-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ৳{quickAmount}
               </button>
             ))}
           </div>
         </div>
+
 
         <div className="p-4 border border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-sky-50">
           <h3 className="flex items-center gap-2 mb-2 font-bold text-blue-800">
@@ -499,14 +476,11 @@ function AddMoney() {
             Go Back
           </button>
           <button
-            type="button"
-            onClick={() => {
-              alert('🔧 Add Money service is currently under maintenance. Please try again later.');
-            }}
-            disabled
-            className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-slate-400 to-slate-500 cursor-not-allowed opacity-60"
+            type="submit"
+            disabled={processing || !amount.trim()}
+            className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Under Maintenance
+            {processing ? 'Processing...' : 'Add Money'}
           </button>
         </div>
 

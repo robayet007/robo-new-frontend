@@ -237,22 +237,48 @@ function UserManagement() {
   };
 
   const handleSaveBalance = async () => {
-    if (!selectedUserForBalance) return;
+    if (!selectedUserForBalance) {
+      console.error('❌ No user selected for balance edit');
+      return;
+    }
+    
     const raw = balanceValue.trim();
     const amount = Number(raw);
+    
+    console.log('💾 Saving balance:', {
+      userId: selectedUserForBalance.uid,
+      userEmail: selectedUserForBalance.email,
+      currentValue: balanceValue,
+      parsedAmount: amount
+    });
+    
     if (Number.isNaN(amount)) {
       setMessage({ type: 'error', text: 'Please enter a valid balance amount' });
+      return;
+    }
+    
+    if (amount < 0) {
+      setMessage({ type: 'error', text: 'Balance cannot be negative. Please enter 0 or greater.' });
       return;
     }
 
     try {
       setBalanceLoading(true);
+      console.log('📤 Calling balanceApi.sync with:', {
+        userId: selectedUserForBalance.uid,
+        userEmail: selectedUserForBalance.email || '',
+        userName: selectedUserForBalance.displayName || '',
+        balance: amount,
+      });
+      
       const resp = await balanceApi.sync({
         userId: selectedUserForBalance.uid,
         userEmail: selectedUserForBalance.email || '',
         userName: selectedUserForBalance.displayName || '',
         balance: amount,
       });
+      
+      console.log('📥 Balance sync response:', resp);
 
       if (resp.success) {
         setMessage({
@@ -401,9 +427,14 @@ function UserManagement() {
                 min="0"
                 step="0.01"
                 value={balanceValue}
-                onChange={(e) => setBalanceValue(e.target.value)}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  console.log('📝 Balance value changed:', newValue);
+                  setBalanceValue(newValue);
+                }}
                 disabled={balanceLoading}
-                className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm"
+                placeholder="0.00"
+                className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
               <p className="mt-1 text-[11px] sm:text-xs text-slate-500">
                 Manually override this user&apos;s Robo balance. This will sync to the database.

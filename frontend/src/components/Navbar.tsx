@@ -107,14 +107,13 @@ function Navbar() {
                   )}
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-400 hover:bg-slate-50 cursor-not-allowed opacity-60"
+                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
-                      alert('🔧 Add Money service is currently under maintenance. Please try again later.');
+                      navigate('/add-money');
                     }}
-                    title="Under Maintenance"
                   >
-                    💰 Add Money <span className="text-[10px] text-amber-600">(Maintenance)</span>
+                    💰 Add Money
                   </button>
                   <button
                     type="button"

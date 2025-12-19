@@ -37,7 +37,6 @@ function Checkout({ products }: { products: Product[] }) {
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
   const [ffNameError, setFfNameError] = useState<string | null>(null);
-  // Robo Pay disabled for maintenance - default to Uddokta Pay
   const [payment, setPayment] = useState<'robo' | 'uddokta'>('uddokta');
   const [processing, setProcessing] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
@@ -161,13 +160,11 @@ function Checkout({ products }: { products: Product[] }) {
 
   useEffect(() => {
     // Set default payment method based on balance
-    // Robo Pay disabled for maintenance - always default to Uddokta Pay
     // If user has balance and enough for product, default to Robo Pay
     // Otherwise default to Uddokta Pay
     const hasEnough = typeof hasEnoughBalance === 'function' && product
       ? hasEnoughBalance(product.price)
       : false;
-    // Force Uddokta Pay since Robo Pay is under maintenance
 
     if (user && product && !isNaN(balance) && balance > 0 && hasEnough) {
       setPayment('robo');
@@ -1308,17 +1305,23 @@ function Checkout({ products }: { products: Product[] }) {
           <h2 className="text-xl font-bold text-slate-800">Select one option</h2>
         </div>
 
-        {/* Payment Method Cards - Robo Pay disabled for maintenance */}
+        {/* Payment Method Cards */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* Robo Pay / Wallet Pay - DISABLED FOR MAINTENANCE */}
-          <div className="relative bg-white border-2 rounded-xl p-4 border-slate-200 opacity-60 cursor-not-allowed">
-            <div className="absolute inset-0 bg-slate-100/80 rounded-xl flex items-center justify-center z-10 backdrop-blur-sm">
-              <div className="text-center px-2">
-                <p className="text-xs font-bold text-amber-600 mb-1">🔧 Under Maintenance</p>
-                <p className="text-[10px] text-slate-600">Robo Pay temporarily unavailable</p>
+          {/* Robo Pay / Wallet Pay */}
+          <button
+            onClick={() => setPayment('robo')}
+            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
+              payment === 'robo' 
+                ? 'border-purple-500 shadow-lg shadow-purple-500/20' 
+                : 'border-slate-200 hover:border-purple-300'
+            }`}
+          >
+            {payment === 'robo' && (
+              <div className="absolute flex items-center justify-center w-6 h-6 bg-red-500 rounded-full -top-2 -left-2">
+                <FaCheck className="text-xs text-white" />
               </div>
-            </div>
-            <div className="flex items-center gap-3 mb-2 opacity-50">
+            )}
+            <div className="flex items-center gap-3 mb-2">
               <div className="flex items-center justify-center w-12 h-12 text-lg font-bold text-white rounded-lg bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600">
                 R
               </div>
@@ -1327,8 +1330,8 @@ function Checkout({ products }: { products: Product[] }) {
                 <p className="text-xs text-slate-500">ওয়ালেট পে</p>
               </div>
             </div>
-            <p className="mt-2 text-xs text-slate-600 opacity-50">Wallet Pay</p>
-          </div>
+            <p className="mt-2 text-xs text-slate-600">Wallet Pay</p>
+          </button>
 
           {/* Uddokta Pay / Instant Payment */}
           <button
@@ -1382,14 +1385,6 @@ function Checkout({ products }: { products: Product[] }) {
                 প্রোডাক্ট কিনতে আপনার প্রয়োজন ৳ {requiredAmount}।
               </span>
             </div>
-            {/* Robo Pay disabled - show maintenance message instead */}
-            {payment === 'robo' && (
-              <div className="p-3 mt-3 border border-amber-200 rounded-lg bg-amber-50">
-                <p className="text-sm text-amber-800">
-                  🔧 Robo Pay is currently under maintenance. Please use Uddokta Pay instead.
-                </p>
-              </div>
-            )}
           </div>
         )}
 
@@ -1400,23 +1395,16 @@ function Checkout({ products }: { products: Product[] }) {
               alert('Please enter your Free Fire UID');
               return;
             }
-            // Robo Pay disabled for maintenance - force Uddokta Pay
             if (payment === 'robo') {
-              alert('🔧 Robo Pay is currently under maintenance. Please use Uddokta Pay instead.');
-              setPayment('uddokta');
-              // Automatically trigger Uddokta Pay after switching
-              setTimeout(() => {
-                handleUddoktaPayPayment();
-              }, 100);
-              return;
+              handleRoboBalancePayment();
             } else {
               handleUddoktaPayPayment();
             }
           }}
-          disabled={!uid.trim() || processing || balanceLoading || payment === 'robo'}
+          disabled={!uid.trim() || processing || balanceLoading}
           className="w-full px-6 py-4 text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-purple-500/30"
         >
-          {processing ? 'Processing...' : payment === 'robo' ? 'Under Maintenance' : 'Buy Now'}
+          {processing ? 'Processing...' : 'Buy Now'}
         </button>
       </div>
     </div>
