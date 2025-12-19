@@ -1,8 +1,8 @@
 // Uddokta Pay API Integration - Using Backend Proxy
-// Get backend base URL - use AWS backend
+// Get backend base URL - use Render backend
 function getBackendBaseURL(): string {
-  // Use AWS backend API
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://15.134.216.212';
+  // Use Render backend API
+  const backendUrl = 'https://robo-backend-sbms.onrender.com';
   return `${backendUrl}/api`;
 }
 
@@ -39,8 +39,8 @@ async function smartFetch(path: string, options: RequestInit = {}): Promise<Resp
 
 // Get backend URL for webhook
 export const getBackendWebhookUrl = (): string => {
-  // Use AWS backend for webhook
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://15.134.216.212';
+  // Use Render backend for webhook
+  const backendUrl = 'https://robo-backend-sbms.onrender.com';
   const webhookUrl = `${backendUrl}/api/payments/uddokta/webhook`;
   console.log('🔗 Webhook URL:', webhookUrl);
   return webhookUrl;
