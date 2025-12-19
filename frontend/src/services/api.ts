@@ -2,10 +2,10 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } fr
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
-  // Get API base URL - use Render backend
+  // Get API base URL - use AWS backend
   static getBaseURL(): string {
-    // Use Render backend API
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://robo-backend-sbms.onrender.com';
+    // Use AWS backend API
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://15.134.216.212';
     return `${backendUrl}/api`;
   }
   
