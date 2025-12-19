@@ -108,6 +108,10 @@ function Checkout({ products }: { products: Product[] }) {
       allParams: Object.fromEntries(searchParams.entries()),
       fullURL: window.location.href
     });
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H0',location:'Checkout.tsx:88',message:'Uddokta callback URL params',data:{invoiceId,status,allParams:Object.fromEntries(searchParams.entries()),fullURL:window.location.href},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     if (invoiceId) {
       console.log('✅ Invoice ID found:', invoiceId);
@@ -280,6 +284,10 @@ function Checkout({ products }: { products: Product[] }) {
     console.log('🔄 handleUddoktaPayCallback called with invoiceId:', invoiceId);
     
     // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H4',location:'Checkout.tsx:278',message:'handleUddoktaPayCallback entry (debug)',data:{invoiceId},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+
+    // #region agent log
     fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:246',message:'handleUddoktaPayCallback entry',data:{invoiceId,uid,uidLength:uid.length,uidTrimmed:uid.trim(),localStorageUid:localStorage.getItem('checkout_uid'),urlUid:searchParams.get('uid')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
     // #endregion
     
@@ -337,6 +345,10 @@ function Checkout({ products }: { products: Product[] }) {
       
       // #region agent log
       fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Checkout.tsx:333',message:'Uddokta Pay verification response received',data:{verifyResponse,hasStatus:!!verifyResponse.status,hasPayment:!!verifyResponse.payment,paymentStatus:verifyResponse.payment?.status,allKeys:Object.keys(verifyResponse)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'Checkout.tsx:337',message:'Uddokta verify response (debug)',data:{invoiceId:invoiceId.trim(),rootStatus:verifyResponse.status,paymentStatus:verifyResponse.payment?.status,paymentStatusField:verifyResponse.payment_status,keys:Object.keys(verifyResponse || {})},timestamp:Date.now()})}).catch(()=>{});
       // #endregion
       
       // Check payment status - Uddokta Pay might return status in different formats
@@ -398,6 +410,10 @@ function Checkout({ products }: { products: Product[] }) {
       const shouldProcess = (isVerified || (isPending && hasPaymentData)) && 
                            paymentStatus !== 'CANCELLED' && 
                            paymentStatus !== 'UNKNOWN';
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2',location:'Checkout.tsx:398',message:'Verification decision (debug)',data:{invoiceId:invoiceId.trim(),paymentStatus,isVerified,hasPaymentData,shouldProcess,isPending},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
 
       console.log('🔍 Verification Decision:');
       console.log('  - paymentStatus:', paymentStatus);
@@ -537,6 +553,9 @@ function Checkout({ products }: { products: Product[] }) {
             }
           }
       } else {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/5953be24-521b-4618-a8c0-2a465a0f1894',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H3',location:'Checkout.tsx:539',message:'Not processing payment after verify',data:{invoiceId:invoiceId.trim(),paymentStatus,hasPaymentData,isVerified,isPending},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         const paymentStatusRaw = verifyResponse.payment?.status || 'UNKNOWN';
         // Normalize to uppercase for comparison
         const paymentStatus = typeof paymentStatusRaw === 'string' 
