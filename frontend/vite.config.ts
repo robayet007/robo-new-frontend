@@ -9,12 +9,16 @@ export default defineConfig({
   },
   // PWA configuration
   publicDir: 'public',
+  // Base path - empty for root domain (works with custom domains)
+  base: '/',
   build: {
     rollupOptions: {
       output: {
         manualChunks: undefined,
       },
     },
+    // Ensure assets are referenced correctly
+    assetsDir: 'assets',
   },
   // Server configuration for WebSocket
   server: {

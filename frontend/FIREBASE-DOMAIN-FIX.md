@@ -27,6 +27,8 @@ Your authorized domains should include:
 - ✅ `localhost` (for local development)
 - ✅ `robotopup-21902.firebaseapp.com` (Firebase default)
 - ✅ `robotopup.vercel.app` (your Vercel domain)
+- ✅ `your-custom-domain.com` (if using custom domain - **IMPORTANT!**)
+- ✅ `www.your-custom-domain.com` (if using www subdomain)
 
 ### Step 5: Test
 1. Go to your Vercel app: https://robotopup.vercel.app
@@ -43,8 +45,15 @@ Your authorized domains should include:
 
 1. **Check domain format**:
    - ✅ Correct: `robotopup.vercel.app`
+   - ✅ Correct: `your-custom-domain.com` (for custom domain)
    - ❌ Wrong: `https://robotopup.vercel.app` (no https://)
    - ❌ Wrong: `robotopup.vercel.app/` (no trailing slash)
+   - ❌ Wrong: `https://your-custom-domain.com` (no https://)
+
+2. **Custom Domain Users**:
+   - **CRITICAL**: Custom domain add করলে Firebase authorized domains এ **must add** করতে হবে
+   - Example: যদি আপনার domain `example.com` হয়, তাহলে Firebase এ `example.com` add করুন
+   - `www` subdomain use করলে `www.example.com` ও add করুন
 
 2. **Clear browser cache**:
    - Hard refresh: `Ctrl+Shift+R` (Windows) or `Cmd+Shift+R` (Mac)
