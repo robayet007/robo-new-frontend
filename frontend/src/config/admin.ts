@@ -1,5 +1,5 @@
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
+import { db } from './firebase';   
 
 // Admin email configuration
 export const ADMIN_EMAIL = 'mdrobayet007@gmail.com';
