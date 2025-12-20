@@ -1,7 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
-import { getAnalytics } from 'firebase/analytics';
+import { getAnalytics } from 'firebase/analytics';  
 
 // Firebase configuration from environment variables
 // ⚠️ SECURITY: Never commit .env file to git!
