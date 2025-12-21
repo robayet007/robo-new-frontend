@@ -15,12 +15,16 @@ function OrderHistory() {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all payments from backend, then filter by current userId
-        const response = await paymentApi.getAll(100);
+        // Fetch user-specific orders from backend
+        const response = await paymentApi.getAll(100, user.uid);
         if (response.success && Array.isArray(response.data)) {
-          const all = response.data as BackendPurchase[];
-          const userOrders = all.filter((p) => p.userId === user.uid);
-          setOrders(userOrders);
+          // Sort by latest first
+          const sortedOrders = (response.data as BackendPurchase[]).sort((a, b) => {
+            const aTime = new Date(a.verifiedAt || a.createdAt || 0).getTime();
+            const bTime = new Date(b.verifiedAt || b.createdAt || 0).getTime();
+            return bTime - aTime;
+          });
+          setOrders(sortedOrders);
         } else {
           setOrders([]);
           if (response.message) {
@@ -114,9 +118,12 @@ function OrderHistory() {
                   <p className="mt-1 text-xs">
                     <span className={
                       isRobo ? 'text-purple-600' : 
+                      order.paymentMethod === 'uddokta' ? 'text-blue-600' :
                       'text-rose-600'
                     }>
-                      {isRobo ? 'Robo Pay' : 'bKash'}
+                      {isRobo ? 'Robo Pay' : 
+                       order.paymentMethod === 'uddokta' ? 'Uddokta Pay' :
+                       'bKash'}
                     </span>
                     <span className="text-slate-400"> • </span>
                     <span

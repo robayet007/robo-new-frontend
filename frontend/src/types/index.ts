@@ -39,7 +39,7 @@ export interface BackendPurchase {
   productId: string;
   productName?: string;
   diamonds?: number;
-  paymentMethod: 'bkash' | 'robo';
+  paymentMethod: 'bkash' | 'robo' | 'uddokta';
   status: 'pending' | 'verified' | 'rejected' | 'failed' | 'completed';
   updatedBalance?: number;
   createdAt: string;

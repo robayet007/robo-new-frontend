@@ -222,8 +222,11 @@ export const paymentApi = {
     return response.json();
   },
   
-  getAll: async (limit: number = 50): Promise<ApiResponse> => {
-    const response = await SmartAPIManager.smartFetch(`/payments?limit=${limit}`);
+  getAll: async (limit: number = 50, userId?: string): Promise<ApiResponse> => {
+    const url = userId 
+      ? `/payments/user/${userId}?limit=${limit}`
+      : `/payments?limit=${limit}`;
+    const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
 

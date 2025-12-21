@@ -9,7 +9,7 @@ type AdminOrder = {
   userEmail?: string;
   userName?: string;
   userId?: string;
-  paymentMethod?: 'bkash' | 'robo' | string;
+  paymentMethod?: 'bkash' | 'robo' | 'uddokta' | string;
   updatedBalance?: number | null;
   productId?: string;
   productName?: string;
@@ -167,10 +167,13 @@ function AdminOrders() {
                       className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                         o.paymentMethod === 'robo'
                           ? 'bg-purple-100 text-purple-700'
+                          : o.paymentMethod === 'uddokta'
+                          ? 'bg-blue-100 text-blue-700'
                           : 'bg-rose-100 text-rose-700'
                       }`}
                     >
                       {o.paymentMethod === 'robo' ? 'Robo Pay' : 
+                       o.paymentMethod === 'uddokta' ? 'Uddokta Pay' :
                        'bKash'}
                     </span>
                     <p className="mt-1 text-[10px] text-slate-500">
