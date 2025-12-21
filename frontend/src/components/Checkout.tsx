@@ -274,7 +274,8 @@ function Checkout({ products }: { products: Product[] }) {
     const invoiceId = searchParams.get("invoice_id");
     const transactionId = searchParams.get("transactionId");
 
-    if (status === "success" && (invoiceId || transactionId)) {
+    // Handle both "success" and "completed" status from Uddokta Pay
+    if ((status === "success" || status === "completed") && (invoiceId || transactionId)) {
       // Payment successful, verify it
       if (invoiceId) {
         setVerifyingPayment({
