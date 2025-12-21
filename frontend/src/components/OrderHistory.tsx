@@ -83,7 +83,6 @@ function OrderHistory() {
               : 'Unknown date';
 
             const isRobo = order.paymentMethod === 'robo';
-            const paymentMethod = order.paymentMethod;
             const amount = (order.amount ?? order.price) ?? 0;
 
             return (

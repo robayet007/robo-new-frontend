@@ -256,7 +256,7 @@ function Checkout({ products }: { products: Product[] }) {
         window.location.href = response.data.paymentUrl;
       } else {
         setProcessing(false);
-        const errorMsg = response.message || response.error || "Failed to create payment session. Please try again.";
+        const errorMsg = response.message || "Failed to create payment session. Please try again.";
         console.error("❌ Uddokta Pay checkout failed:", errorMsg);
         alert(errorMsg);
       }

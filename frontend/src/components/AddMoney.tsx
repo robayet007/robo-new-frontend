@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
-import { paymentApi } from '../services/api';
 
 function AddMoney() {
   // Initialize amount from localStorage or URL params to persist across redirects
@@ -12,7 +11,7 @@ function AddMoney() {
     return localStorage.getItem('add_money_amount') || searchParams.get('amount') || '';
   });
   const [error, setError] = useState('');
-  const [processing, setProcessing] = useState(false);
+  const [processing] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
