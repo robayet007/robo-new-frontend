@@ -115,10 +115,9 @@ function OrderHistory() {
                   <p className="mt-1 text-xs">
                     <span className={
                       isRobo ? 'text-purple-600' : 
-                      paymentMethod === 'uddokta' ? 'text-blue-600' : 
                       'text-rose-600'
                     }>
-                      {isRobo ? 'Robo Pay' : paymentMethod === 'uddokta' ? 'Uddokta Pay' : 'bKash'}
+                      {isRobo ? 'Robo Pay' : 'bKash'}
                     </span>
                     <span className="text-slate-400"> • </span>
                     <span

@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { paymentApi } from '../services/api';
-import { createUddoktaPayCheckout, verifyUddoktaPayPayment, getBackendWebhookUrl } from '../services/uddoktaPay';
 
 function AddMoney() {
   // Initialize amount from localStorage or URL params to persist across redirects
@@ -22,54 +21,7 @@ function AddMoney() {
     refreshBalance,
   } = useRoboBalance();
 
-  // Handle Uddokta Pay callback after payment
-  useEffect(() => {
-    // Check all possible parameter names that Uddokta Pay might use
-    const invoiceId = searchParams.get('invoice_id') || 
-                      searchParams.get('invoiceId') || 
-                      searchParams.get('invoice') ||
-                      searchParams.get('transaction_id') ||
-                      searchParams.get('transactionId');
-    
-    const status = searchParams.get('status') || 
-                   searchParams.get('payment_status');
-    
-    console.log('🔍 Uddokta Pay Callback (AddMoney) - URL Params:', {
-      invoice_id: searchParams.get('invoice_id'),
-      invoiceId: searchParams.get('invoiceId'),
-      invoice: searchParams.get('invoice'),
-      transaction_id: searchParams.get('transaction_id'),
-      transactionId: searchParams.get('transactionId'),
-      status: searchParams.get('status'),
-      payment_status: searchParams.get('payment_status'),
-      allParams: Object.fromEntries(searchParams.entries())
-    });
-    
-    if (invoiceId) {
-      console.log('✅ Invoice ID found:', invoiceId);
-      console.log('📊 Status:', status);
-      
-      // Process payment if:
-      // 1. Status is COMPLETED
-      // 2. Status is PENDING (Uddokta Pay might send pending even when payment is done)
-      // 3. No status but invoice_id exists (verify anyway)
-      // We always verify via API to get the actual payment status
-      if (status === 'COMPLETED' || status === 'pending' || status === 'PENDING' || !status) {
-        console.log('🚀 Processing payment callback...');
-        console.log('ℹ️ URL status:', status, '- Will verify actual status via API');
-        handleUddoktaPayCallback(invoiceId);
-      } else if (status === 'CANCELLED' || status === 'cancelled') {
-        console.log('❌ Payment was cancelled');
-        setError('Payment was cancelled. Please try again.');
-      } else {
-        console.log('⚠️ Payment status is:', status, '- Still verifying via API...');
-        // Even if status is unknown, try to verify via API
-        handleUddoktaPayCallback(invoiceId);
-      }
-    } else {
-      console.log('ℹ️ No invoice_id found in URL parameters');
-    }
-  }, [searchParams]);
+  // Removed: Uddokta Pay callback handler
 
   // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
   const currentBalance =
@@ -101,62 +53,8 @@ function AddMoney() {
     }
 
     console.log('💸 Proceeding to payment with amount:', amountValue);
-    await handleUddoktaPayPayment(amountValue);
-  };
-
-  // Handle Uddokta Pay payment
-  const handleUddoktaPayPayment = async (amountValue: number) => {
-    if (!user?.email) {
-      setError('Please login to continue');
-      navigate('/login');
-      return;
-    }
-
-    setProcessing(true);
-    setError('');
-    
-    try {
-      // Save amount to localStorage before redirect
-      localStorage.setItem('add_money_amount', amountValue.toString());
-      
-      const baseUrl = window.location.origin;
-      // Include amount in redirect URL to restore it after redirect
-      const redirectUrl = `${baseUrl}/add-money?amount=${encodeURIComponent(amountValue)}`;
-      const cancelUrl = `${baseUrl}/add-money?cancelled=true&amount=${encodeURIComponent(amountValue)}`;
-      const webhookUrl = getBackendWebhookUrl();
-
-      const checkoutRequest = {
-        full_name: user.displayName || user.email.split('@')[0] || 'User',
-        email: user.email,
-        amount: amountValue.toString(),
-        metadata: {
-          user_id: user.uid,
-          order_id: `ADD_MONEY_${Date.now()}`,
-          product_id: 'add_money',
-          product_name: `Add ৳${amountValue} to Robo Balance`,
-          player_id: user.email,
-          diamonds: 0,
-          price: amountValue,
-          payment_type: 'add_money' as const,
-        },
-        redirect_url: redirectUrl,
-        cancel_url: cancelUrl,
-        webhook_url: webhookUrl,
-      };
-
-      const checkoutResponse = await createUddoktaPayCheckout(checkoutRequest);
-      
-      if (checkoutResponse.status && checkoutResponse.payment_url) {
-        // Redirect to Uddokta Pay payment page
-        window.location.href = checkoutResponse.payment_url;
-      } else {
-        throw new Error(checkoutResponse.message || 'Failed to create payment');
-      }
-    } catch (err: any) {
-      console.error('Uddokta Pay checkout error:', err);
-      setError('Payment failed: ' + (err.message || 'Please try again.'));
-      setProcessing(false);
-    }
+    // bKash payment - handled via manual verification
+    setError('bKash payment: Please complete payment and verify manually');
   };
 
   // Restore amount from localStorage or URL params on mount
@@ -170,172 +68,7 @@ function AddMoney() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Handle Uddokta Pay callback after payment
-  const handleUddoktaPayCallback = async (invoiceId: string) => {
-    console.log('🔄 handleUddoktaPayCallback (AddMoney) called with invoiceId:', invoiceId);
-    
-    // Try to restore amount from localStorage or URL if state is empty
-    let currentAmount = amount.trim();
-    if (!currentAmount) {
-      currentAmount = localStorage.getItem('add_money_amount') || searchParams.get('amount') || '';
-      if (currentAmount) {
-        setAmount(currentAmount);
-      }
-    }
-    
-    const amountValue = parseFloat(currentAmount);
-    if (!amountValue || isNaN(amountValue)) {
-      console.warn('⚠️ Invalid amount:', currentAmount);
-      setError('Invalid amount. Please try again.');
-      return;
-    }
-
-    if (!invoiceId || invoiceId.trim() === '') {
-      console.error('❌ Invalid invoice ID:', invoiceId);
-      setError('Invalid payment transaction ID. Please contact support.');
-      return;
-    }
-
-    setProcessing(true);
-    setError('');
-    
-    try {
-      console.log('🔍 Verifying payment with Uddokta Pay API...');
-      // Verify payment with Uddokta Pay
-      const verifyResponse = await verifyUddoktaPayPayment(invoiceId.trim());
-      
-      console.log('📥 Uddokta Pay verification response:', verifyResponse);
-      console.log('📥 Full response structure:', JSON.stringify(verifyResponse, null, 2));
-      
-      // Check payment status - Uddokta Pay might return status in different formats
-      const paymentStatusRaw = verifyResponse.payment?.status || 
-                              verifyResponse.status || 
-                              verifyResponse.payment_status ||
-                              'UNKNOWN';
-      
-      // Normalize status to uppercase for comparison
-      type PaymentStatusType = 'COMPLETED' | 'PENDING' | 'CANCELLED' | 'UNKNOWN';
-      let paymentStatus: PaymentStatusType = 'UNKNOWN';
-      
-      if (typeof paymentStatusRaw === 'string') {
-        const upperStatus = paymentStatusRaw.toUpperCase();
-        if (upperStatus === 'COMPLETED' || upperStatus === 'PENDING' || upperStatus === 'CANCELLED' || upperStatus === 'UNKNOWN') {
-          paymentStatus = upperStatus as PaymentStatusType;
-        }
-      }
-      
-      // Also check if response.status is a boolean (true = success)
-      const isResponseSuccessful = verifyResponse.status === true || verifyResponse.status === 'true';
-      
-      // Check if payment has required data (amount, invoice_id) - indicates successful payment
-      const hasPaymentData = verifyResponse.payment?.amount || verifyResponse.amount || verifyResponse.payment?.invoice_id || verifyResponse.invoice_id;
-      
-      console.log('📊 Detected payment status:', paymentStatus);
-      console.log('📊 Response status (boolean):', verifyResponse.status);
-      console.log('📊 Is response successful:', isResponseSuccessful);
-      console.log('📊 Has payment data:', hasPaymentData);
-      
-      // ✅ ACCEPT PENDING payments if transaction ID is valid (has payment data)
-      // According to Uddokta Pay docs: PENDING payments should be accepted and stored
-      // Webhook will notify when status changes to COMPLETED
-      const isVerified = paymentStatus === 'COMPLETED';
-      const isPending = paymentStatus === 'PENDING';
-      
-      // Process if: (1) COMPLETED, OR (2) PENDING with valid transaction data
-      // Do NOT process if CANCELLED or UNKNOWN
-      const shouldProcess = (isVerified || (isPending && hasPaymentData)) && 
-                           paymentStatus !== 'CANCELLED' && 
-                           paymentStatus !== 'UNKNOWN';
-      
-      if (shouldProcess) {
-        console.log('✅ Payment verified by Uddokta Pay, now verifying with backend...');
-        console.log('✅ Processing with status:', paymentStatus, 'hasPaymentData:', hasPaymentData);
-        console.log('✅ Status Code: 0.0.0.0'); // Transaction ID verified successfully
-        
-        // Payment successful, now verify with our backend
-        const paymentData = {
-          transactionId: invoiceId.trim().toUpperCase(),
-          amount: amountValue,
-          playerId: user?.email || '',
-          productId: 'add_money',
-          productName: `Add ৳${amountValue} to Robo Balance`,
-          diamonds: 0,
-          price: amountValue,
-          userEmail: user?.email || '',
-          userName: user?.displayName || user?.email?.split('@')[0] || 'User',
-          userId: user?.uid || user?.email || '',
-          paymentMethod: 'uddokta' as const,
-          uddoktaPayStatus: paymentStatus // Pass Uddokta Pay status to backend
-        };
-
-        console.log('📤 Sending payment verification to backend:', paymentData);
-        const response = await paymentApi.verify(paymentData);
-        
-        console.log('📥 Backend verification response:', response);
-        
-        if (response.success) {
-          console.log('✅ Payment verified successfully by backend');
-          
-          // ✅ Wait a moment for backend to process balance update
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          // ✅ ব্যালেন্স রিফ্রেশ করি - multiple times to ensure update
-          console.log('🔄 Refreshing balance after successful payment');
-          await refreshBalance();
-          
-          // Wait a bit more and refresh again (in case socket event hasn't arrived yet)
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await refreshBalance();
-
-          // Get updated balance after refresh
-          const updatedBalance = backendBalance !== null && backendBalance !== undefined ? backendBalance : 0;
-          console.log(`✅ Balance updated successfully. Added: ৳${amountValue}`);
-          console.log('💰 Current balance after refresh:', updatedBalance);
-          
-          // Clear localStorage and URL params
-          localStorage.removeItem('add_money_amount');
-          navigate('/add-money', { replace: true });
-          alert(`✅ Payment successful! ৳${amountValue} added to your balance.`);
-          setAmount('');
-        } else {
-          throw new Error(response.message || 'Payment verification failed');
-        }
-      } else {
-        // Get status from multiple possible locations
-        const finalPaymentStatus = verifyResponse.payment?.status || 
-                                  verifyResponse.status || 
-                                  verifyResponse.payment_status ||
-                                  paymentStatus ||
-                                  'UNKNOWN';
-        console.error('❌ Payment status is not COMPLETED:', finalPaymentStatus);
-        console.error('❌ Full response:', verifyResponse);
-        
-        // Handle PENDING status - payment might still be processing
-        if (finalPaymentStatus === 'PENDING' || (typeof finalPaymentStatus === 'string' && finalPaymentStatus.toUpperCase() === 'PENDING')) {
-          console.log('⏳ Payment status is PENDING - payment is still processing');
-          setError('Your payment is being processed. Your balance will be updated automatically. Please check back in a few minutes.');
-          navigate('/add-money', { replace: true });
-          return;
-        } else if (finalPaymentStatus === 'CANCELLED' || (typeof finalPaymentStatus === 'string' && finalPaymentStatus.toUpperCase() === 'CANCELLED')) {
-          console.error('❌ Payment was cancelled');
-          setError('Payment was cancelled. Please try again.');
-          return;
-        } else {
-          throw new Error(`Payment verification failed. Status: ${finalPaymentStatus}. Please try again or contact support.`);
-        }
-      }
-    } catch (err: any) {
-      console.error('❌ Payment verification error:', err);
-      console.error('Error details:', {
-        message: err.message,
-        stack: err.stack,
-        invoiceId: invoiceId
-      });
-      setError(err.message || 'Payment verification failed. Please try again. If the problem persists, contact support with transaction ID: ' + invoiceId);
-    } finally {
-      setProcessing(false);
-    }
-  };
+  // Removed: handleUddoktaPayCallback function - all Uddokta Pay code removed
 
   const handleQuickAmount = (quickAmount: number) => {
     console.log('⚡ Quick amount selected:', quickAmount);
@@ -495,7 +228,7 @@ function AddMoney() {
             <p className="font-semibold text-slate-700">📢 Important:</p>
             <ul className="mt-1 space-y-1">
               <li>• Minimum deposit: ৳10</li>
-              <li>• Secure payment via Uddokta Pay</li>
+              <li>• Secure payment via bKash</li>
               <li>• Balance updates automatically after payment</li>
               <li>• Multiple payment methods supported</li>
               <li>• If you need help, contact support</li>

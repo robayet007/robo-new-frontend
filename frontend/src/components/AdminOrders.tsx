@@ -9,7 +9,7 @@ type AdminOrder = {
   userEmail?: string;
   userName?: string;
   userId?: string;
-  paymentMethod?: 'bkash' | 'robo' | 'uddokta' | string;
+  paymentMethod?: 'bkash' | 'robo' | string;
   updatedBalance?: number | null;
   productId?: string;
   productName?: string;
@@ -171,7 +171,7 @@ function AdminOrders() {
                       }`}
                     >
                       {o.paymentMethod === 'robo' ? 'Robo Pay' : 
-                       o.paymentMethod === 'uddokta' ? 'Uddokta Pay' : 'bKash'}
+                       'bKash'}
                     </span>
                     <p className="mt-1 text-[10px] text-slate-500">
                       {o.status || '—'}
