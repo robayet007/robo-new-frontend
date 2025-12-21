@@ -270,7 +270,7 @@ export const paymentApi = {
         return {
           success: false,
           message: errorMessage,
-          data: null
+          data: undefined
         };
       }
       
@@ -282,7 +282,7 @@ export const paymentApi = {
       return {
         success: false,
         message: error.message || 'Network error. Please check your connection and try again.',
-        data: null
+        data: undefined
       };
     }
   },

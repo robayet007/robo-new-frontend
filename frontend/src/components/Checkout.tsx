@@ -29,29 +29,11 @@ function Checkout({ products }: { products: Product[] }) {
   const product = products.find((p) => p.id === productId) ?? products[0];
   const [searchParams] = useSearchParams();
 
-  // #region agent log
   // Initialize UID from localStorage to persist across redirects
   const [uid, setUid] = useState(() => {
     const savedUid = localStorage.getItem("checkout_uid") || "";
-    fetch("http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "Checkout.tsx:26",
-        message: "UID state initialization",
-        data: {
-          savedUid,
-          fromLocalStorage: !!localStorage.getItem("checkout_uid"),
-        },
-        timestamp: Date.now(),
-        sessionId: "debug-session",
-        runId: "run1",
-        hypothesisId: "A",
-      }),
-    }).catch(() => {});
     return savedUid;
   });
-  // #endregion
 
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
@@ -82,55 +64,12 @@ function Checkout({ products }: { products: Product[] }) {
 
   // Restore UID from localStorage or URL params on mount and when searchParams change
   useEffect(() => {
-    // #region agent log
-    fetch("http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        location: "Checkout.tsx:64",
-        message: "Component mount - checking UID restoration",
-        data: {
-          currentUid: uid,
-          localStorageUid: localStorage.getItem("checkout_uid"),
-          urlUid: searchParams.get("uid"),
-        },
-        timestamp: Date.now(),
-        sessionId: "debug-session",
-        runId: "run1",
-        hypothesisId: "A",
-      }),
-    }).catch(() => {});
-    // #endregion
-
     // Priority: URL param > localStorage > current state
     const urlUid = searchParams.get("uid");
     const localUid = localStorage.getItem("checkout_uid");
     const savedUid = urlUid || localUid || "";
 
     if (savedUid && savedUid !== uid) {
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            location: "Checkout.tsx:71",
-            message: "Restoring UID on mount",
-            data: {
-              savedUid,
-              fromLocalStorage: !!localUid,
-              fromUrl: !!urlUid,
-              currentUid: uid,
-            },
-            timestamp: Date.now(),
-            sessionId: "debug-session",
-            runId: "run1",
-            hypothesisId: "A",
-          }),
-        }
-      ).catch(() => {});
-      // #endregion
       setUid(savedUid);
       // Also save to localStorage if it came from URL
       if (urlUid) {
