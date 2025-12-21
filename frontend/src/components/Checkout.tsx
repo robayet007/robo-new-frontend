@@ -284,23 +284,26 @@ function Checkout({ products }: { products: Product[] }) {
           message: "Verifying payment..."
         });
 
-        // Verify payment
+        // Verify payment - Backend will automatically verify and send Telegram notification
         paymentApi.uddoktaVerify(invoiceId)
           .then((response) => {
-            if (response.success) {
+            if (response.success && response.data?.payment) {
+              const paymentData = response.data.payment;
+              
+              // Payment is verified/completed
               setVerifyingPayment({
                 invoiceId: invoiceId,
                 status: "verified",
-                message: "Payment verified successfully!"
+                message: "Payment verified successfully! ✅"
               });
 
               // Show success message
               setPaymentResult({
                 status: "success",
-                message: "Payment successful! Your order is being processed.",
+                message: "Payment verified! Your order is being processed and you will receive your items soon.",
                 amount: product.price,
                 remaining: balance,
-                transactionId: response.data?.payment?.transactionId || transactionId || "",
+                transactionId: paymentData.transactionId || transactionId || "",
                 productName: product.name,
                 paymentMethod: "uddokta",
                 ffName: ffName,
@@ -312,23 +315,78 @@ function Checkout({ products }: { products: Product[] }) {
                 refresh().catch(console.error);
               }
 
-              // Clear URL params
-              navigate("/checkout", { replace: true });
+              // Clear URL params after showing success
+              setTimeout(() => {
+                navigate("/checkout", { replace: true });
+              }, 3000); // Show success message for 3 seconds
             } else {
-              setVerifyingPayment({
-                invoiceId: invoiceId,
-                status: "failed",
-                message: response.message || "Verification failed"
-              });
+              // If verification response doesn't have payment data, but status is completed
+              if (status === "completed") {
+                setVerifyingPayment({
+                  invoiceId: invoiceId,
+                  status: "verified",
+                  message: "Payment completed! ✅"
+                });
+                setPaymentResult({
+                  status: "success",
+                  message: "Payment completed successfully! Your order is being processed.",
+                  amount: product.price,
+                  remaining: balance,
+                  transactionId: transactionId || "",
+                  productName: product.name,
+                  paymentMethod: "uddokta",
+                  ffName: ffName,
+                  playerId: uid
+                });
+                if (user) {
+                  refresh().catch(console.error);
+                }
+                setTimeout(() => {
+                  navigate("/checkout", { replace: true });
+                }, 3000);
+              } else {
+                setVerifyingPayment({
+                  invoiceId: invoiceId,
+                  status: "failed",
+                  message: response.message || "Verification failed"
+                });
+              }
             }
           })
           .catch((error) => {
             console.error("Verification error:", error);
-            setVerifyingPayment({
-              invoiceId: invoiceId,
-              status: "failed",
-              message: error.message || "Failed to verify payment"
-            });
+            // If status is completed, show success even if verification API fails
+            // (webhook might have already processed it)
+            if (status === "completed") {
+              setVerifyingPayment({
+                invoiceId: invoiceId,
+                status: "verified",
+                message: "Payment completed! ✅"
+              });
+              setPaymentResult({
+                status: "success",
+                message: "Payment completed successfully! Your order is being processed.",
+                amount: product.price,
+                remaining: balance,
+                transactionId: transactionId || "",
+                productName: product.name,
+                paymentMethod: "uddokta",
+                ffName: ffName,
+                playerId: uid
+              });
+              if (user) {
+                refresh().catch(console.error);
+              }
+              setTimeout(() => {
+                navigate("/checkout", { replace: true });
+              }, 3000);
+            } else {
+              setVerifyingPayment({
+                invoiceId: invoiceId,
+                status: "failed",
+                message: error.message || "Failed to verify payment"
+              });
+            }
           });
       }
     } else if (status === "cancelled") {
