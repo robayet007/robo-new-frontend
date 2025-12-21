@@ -4,8 +4,9 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } fr
 class SmartAPIManager {
   // Get API base URL - use Render backend
   static getBaseURL(): string {
-    // Use Render backend API
-    const backendUrl = 'https://robo-backend-sbms.onrender.com';
+    // Use Render backend API (production)
+    // For local development, you can use: 'http://localhost:5000'
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://robo-backend-sbms.onrender.com';
     return `${backendUrl}/api`;
   }
   
@@ -152,7 +153,7 @@ export const paymentApi = {
     productName?: string;
     diamonds?: number;
     price?: number;
-    paymentMethod?: 'bkash' | 'robo' | 'uddokta';
+    paymentMethod?: 'bkash' | 'robo';
     updatedBalance?: number; // For Robo Balance payments, send the remaining balance
     userEmail?: string; // User email for database tracking
     userName?: string; // User name for database tracking
@@ -223,6 +224,75 @@ export const paymentApi = {
   
   getAll: async (limit: number = 50): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/payments?limit=${limit}`);
+    return response.json();
+  },
+
+  // Uddokta Pay checkout
+  uddoktaCheckout: async (checkoutData: {
+    amount: number;
+    playerId: string;
+    productId: string;
+    productName?: string;
+    diamonds?: number;
+    price?: number;
+    userEmail?: string;
+    userName?: string;
+    userId?: string;
+    fullName?: string;
+    email?: string;
+    redirectUrl?: string;
+    cancelUrl?: string;
+  }): Promise<ApiResponse<{
+    invoiceId: string;
+    paymentUrl: string;
+    transactionId: string;
+    paymentId: string;
+  }>> => {
+    try {
+      console.log('🔄 Calling Uddokta Pay checkout API...', checkoutData);
+      const response = await SmartAPIManager.smartFetch('/payments/uddokta/checkout', {
+        method: 'POST',
+        body: JSON.stringify(checkoutData)
+      });
+      
+      console.log('📥 Uddokta Pay API response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Uddokta Pay API error:', errorText);
+        let errorMessage = `Server error: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          errorMessage = errorText.substring(0, 200);
+        }
+        return {
+          success: false,
+          message: errorMessage,
+          data: null
+        };
+      }
+      
+      const jsonResponse = await response.json();
+      console.log('✅ Uddokta Pay API response:', jsonResponse);
+      return jsonResponse;
+    } catch (error: any) {
+      console.error('❌ Uddokta Pay checkout API call failed:', error);
+      return {
+        success: false,
+        message: error.message || 'Network error. Please check your connection and try again.',
+        data: null
+      };
+    }
+  },
+
+  // Uddokta Pay verify
+  uddoktaVerify: async (invoiceId: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch('/payments/uddokta/verify', {
+      method: 'POST',
+      body: JSON.stringify({ invoice_id: invoiceId })
+    });
     return response.json();
   }
 };
