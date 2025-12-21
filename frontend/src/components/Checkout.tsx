@@ -240,7 +240,7 @@ function Checkout({ products }: { products: Product[] }) {
         userId: user.uid || "",
         fullName: user.displayName || user.email.split("@")[0] || "Customer",
         email: user.email,
-        redirectUrl: `${window.location.origin}/checkout?status=success&payment=uddokta`,
+        redirectUrl: `${window.location.origin}/checkout?status=completed&payment=uddokta`,
         cancelUrl: `${window.location.origin}/checkout?status=cancelled&payment=uddokta`
       };
 
