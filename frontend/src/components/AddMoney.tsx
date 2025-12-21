@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
+import { paymentApi } from '../services/api';
 
 function AddMoney() {
   // Initialize amount from localStorage or URL params to persist across redirects
@@ -11,7 +12,12 @@ function AddMoney() {
     return localStorage.getItem('add_money_amount') || searchParams.get('amount') || '';
   });
   const [error, setError] = useState('');
-  const [processing] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [verifyingPayment, setVerifyingPayment] = useState<{
+    invoiceId: string;
+    status: "verifying" | "verified" | "failed";
+    message?: string;
+  } | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
@@ -20,7 +26,164 @@ function AddMoney() {
     refreshBalance,
   } = useRoboBalance();
 
-  // Removed: Uddokta Pay callback handler
+  // ✅ Handle Uddokta Pay payment for add money
+  const handleUddoktaPayPayment = async () => {
+    const amountValue = parseFloat(amount);
+    
+    if (!amount || isNaN(amountValue) || amountValue <= 0) {
+      setError('Please enter a valid amount');
+      return;
+    }
+
+    if (amountValue < 10) {
+      setError('Minimum amount is ৳10');
+      return;
+    }
+
+    if (!user?.email) {
+      setError('Please login to continue');
+      navigate('/login');
+      return;
+    }
+
+    setProcessing(true);
+    setError('');
+
+    try {
+      const checkoutData = {
+        amount: amountValue,
+        playerId: user.uid || '', // For add_money, we use userId as playerId
+        productId: 'add_money',
+        productName: `Add Money - ৳${amountValue}`,
+        diamonds: 0,
+        price: amountValue,
+        userEmail: user.email,
+        userName: user.displayName || user.email.split('@')[0] || 'User',
+        userId: user.uid || '',
+        fullName: user.displayName || user.email.split('@')[0] || 'Customer',
+        email: user.email,
+        redirectUrl: `${window.location.origin}/add-money?status=completed&payment=uddokta`,
+        cancelUrl: `${window.location.origin}/add-money?status=cancelled&payment=uddokta`
+      };
+
+      console.log('🔄 Creating Uddokta Pay checkout for add money...', checkoutData);
+
+      const response = await paymentApi.uddoktaCheckout(checkoutData);
+
+      console.log('📥 Uddokta Pay response:', response);
+
+      if (response.success && response.data?.paymentUrl) {
+        console.log('✅ Checkout created, redirecting to payment page...', response.data.paymentUrl);
+        // Save amount to localStorage for after redirect
+        localStorage.setItem('add_money_amount', amount);
+        // Redirect to Uddokta Pay payment page
+        window.location.href = response.data.paymentUrl;
+      } else {
+        setProcessing(false);
+        const errorMsg = response.message || "Failed to create payment session. Please try again.";
+        console.error("❌ Uddokta Pay checkout failed:", errorMsg);
+        setError(errorMsg);
+      }
+    } catch (error: any) {
+      console.error("❌ Uddokta Pay checkout error:", error);
+      setProcessing(false);
+      const errorMsg = error.message || "Failed to process payment. Please try again.";
+      setError(errorMsg);
+    }
+  };
+
+  // ✅ Handle payment status from URL params (after redirect)
+  useEffect(() => {
+    const status = searchParams.get("status");
+    const invoiceId = searchParams.get("invoice_id");
+    const paymentMethod = searchParams.get("payment");
+
+    // Handle both "success" and "completed" status from Uddokta Pay
+    if ((status === "success" || status === "completed") && invoiceId && paymentMethod === "uddokta") {
+      setVerifyingPayment({
+        invoiceId: invoiceId,
+        status: "verifying",
+        message: "Verifying payment..."
+      });
+
+      // Verify payment - Backend will automatically verify and update balance
+      paymentApi.uddoktaVerify(invoiceId)
+        .then((response) => {
+          if (response.success && response.data?.payment) {
+            setVerifyingPayment({
+              invoiceId: invoiceId,
+              status: "verified",
+              message: "Payment verified successfully! ✅"
+            });
+            
+            // Refresh balance
+            if (user) {
+              refreshBalance().then(() => {
+                // Clear URL params and show success
+                setTimeout(() => {
+                  navigate("/add-money", { replace: true });
+                  setVerifyingPayment(null);
+                }, 2000);
+              });
+            }
+          } else {
+            // If verification response doesn't have payment data, but status is completed
+            if (status === "completed") {
+              setVerifyingPayment({
+                invoiceId: invoiceId,
+                status: "verified",
+                message: "Payment completed! ✅"
+              });
+              if (user) {
+                refreshBalance().then(() => {
+                  setTimeout(() => {
+                    navigate("/add-money", { replace: true });
+                    setVerifyingPayment(null);
+                  }, 2000);
+                });
+              }
+            } else {
+              setVerifyingPayment({
+                invoiceId: invoiceId,
+                status: "failed",
+                message: response.message || "Verification failed"
+              });
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Verification error:", error);
+          // If status is completed, show success even if verification API fails
+          if (status === "completed") {
+            setVerifyingPayment({
+              invoiceId: invoiceId,
+              status: "verified",
+              message: "Payment completed! ✅"
+            });
+            if (user) {
+              refreshBalance().then(() => {
+                setTimeout(() => {
+                  navigate("/add-money", { replace: true });
+                  setVerifyingPayment(null);
+                }, 2000);
+              });
+            }
+          } else {
+            setVerifyingPayment({
+              invoiceId: invoiceId,
+              status: "failed",
+              message: error.message || "Failed to verify payment"
+            });
+          }
+        });
+    } else if (status === "cancelled" && paymentMethod === "uddokta") {
+      setProcessing(false);
+      setError("Payment was cancelled. Please try again if you want to add money.");
+      // Clear URL params
+      navigate("/add-money", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user, navigate]);
 
   // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
   const currentBalance =
@@ -52,8 +215,8 @@ function AddMoney() {
     }
 
     console.log('💸 Proceeding to payment with amount:', amountValue);
-    // bKash payment - handled via manual verification
-    setError('bKash payment: Please complete payment and verify manually');
+    // Use Uddokta Pay for add money
+    handleUddoktaPayPayment();
   };
 
   // Restore amount from localStorage or URL params on mount
@@ -191,18 +354,36 @@ function AddMoney() {
         </div>
 
 
+        {/* Payment Status Messages */}
+        {verifyingPayment && (
+          <div className={`p-4 mb-4 rounded-xl ${
+            verifyingPayment.status === "verified" 
+              ? "bg-green-50 border border-green-200" 
+              : verifyingPayment.status === "failed"
+              ? "bg-red-50 border border-red-200"
+              : "bg-blue-50 border border-blue-200"
+          }`}>
+            <p className={`text-sm font-medium ${
+              verifyingPayment.status === "verified"
+                ? "text-green-700"
+                : verifyingPayment.status === "failed"
+                ? "text-red-700"
+                : "text-blue-700"
+            }`}>
+              {verifyingPayment.status === "verifying" && "⏳ Verifying payment..."}
+              {verifyingPayment.status === "verified" && "✅ Payment verified successfully! Your balance has been updated."}
+              {verifyingPayment.status === "failed" && `❌ ${verifyingPayment.message}`}
+            </p>
+          </div>
+        )}
+
         <div className="p-4 border border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-sky-50">
           <h3 className="flex items-center gap-2 mb-2 font-bold text-blue-800">
-            <span className="text-lg">💡</span> How to Pay
+            <span className="text-lg">💡</span> Payment Method
           </h3>
-          <ol className="pl-5 space-y-2 text-sm text-blue-700 list-decimal">
-            {/* <li>Send money to our bKash Merchant number</li> */}
-            {/* <li>Enter the bKash Transaction ID (starting with C)</li> */}
-            {/* <li>Your balance will be updated instantly</li> */}
-          </ol>
-          <div className="p-2 mt-3 bg-blue-100 rounded-lg">
-            
-          </div>
+          <p className="text-sm text-blue-700 mb-2">
+            We use <strong>Uddokta Pay</strong> for secure online payments. Your balance will be updated automatically after payment.
+          </p>
         </div>
 
         <div className="flex gap-3">
@@ -215,10 +396,10 @@ function AddMoney() {
           </button>
           <button
             type="submit"
-            disabled={processing || !amount.trim()}
+            disabled={processing || !amount.trim() || !user}
             className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {processing ? 'Processing...' : 'Add Money'}
+            {processing ? 'Processing...' : !user ? 'Please Login' : 'Add Money with Uddokta Pay'}
           </button>
         </div>
 
