@@ -38,8 +38,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
           }
         });
       })
-      .catch((error) => {
-        // console.error('❌ Service Worker registration failed:', error);
+      .catch((_error) => {
+        // console.error('❌ Service Worker registration failed:', _error);
       });
     
     // Also check for updates on page load

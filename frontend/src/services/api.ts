@@ -161,7 +161,7 @@ export const paymentApi = {
     timestamp?: string; // Timestamp for tracking
   }, options: RequestInit = {}): Promise<ApiResponse> => {
     try {
-      const baseURL = await SmartAPIManager.getBaseURL();
+      // const baseURL = await SmartAPIManager.getBaseURL();
       // console.log('🌐 API Base URL:', baseURL);
       // console.log('🌐 API Endpoint: POST /payments/verify');
       // console.log('📦 Request Payload:', JSON.stringify(paymentData, null, 2));

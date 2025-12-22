@@ -65,8 +65,8 @@ function useUsers() {
             fallbackInterval = null;
           }
         },
-        (error) => {
-          // console.error('❌ Error loading users from Firestore:', error);
+        (_error) => {
+          // console.error('❌ Error loading users from Firestore:', _error);
           // console.warn('⚠️ Real-time listener failed (may be blocked by browser extension)');
           // console.warn('⚠️ Falling back to periodic fetch every 10 seconds');
           setLoading(false);

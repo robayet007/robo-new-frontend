@@ -83,10 +83,10 @@ function useAuth() {
           Promise.all([
             firebaseUser.getIdToken().then(token => {
               setUser(prev => prev ? { ...prev, token } : prev);
-            }).catch(err => {/* console.error('Error getting token:', err) */}),
-            addUserToFirestore(authUser).catch(err => {/* console.error('Error adding to Firestore:', err) */}),
-            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(err => {/* console.error('Error updating lastLogin:', err) */}) : Promise.resolve()
-          ]).catch(err => {/* console.error('Background auth update error:', err) */});
+            }).catch(_err => {/* console.error('Error getting token:', _err) */}),
+            addUserToFirestore(authUser).catch(_err => {/* console.error('Error adding to Firestore:', _err) */}),
+            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(_err => {/* console.error('Error updating lastLogin:', _err) */}) : Promise.resolve()
+          ]).catch(_err => {/* console.error('Background auth update error:', _err) */});
         } catch (error) {
           // console.error('Error in auth state change:', error);
           const authUser: AuthUser = {
@@ -99,7 +99,7 @@ function useAuth() {
           setLoading(false);
           
           // Add to Firestore in background
-          addUserToFirestore(authUser).catch(err => {/* console.error('Error adding to Firestore:', err) */});
+          addUserToFirestore(authUser).catch(_err => {/* console.error('Error adding to Firestore:', _err) */});
         }
       } else {
         setUser(null);
