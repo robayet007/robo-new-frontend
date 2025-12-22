@@ -6,7 +6,7 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Local development default
     // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    const backendUrl = "https://robo-backend-sbms.onrender.com";
     return `${backendUrl}/api`;
   }
   
