@@ -49,7 +49,7 @@ function AdminOrders() {
           setError(resp.message || 'Failed to load orders');
         }
       } catch (err: any) {
-        console.error('Error loading orders:', err);
+        // console.error('Error loading orders:', err);
         setError(err?.message || 'Failed to load orders');
       } finally {
         setLoading(false);

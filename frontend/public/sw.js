@@ -1,9 +1,9 @@
 // Service Worker for Robo Top Up PWA
-const CACHE_NAME = 'robo-topup-v2';
+const CACHE_NAME = 'robo-topup-v3';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/fav.webp',
+  '/logo-robo.jpg',
   '/manifest.json'
 ];
 
@@ -13,12 +13,13 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Service Worker: Caching files');
-        return cache.addAll(urlsToCache);
+        return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' })));
       })
       .catch((error) => {
         console.error('Service Worker: Cache failed', error);
       })
   );
+  // Force activate new service worker immediately
   self.skipWaiting();
 });
 
@@ -34,9 +35,11 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Claim all clients immediately to activate new service worker
+      return self.clients.claim();
     })
   );
-  return self.clients.claim();
 });
 
 // Helper function to check if request should be cached
@@ -125,5 +128,32 @@ self.addEventListener('fetch', (event) => {
           });
       })
   );
+});
+
+// Listen for messages from client to force update
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'CACHE_UPDATE') {
+    // Force update cache for specific resources
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) => {
+        return Promise.all(
+          urlsToCache.map((url) => {
+            return fetch(new Request(url, { cache: 'reload' }))
+              .then((response) => {
+                if (response.ok) {
+                  return cache.put(url, response);
+                }
+              })
+              .catch((error) => {
+                console.warn('Failed to update cache for', url, error);
+              });
+          })
+        );
+      })
+    );
+  }
 });
 

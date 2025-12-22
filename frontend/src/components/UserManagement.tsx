@@ -119,7 +119,7 @@ function UserManagement() {
 
         setPaymentUsers(list);
       } catch (err) {
-        console.error('Error loading payment users:', err);
+        // console.error('Error loading payment users:', err);
       } finally {
         setPaymentUsersLoading(false);
       }
@@ -147,7 +147,7 @@ function UserManagement() {
 
         setBalanceRecords(list);
       } catch (err) {
-        console.error('Error loading balances:', err);
+        // console.error('Error loading balances:', err);
         setBalanceRecords([]);
       } finally {
         setBalanceRecordsLoading(false);
@@ -228,7 +228,7 @@ function UserManagement() {
 
       setBalanceValue(current.toString());
     } catch (err: any) {
-      console.error('Error fetching user balance:', err);
+      // console.error('Error fetching user balance:', err);
       setMessage({ type: 'error', text: 'Failed to load user balance' });
       setBalanceValue('0');
     } finally {
@@ -238,19 +238,19 @@ function UserManagement() {
 
   const handleSaveBalance = async () => {
     if (!selectedUserForBalance) {
-      console.error('❌ No user selected for balance edit');
+      // console.error('❌ No user selected for balance edit');
       return;
     }
     
     const raw = balanceValue.trim();
     const amount = Number(raw);
     
-    console.log('💾 Saving balance:', {
-      userId: selectedUserForBalance.uid,
-      userEmail: selectedUserForBalance.email,
-      currentValue: balanceValue,
-      parsedAmount: amount
-    });
+    // console.log('💾 Saving balance:', {
+    //   userId: selectedUserForBalance.uid,
+    //   userEmail: selectedUserForBalance.email,
+    //   currentValue: balanceValue,
+    //   parsedAmount: amount
+    // });
     
     if (Number.isNaN(amount)) {
       setMessage({ type: 'error', text: 'Please enter a valid balance amount' });
@@ -264,12 +264,12 @@ function UserManagement() {
 
     try {
       setBalanceLoading(true);
-      console.log('📤 Calling balanceApi.sync with:', {
-        userId: selectedUserForBalance.uid,
-        userEmail: selectedUserForBalance.email || '',
-        userName: selectedUserForBalance.displayName || '',
-        balance: amount,
-      });
+      // console.log('📤 Calling balanceApi.sync with:', {
+      //   userId: selectedUserForBalance.uid,
+      //   userEmail: selectedUserForBalance.email || '',
+      //   userName: selectedUserForBalance.displayName || '',
+      //   balance: amount,
+      // });
       
       const resp = await balanceApi.sync({
         userId: selectedUserForBalance.uid,
@@ -278,7 +278,7 @@ function UserManagement() {
         balance: amount,
       });
       
-      console.log('📥 Balance sync response:', resp);
+      // console.log('📥 Balance sync response:', resp);
 
       if (resp.success) {
         setMessage({
@@ -309,7 +309,7 @@ function UserManagement() {
         });
       }
     } catch (err: any) {
-      console.error('Error updating balance:', err);
+      // console.error('Error updating balance:', err);
       setMessage({
         type: 'error',
         text: err?.message || 'Failed to update balance',
@@ -321,9 +321,9 @@ function UserManagement() {
 
   // Debug: Log users from Firestore
   useEffect(() => {
-    console.log('📊 Users loaded from Firestore:', users.length);
-    console.log('👥 Users list:', users);
-    console.log('🔐 Current user:', currentUser);
+    // console.log('📊 Users loaded from Firestore:', users.length);
+    // console.log('👥 Users list:', users);
+    // console.log('🔐 Current user:', currentUser);
   }, [users, currentUser]);
 
   if (loading) {
@@ -429,7 +429,7 @@ function UserManagement() {
                 value={balanceValue}
                 onChange={(e) => {
                   const newValue = e.target.value;
-                  console.log('📝 Balance value changed:', newValue);
+                  // console.log('📝 Balance value changed:', newValue);
                   setBalanceValue(newValue);
                 }}
                 disabled={balanceLoading}

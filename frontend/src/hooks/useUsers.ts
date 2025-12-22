@@ -29,7 +29,7 @@ function useUsers() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('🔄 Initializing users fetch from Firebase Firestore...');
+    // console.log('🔄 Initializing users fetch from Firebase Firestore...');
 
     // Initial load
     loadUsers();
@@ -55,7 +55,7 @@ function useUsers() {
               lastLogin: data.lastLogin,
             });
           });
-          console.log(`✅ Users fetched from Firestore: ${usersList.length} users found`);
+          // console.log(`✅ Users fetched from Firestore: ${usersList.length} users found`);
           setUsers(usersList);
           setLoading(false);
 
@@ -66,28 +66,28 @@ function useUsers() {
           }
         },
         (error) => {
-          console.error('❌ Error loading users from Firestore:', error);
-          console.warn('⚠️ Real-time listener failed (may be blocked by browser extension)');
-          console.warn('⚠️ Falling back to periodic fetch every 10 seconds');
+          // console.error('❌ Error loading users from Firestore:', error);
+          // console.warn('⚠️ Real-time listener failed (may be blocked by browser extension)');
+          // console.warn('⚠️ Falling back to periodic fetch every 10 seconds');
           setLoading(false);
           
           // Fall back to periodic polling if real-time listener fails
           if (!fallbackInterval) {
             fallbackInterval = setInterval(() => {
-              console.log('🔄 Periodic refresh: Fetching users...');
+              // console.log('🔄 Periodic refresh: Fetching users...');
               loadUsers();
             }, 10000); // Refresh every 10 seconds
           }
         }
       );
     } catch (error) {
-      console.error('❌ Failed to set up real-time listener:', error);
-      console.warn('⚠️ Using periodic fetch instead');
+      // console.error('❌ Failed to set up real-time listener:', error);
+      // console.warn('⚠️ Using periodic fetch instead');
       setLoading(false);
       
       // Set up periodic polling as fallback
       fallbackInterval = setInterval(() => {
-        console.log('🔄 Periodic refresh: Fetching users...');
+        // console.log('🔄 Periodic refresh: Fetching users...');
         loadUsers();
       }, 10000);
     }
@@ -105,7 +105,7 @@ function useUsers() {
   const loadUsers = async () => {
     try {
       setLoading(true);
-      console.log('📡 Fetching users from Firebase Firestore...');
+      // console.log('📡 Fetching users from Firebase Firestore...');
       const q = query(collection(db, USERS_COLLECTION));
       const querySnapshot = await getDocs(q);
 
@@ -124,10 +124,10 @@ function useUsers() {
         });
       });
 
-      console.log(`✅ Successfully loaded ${usersList.length} users from Firestore`);
+      // console.log(`✅ Successfully loaded ${usersList.length} users from Firestore`);
       setUsers(usersList);
     } catch (error) {
-      console.error('❌ Error loading users from Firestore:', error);
+      // console.error('❌ Error loading users from Firestore:', error);
     } finally {
       setLoading(false);
     }
@@ -146,9 +146,9 @@ function useUsers() {
       };
 
       await setDoc(userRef, userData, { merge: true });
-      console.log('User added to Firestore:', user.email);
+      // console.log('User added to Firestore:', user.email);
     } catch (error) {
-      console.error('Error adding user:', error);
+      // console.error('Error adding user:', error);
     }
   };
 
@@ -161,7 +161,7 @@ function useUsers() {
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
-        console.error('User not found:', email);
+        // console.error('User not found:', email);
         return;
       }
 
@@ -171,9 +171,9 @@ function useUsers() {
       });
 
       await Promise.all(updatePromises);
-      console.log('User role updated:', email, newRole);
+      // console.log('User role updated:', email, newRole);
     } catch (error) {
-      console.error('Error updating user role:', error);
+      // console.error('Error updating user role:', error);
       throw error;
     }
   };
@@ -195,7 +195,7 @@ function useUsers() {
         return userData.role || 'user';
       }
     } catch (error) {
-      console.error('Error getting user role:', error);
+      // console.error('Error getting user role:', error);
     }
     
     return 'user';

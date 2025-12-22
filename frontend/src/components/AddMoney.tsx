@@ -66,14 +66,14 @@ function AddMoney() {
         cancelUrl: `${window.location.origin}/add-money?status=cancelled&payment=uddokta`
       };
 
-      console.log('🔄 Creating Uddokta Pay checkout for add money...', checkoutData);
+      // console.log('🔄 Creating Uddokta Pay checkout for add money...', checkoutData);
 
       const response = await paymentApi.uddoktaCheckout(checkoutData);
 
-      console.log('📥 Uddokta Pay response:', response);
+      // console.log('📥 Uddokta Pay response:', response);
 
       if (response.success && response.data?.paymentUrl) {
-        console.log('✅ Checkout created, redirecting to payment page...', response.data.paymentUrl);
+        // console.log('✅ Checkout created, redirecting to payment page...', response.data.paymentUrl);
         // Save amount to localStorage for after redirect
         localStorage.setItem('add_money_amount', amount);
         // Redirect to Uddokta Pay payment page
@@ -81,11 +81,11 @@ function AddMoney() {
       } else {
         setProcessing(false);
         const errorMsg = response.message || "Failed to create payment session. Please try again.";
-        console.error("❌ Uddokta Pay checkout failed:", errorMsg);
+        // console.error("❌ Uddokta Pay checkout failed:", errorMsg);
         setError(errorMsg);
       }
     } catch (error: any) {
-      console.error("❌ Uddokta Pay checkout error:", error);
+      // console.error("❌ Uddokta Pay checkout error:", error);
       setProcessing(false);
       const errorMsg = error.message || "Failed to process payment. Please try again.";
       setError(errorMsg);
@@ -152,7 +152,7 @@ function AddMoney() {
           }
         })
         .catch((error) => {
-          console.error("Verification error:", error);
+          // console.error("Verification error:", error);
           // If status is completed, show success even if verification API fails
           if (status === "completed") {
             setVerifyingPayment({
@@ -188,7 +188,7 @@ function AddMoney() {
   // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
   const currentBalance =
     backendBalance !== null && backendBalance !== undefined ? backendBalance : 0;
-  console.log('💰 Current balance value:', currentBalance);
+  // console.log('💰 Current balance value:', currentBalance);
 
   const predefinedAmounts = [100, 200, 500, 1000, 2000, 5000];
 
@@ -214,7 +214,7 @@ function AddMoney() {
       return;
     }
 
-    console.log('💸 Proceeding to payment with amount:', amountValue);
+    // console.log('💸 Proceeding to payment with amount:', amountValue);
     // Use Uddokta Pay for add money
     handleUddoktaPayPayment();
   };
@@ -233,14 +233,14 @@ function AddMoney() {
   // Removed: handleUddoktaPayCallback function - all Uddokta Pay code removed
 
   const handleQuickAmount = (quickAmount: number) => {
-    console.log('⚡ Quick amount selected:', quickAmount);
+    // console.log('⚡ Quick amount selected:', quickAmount);
     setAmount(quickAmount.toString());
     setError('');
   };
 
 
   if (!user) {
-    console.log('👤 No user found, showing login prompt');
+    // console.log('👤 No user found, showing login prompt');
     return (
       <div className="max-w-md p-6 mx-auto mt-8 bg-white border shadow-xl rounded-2xl border-slate-200">
         <div className="text-center">
@@ -257,7 +257,7 @@ function AddMoney() {
   }
 
   if (balanceLoading) {
-    console.log('⏳ Loading state...');
+    // console.log('⏳ Loading state...');
     return (
       <div className="max-w-md p-6 mx-auto mt-8 text-center bg-white border shadow-xl rounded-2xl border-slate-200">
         <div className="animate-pulse">
@@ -275,7 +275,7 @@ function AddMoney() {
     );
   }
 
-  console.log('🎨 Rendering AddMoney component');
+  // console.log('🎨 Rendering AddMoney component');
   return (
     <div className="max-w-md p-4 mx-auto mt-4 bg-white border shadow-xl sm:mt-6 md:mt-8 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-slate-200">
       <div className="mb-6 text-center">
@@ -345,7 +345,7 @@ function AddMoney() {
                 type="button"
                 onClick={() => handleQuickAmount(quickAmount)}
                 disabled={processing}
-                className="py-3 font-semibold rounded-xl bg-gradient-to-r from-purple-100 to-violet-100 text-purple-700 hover:from-purple-200 hover:to-violet-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-3 font-semibold text-purple-700 transition-all rounded-xl bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-200 hover:to-violet-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ৳{quickAmount}
               </button>
@@ -381,7 +381,7 @@ function AddMoney() {
           <h3 className="flex items-center gap-2 mb-2 font-bold text-blue-800">
             <span className="text-lg">💡</span> Payment Method
           </h3>
-          <p className="text-sm text-blue-700 mb-2">
+          <p className="mb-2 text-sm text-blue-700">
             We use <strong>Uddokta Pay</strong> for secure online payments. Your balance will be updated automatically after payment.
           </p>
         </div>

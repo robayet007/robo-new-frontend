@@ -73,7 +73,7 @@ function Checkout({ products }: { products: Product[] }) {
     const invoiceId = searchParams.get("invoice_id");
     const transactionId = searchParams.get("transactionId");
 
-    console.log("🔍 URL params detected:", { status, invoiceId, transactionId });
+    // console.log("🔍 URL params detected:", { status, invoiceId, transactionId });
 
     // Skip if no relevant params
     if (!status || !(invoiceId || transactionId)) {
@@ -82,7 +82,7 @@ function Checkout({ products }: { products: Product[] }) {
 
     // Prevent duplicate processing
     if (invoiceId && paymentAttemptsRef.current.has(invoiceId)) {
-      console.log(`ℹ️ Invoice ${invoiceId} already processed, clearing URL...`);
+      // console.log(`ℹ️ Invoice ${invoiceId} already processed, clearing URL...`);
       // Clear URL params immediately
       navigate("/checkout", { replace: true });
       return;
@@ -97,7 +97,7 @@ function Checkout({ products }: { products: Product[] }) {
     if ((status === "success" || status === "completed") && invoiceId) {
       // Check if already verifying
       if (verificationInProgressRef.current) {
-        console.log("⚠️ Verification already in progress, skipping...");
+        // console.log("⚠️ Verification already in progress, skipping...");
         return;
       }
 
@@ -111,10 +111,10 @@ function Checkout({ products }: { products: Product[] }) {
 
       const verifyPayment = async () => {
         try {
-          console.log(`🔍 Verifying payment for invoice: ${invoiceId}`);
+          // console.log(`🔍 Verifying payment for invoice: ${invoiceId}`);
           const response = await paymentApi.uddoktaVerify(invoiceId);
           
-          console.log(`✅ Verification response:`, response);
+          // console.log(`✅ Verification response:`, response);
           
           if (response.success) {
             // Payment verified
@@ -154,7 +154,7 @@ function Checkout({ products }: { products: Product[] }) {
             });
           }
         } catch (error: any) {
-          console.error(`❌ Verification error:`, error);
+          // console.error(`❌ Verification error:`, error);
           setVerifyingPayment({
             invoiceId: invoiceId,
             status: "failed",
@@ -296,10 +296,10 @@ function Checkout({ products }: { products: Product[] }) {
 
   // ✅ FIX: Handle Uddokta Pay checkout with strict prevention
   const handleUddoktaPayPayment = async () => {
-    console.log("🔄 Uddokta Pay payment initiated");
+    // console.log("🔄 Uddokta Pay payment initiated");
     
     if (isPaymentInProgressRef.current) {
-      console.log("⚠️ Payment already in progress");
+      // console.log("⚠️ Payment already in progress");
       return;
     }
     
@@ -333,12 +333,12 @@ function Checkout({ products }: { products: Product[] }) {
         cancelUrl: `${window.location.origin}/checkout?status=cancelled&payment=uddokta`
       };
 
-      console.log("🔄 Creating Uddokta Pay checkout...");
+      // console.log("🔄 Creating Uddokta Pay checkout...");
       const response = await paymentApi.uddoktaCheckout(checkoutData);
-      console.log("📥 Uddokta Pay response:", response);
+      // console.log("📥 Uddokta Pay response:", response);
 
       if (response.success && response.data?.paymentUrl) {
-        console.log("✅ Redirecting to payment page...");
+        // console.log("✅ Redirecting to payment page...");
         
         // Store invoice ID to prevent duplicate processing
         if (response.data.invoiceId) {
@@ -353,7 +353,7 @@ function Checkout({ products }: { products: Product[] }) {
         alert(errorMsg);
       }
     } catch (error: any) {
-      console.error("❌ Uddokta Pay checkout error:", error);
+      // console.error("❌ Uddokta Pay checkout error:", error);
       alert(error.message || "Failed to process payment.");
     } finally {
       isPaymentInProgressRef.current = false;
@@ -364,7 +364,7 @@ function Checkout({ products }: { products: Product[] }) {
   // ✅ FIX: Handle Robo Balance Payment with atomic approach
   const handleRoboBalancePayment = async () => {
     if (isPaymentInProgressRef.current) {
-      console.log("⚠️ Payment already in progress");
+      // console.log("⚠️ Payment already in progress");
       return;
     }
     
@@ -381,7 +381,7 @@ function Checkout({ products }: { products: Product[] }) {
     
     // Check if already processed
     if (paymentAttemptsRef.current.has(transactionId)) {
-      console.log(`⚠️ Transaction ${transactionId} already processed`);
+      // console.log(`⚠️ Transaction ${transactionId} already processed`);
       setProcessing(false);
       isPaymentInProgressRef.current = false;
       return;
@@ -426,7 +426,7 @@ function Checkout({ products }: { products: Product[] }) {
         timestamp: new Date().toISOString(),
       };
 
-      console.log(`🔍 Sending Robo Balance payment:`, paymentPayload.transactionId);
+      // console.log(`🔍 Sending Robo Balance payment:`, paymentPayload.transactionId);
 
       // Send payment request with timeout
       const controller = new AbortController();
@@ -577,7 +577,7 @@ function Checkout({ products }: { products: Product[] }) {
                         await navigator.clipboard.writeText(verifyingPayment.invoiceId);
                         alert("Invoice ID copied!");
                       } catch (err) {
-                        console.error("Failed to copy:", err);
+                        // console.error("Failed to copy:", err);
                       }
                     }}
                     className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded transition-colors"
@@ -636,7 +636,7 @@ function Checkout({ products }: { products: Product[] }) {
                           await navigator.clipboard.writeText(paymentResult.transactionId || "");
                           alert("Transaction ID copied!");
                         } catch (err) {
-                          console.error("Failed to copy:", err);
+                          // console.error("Failed to copy:", err);
                         }
                       }}
                       className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded transition-colors"

@@ -20,7 +20,7 @@ class SmartAPIManager {
     const baseURL = this.getBaseURL();
     const url = `${baseURL}${path}`;
     
-    console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
+    // console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
     // Use provided signal or create new one with timeout
     let controller: AbortController | null = null;
@@ -38,7 +38,7 @@ class SmartAPIManager {
       timeoutId = setTimeout(() => {
         if (controller) {
           controller.abort();
-          console.warn('⏱️ Request timeout after 20 seconds');
+          // console.warn('⏱️ Request timeout after 20 seconds');
         }
       }, timeout);
     }
@@ -162,11 +162,11 @@ export const paymentApi = {
   }, options: RequestInit = {}): Promise<ApiResponse> => {
     try {
       const baseURL = await SmartAPIManager.getBaseURL();
-      console.log('🌐 API Base URL:', baseURL);
-      console.log('🌐 API Endpoint: POST /payments/verify');
-      console.log('📦 Request Payload:', JSON.stringify(paymentData, null, 2));
-      console.log('🔑 Payment Method:', paymentData.paymentMethod);
-      console.log('💰 Updated Balance:', paymentData.updatedBalance);
+      // console.log('🌐 API Base URL:', baseURL);
+      // console.log('🌐 API Endpoint: POST /payments/verify');
+      // console.log('📦 Request Payload:', JSON.stringify(paymentData, null, 2));
+      // console.log('🔑 Payment Method:', paymentData.paymentMethod);
+      // console.log('💰 Updated Balance:', paymentData.updatedBalance);
       
       const response = await SmartAPIManager.smartFetch('/payments/verify', {
         method: 'POST',
@@ -174,14 +174,14 @@ export const paymentApi = {
         ...options // Pass options including signal
       });
       
-      console.log('API Response status:', response.status);
-      console.log('API Response ok:', response.ok);
+      // console.log('API Response status:', response.status);
+      // console.log('API Response ok:', response.ok);
       
       if (!response.ok) {
         let errorMessage = `Server error: ${response.status} ${response.statusText}`;
         try {
           const errorText = await response.text();
-          console.error('API Error response:', errorText);
+          // console.error('API Error response:', errorText);
           // Try to parse as JSON
           try {
             const errorJson = JSON.parse(errorText);
@@ -195,7 +195,7 @@ export const paymentApi = {
             errorMessage = errorText.substring(0, 200);
           }
         } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
+          // console.error('Failed to parse error response:', parseError);
         }
         return {
           success: false,
@@ -205,10 +205,10 @@ export const paymentApi = {
       }
       
       const jsonResponse = await response.json();
-      console.log('API JSON response:', jsonResponse);
+      // console.log('API JSON response:', jsonResponse);
       return jsonResponse;
     } catch (error: any) {
-      console.error('❌ API Call failed:', error);
+      // console.error('❌ API Call failed:', error);
       return {
         success: false,
         message: error.message || 'Network error. Please check your connection.',
@@ -252,17 +252,17 @@ export const paymentApi = {
     paymentId: string;
   }>> => {
     try {
-      console.log('🔄 Calling Uddokta Pay checkout API...', checkoutData);
+      // console.log('🔄 Calling Uddokta Pay checkout API...', checkoutData);
       const response = await SmartAPIManager.smartFetch('/payments/uddokta/checkout', {
         method: 'POST',
         body: JSON.stringify(checkoutData)
       });
       
-      console.log('📥 Uddokta Pay API response status:', response.status);
+      // console.log('📥 Uddokta Pay API response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Uddokta Pay API error:', errorText);
+        // console.error('❌ Uddokta Pay API error:', errorText);
         let errorMessage = `Server error: ${response.status}`;
         try {
           const errorJson = JSON.parse(errorText);
@@ -278,10 +278,10 @@ export const paymentApi = {
       }
       
       const jsonResponse = await response.json();
-      console.log('✅ Uddokta Pay API response:', jsonResponse);
+      // console.log('✅ Uddokta Pay API response:', jsonResponse);
       return jsonResponse;
     } catch (error: any) {
-      console.error('❌ Uddokta Pay checkout API call failed:', error);
+      // console.error('❌ Uddokta Pay checkout API call failed:', error);
       return {
         success: false,
         message: error.message || 'Network error. Please check your connection and try again.',

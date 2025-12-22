@@ -31,7 +31,7 @@ export default function useRoboBalance() {
         setBackendBalance(0);
       }
     } catch (error) {
-      console.error('Failed to fetch balance:', error);
+      // console.error('Failed to fetch balance:', error);
       setBackendBalance(0);
     } finally {
       setIsLoading(false);
@@ -60,13 +60,13 @@ export default function useRoboBalance() {
       });
 
       socket.on('connect', () => {
-        console.log('✅ Socket.IO connected:', socket.id);
+        // console.log('✅ Socket.IO connected:', socket.id);
         // Join user-specific room
         socket.emit('join-user-room', user.uid);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket.IO disconnected');
+        // console.log('❌ Socket.IO disconnected');
       });
 
       // Listen for balance updates
@@ -78,7 +78,7 @@ export default function useRoboBalance() {
         transactionId: string;
         timestamp: string;
       }) => {
-        console.log('📡 Real-time balance update received:', data);
+        // console.log('📡 Real-time balance update received:', data);
         if (data.userId === user.uid) {
           // Update balance immediately
           setBackendBalance(data.balance);

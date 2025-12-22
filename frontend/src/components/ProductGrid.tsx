@@ -64,9 +64,14 @@ function ProductGrid({ categories, products }: { categories: Category[]; product
             <div className="flex items-start justify-between gap-2 sm:gap-2.5">
               <div className="flex-1 min-w-0">
                 <p className="m-0 text-sm font-bold truncate sm:text-base text-slate-900">{item.name}</p>
-                <p className="mt-0.5 mb-0 text-xs sm:text-sm text-slate-600">
+                {/* diamond color  */}
+                <p className={`mt-0.5 mb-0 text-xs sm:text-sm ${
+                       item.diamonds ? 'text-[#FAF6FF]' : 'text-slate-600'
+                  }`}>
                   {item.diamonds ? `${item.diamonds} Diamonds` : 'Special item'}
                 </p>
+
+                {/* color end */}
               </div>
               {item.tag ? <span className="inline-flex items-center px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full bg-teal-400/14 border border-teal-400/40 text-teal-700 font-semibold text-[10px] sm:text-xs whitespace-nowrap">{item.tag}</span> : null}
             </div>

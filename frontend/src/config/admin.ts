@@ -23,7 +23,7 @@ export const isAdmin = async (email: string | null | undefined): Promise<boolean
       return userData.role === 'admin';
     }
   } catch (error) {
-    console.error('Error checking admin role:', error);
+    // console.error('Error checking admin role:', error);
   }
   
   return false;

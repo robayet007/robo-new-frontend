@@ -106,14 +106,14 @@ function InstallButton() {
       const { outcome } = await deferredPrompt.userChoice;
 
       if (outcome === 'accepted') {
-        console.log('✅ User accepted the install prompt');
+        // console.log('✅ User accepted the install prompt');
         setIsInstalled(true);
         setShowButton(false);
       } else {
-        console.log('❌ User dismissed the install prompt');
+        // console.log('❌ User dismissed the install prompt');
       }
     } catch (error) {
-      console.error('Error showing install prompt:', error);
+      // console.error('Error showing install prompt:', error);
     } finally {
       setDeferredPrompt(null);
     }

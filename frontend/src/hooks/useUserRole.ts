@@ -28,7 +28,7 @@ function useUserRole() {
         const role = await getUserRole(user.email);
         setIsAdmin(role === 'admin');
       } catch (error) {
-        console.error('Error checking user role:', error);
+        // console.error('Error checking user role:', error);
         setIsAdmin(false);
       } finally {
         setLoading(false);

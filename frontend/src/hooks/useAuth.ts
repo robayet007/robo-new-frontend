@@ -53,9 +53,9 @@ const addUserToFirestore = async (user: AuthUser) => {
     };
 
     await setDoc(userRef, userData, { merge: true });
-    console.log('User added/updated in Firestore:', user.email);
+    // console.log('User added/updated in Firestore:', user.email);
   } catch (error) {
-    console.error('Error adding user to Firestore:', error);
+    // console.error('Error adding user to Firestore:', error);
   }
 };
 
@@ -83,12 +83,12 @@ function useAuth() {
           Promise.all([
             firebaseUser.getIdToken().then(token => {
               setUser(prev => prev ? { ...prev, token } : prev);
-            }).catch(err => console.error('Error getting token:', err)),
-            addUserToFirestore(authUser).catch(err => console.error('Error adding to Firestore:', err)),
-            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(err => console.error('Error updating lastLogin:', err)) : Promise.resolve()
-          ]).catch(err => console.error('Background auth update error:', err));
+            }).catch(err => {/* console.error('Error getting token:', err) */}),
+            addUserToFirestore(authUser).catch(err => {/* console.error('Error adding to Firestore:', err) */}),
+            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(err => {/* console.error('Error updating lastLogin:', err) */}) : Promise.resolve()
+          ]).catch(err => {/* console.error('Background auth update error:', err) */});
         } catch (error) {
-          console.error('Error in auth state change:', error);
+          // console.error('Error in auth state change:', error);
           const authUser: AuthUser = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
@@ -99,7 +99,7 @@ function useAuth() {
           setLoading(false);
           
           // Add to Firestore in background
-          addUserToFirestore(authUser).catch(err => console.error('Error adding to Firestore:', err));
+          addUserToFirestore(authUser).catch(err => {/* console.error('Error adding to Firestore:', err) */});
         }
       } else {
         setUser(null);
@@ -224,7 +224,7 @@ function useAuth() {
           return await currentUser.getIdToken();
         }
       } catch (error) {
-        console.error('Error getting token:', error);
+        // console.error('Error getting token:', error);
       }
     }
     return null;
@@ -256,7 +256,7 @@ function useAuth() {
 
       return { success: true };
     } catch (err: any) {
-      console.error('Error changing password:', err);
+      // console.error('Error changing password:', err);
       let errorMessage = 'Failed to change password';
 
       if (err.code === 'auth/wrong-password') {
@@ -281,7 +281,7 @@ function useAuth() {
       await sendPasswordResetEmail(auth, email);
       return { success: true };
     } catch (err: any) {
-      console.error('Error sending password reset email:', err);
+      // console.error('Error sending password reset email:', err);
       let errorMessage = 'Failed to send password reset email';
 
       if (err.code === 'auth/user-not-found') {

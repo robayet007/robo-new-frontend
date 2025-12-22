@@ -27,7 +27,7 @@ function useCatalog() {
           setLoading(false); // Show cached data immediately
         }
       } catch (parseErr) {
-        console.error('Failed to parse localStorage data:', parseErr);
+        // console.error('Failed to parse localStorage data:', parseErr);
       }
     }
     
@@ -40,7 +40,7 @@ function useCatalog() {
       setLoading(true);
       setError(null);
       
-      console.log('📦 Loading catalog data from backend...');
+      // console.log('📦 Loading catalog data from backend...');
       
       // Try multiple endpoints for categories
       let categoriesRes: ApiResponse<BackendCategory[]> | undefined;
@@ -70,11 +70,11 @@ function useCatalog() {
         try {
           categoriesRes = await endpoint();
           if (categoriesRes.success && categoriesRes.data && categoriesRes.data.length > 0) {
-            console.log(`✅ Categories loaded from ${endpoint.name || 'endpoint'}`);
+            // console.log(`✅ Categories loaded from ${endpoint.name || 'endpoint'}`);
             break;
           }
         } catch (err) {
-          console.log('Category endpoint failed, trying next...');
+          // console.log('Category endpoint failed, trying next...');
         }
       }
       
@@ -126,11 +126,11 @@ function useCatalog() {
           description: `Products in ${catId}`
         }));
         setCategories(extractedCategories);
-        console.warn('Using extracted categories from products');
+        // console.warn('Using extracted categories from products');
       }
       
     } catch (err) {
-      console.error('Failed to load from backend:', err);
+      // console.error('Failed to load from backend:', err);
       setError(err instanceof Error ? err.message : 'Backend connection failed. Using local backup.');
       
       // Try to load from localStorage
@@ -145,11 +145,11 @@ function useCatalog() {
             setProducts(parsed.products);
           }
         } catch (parseErr) {
-          console.error('Failed to parse localStorage data:', parseErr);
+          // console.error('Failed to parse localStorage data:', parseErr);
         }
       } else {
         // If no localStorage backup, set empty arrays to prevent infinite loading
-        console.warn('No cached data available. Setting empty catalog.');
+        // console.warn('No cached data available. Setting empty catalog.');
         if (categories.length === 0) {
           setCategories([]);
         }
@@ -185,7 +185,7 @@ function useCatalog() {
         throw new Error(response.message || 'Failed to create category');
       }
     } catch (err) {
-      console.error('Failed to save category to backend:', err);
+      // console.error('Failed to save category to backend:', err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to create category' 
@@ -204,7 +204,7 @@ function useCatalog() {
       }
       return { success: false, error: response.message };
     } catch (err) {
-      console.error('Failed to delete category:', err);
+      // console.error('Failed to delete category:', err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to delete category' 
@@ -241,7 +241,7 @@ function useCatalog() {
         throw new Error(response.message || 'Failed to create product');
       }
     } catch (err) {
-      console.error('Failed to save product to backend:', err);
+      // console.error('Failed to save product to backend:', err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to create product' 
@@ -282,7 +282,7 @@ function useCatalog() {
         throw new Error(response.message || 'Failed to update product');
       }
     } catch (err) {
-      console.error('Failed to update product:', err);
+      // console.error('Failed to update product:', err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to update product' 
@@ -300,7 +300,7 @@ function useCatalog() {
       }
       return { success: false, error: response.message };
     } catch (err) {
-      console.error('Failed to delete product:', err);
+      // console.error('Failed to delete product:', err);
       return { 
         success: false, 
         error: err instanceof Error ? err.message : 'Failed to delete product' 

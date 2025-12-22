@@ -17,7 +17,7 @@ const firebaseConfig = {
 
 // Validate that all required environment variables are present
 if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
-  console.error('❌ Firebase configuration is missing! Please check your .env file.');
+  // console.error('❌ Firebase configuration is missing! Please check your .env file.');
   throw new Error('Firebase configuration is incomplete. Please set all VITE_FIREBASE_* environment variables.');
 }
 

@@ -47,7 +47,7 @@ function BkashVerification({
       // Success - onVerify will handle navigation and closing
       // Don't set isVerifying to false here - let parent handle it
     } catch (err: any) {
-      console.error('Verification error:', err);
+      // console.error('Verification error:', err);
       setError(err.message || 'Payment verification failed. Please try again.');
       setIsVerifying(false);
     }
