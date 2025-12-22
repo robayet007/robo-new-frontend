@@ -42,7 +42,7 @@ function Checkout({ products }: { products: Product[] }) {
 
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
-  const [ffNameError, setFfNameError] = useState<string | null>(null);
+  const [, setFfNameError] = useState<string | null>(null);
   const [payment, setPayment] = useState<"robo" | "bkash" | "uddokta">("robo");
   const [processing, setProcessing] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
