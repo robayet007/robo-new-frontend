@@ -31,10 +31,10 @@ function Navbar() {
       >
         <div className="flex flex-col">
           <p
-            className="m-0 text-lg sm:text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-500 drop-shadow-sm"
+            className="m-0 text-lg font-extrabold tracking-tight text-transparent sm:text-2xl bg-clip-text bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-500 drop-shadow-sm"
             style={{ fontFamily: "'Poppins', 'Inter', system-ui", letterSpacing: '0.5px' }}
           >
-            Robo Top Up
+            Robo Top Up Zone
           </p>
           <div className="mt-0.5 flex items-center gap-1">
             <span className="inline-block h-[3px] w-10 rounded-full bg-gradient-to-r from-purple-400 via-sky-400 to-emerald-400" />
@@ -81,7 +81,7 @@ function Navbar() {
               </button>
 
               {isProfileMenuOpen && (
-                <div className="absolute right-0 z-20 w-52 mt-2 overflow-hidden bg-white border rounded-xl shadow-lg border-slate-200">
+                <div className="absolute right-0 z-20 mt-2 overflow-hidden bg-white border shadow-lg w-52 rounded-xl border-slate-200">
                   {/* Balance info inside profile dropdown */}
                   {!isAdmin && (
                     <div className="px-3 py-2 text-xs border-b bg-slate-50">
@@ -107,7 +107,7 @@ function Navbar() {
                   )}
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       navigate('/add-money');
@@ -117,7 +117,7 @@ function Navbar() {
                   </button>
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       navigate('/change-password');
@@ -127,7 +127,7 @@ function Navbar() {
                   </button>
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       navigate('/orders');
@@ -137,7 +137,7 @@ function Navbar() {
                   </button>
                   <button
                     type="button"
-                    className="block w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
                       navigate('/ff-info');

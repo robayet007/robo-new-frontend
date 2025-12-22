@@ -34,7 +34,7 @@ export default function GameHero() {
       subtitle: "",
       buttonText: "",
       image:
-        "https://scontent-sin11-1.xx.fbcdn.net/v/t39.30808-6/600106370_122199906206327160_3504858993693350217_n.jpg?stp=dst-jpg_p180x540_tt6&_nc_cat=104&ccb=1-7&_nc_sid=127cfc&_nc_ohc=lvaVtJmCpQgQ7kNvwGsEiUe&_nc_oc=AdkJypWi2O_A_GKS5NBo4p9ANDCXqP3aKAm-j2dKpbQiqRbg1BcdxdtAWCD_altsGIqvw_TSkx0ggIpwMBhYXOgo&_nc_zt=23&_nc_ht=scontent-sin11-1.xx&_nc_gid=UJ_-7fAHStHO8YxevYPrzA&oh=00_AflhmG5_1hSoSmR2llepv_ih_HiHsWcsBdWhOIOgEfkVtg&oe=6946196E",
+        "https://i.ytimg.com/vi/Lq3kxtOLdZ0/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDV5bpXTtYKwYyaOv5vaYRzJM18BA",
     },
     {
       id: 2,
@@ -42,7 +42,7 @@ export default function GameHero() {
       subtitle: "",
       buttonText: "",
       image:
-        "https://i.ytimg.com/vi/eU58nuJM2uA/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAaMCPxt1MftlPON6VknbQk3szbUQ",
+        "https://i.ytimg.com/vi/ACC4-FeWu8Q/maxresdefault.jpg",
     },
   ]
 
@@ -59,8 +59,8 @@ export default function GameHero() {
     position: "relative",
     width: "100%",
     maxWidth: "1200px",
-    // একটু বেশি height রেখেছি যেন পুরো ব্যানার ইমেজ পরিষ্কার দেখা যায়
-    height: isMobile ? "260px" : isTablet ? "380px" : "520px",
+    // YouTube image aspect ratio (16:9) এর জন্য aspect ratio maintain করা হয়েছে
+    aspectRatio: "16 / 9",
     margin: "0 auto",
     overflow: "hidden",
     borderRadius: "8px",
@@ -71,7 +71,7 @@ export default function GameHero() {
     width: "100%",
     height: "100%",
     backgroundImage: `url(${slides[activeSlide].image})`,
-    // দুই দিকেই পুরো ব্যানার ভরাট করার জন্য এখন cover ব্যবহার করছি
+    // পুরো ইমেজ দেখানোর জন্য cover ব্যবহার করা হয়েছে যাতে container fill হয়
     backgroundSize: "cover",
     backgroundPosition: "center center",
     backgroundRepeat: "no-repeat",
