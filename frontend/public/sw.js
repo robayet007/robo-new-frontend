@@ -1,5 +1,10 @@
 // Service Worker for Robo Top Up PWA
-const CACHE_NAME = 'robo-topup-v3';
+// Version with timestamp for cache busting
+const CACHE_VERSION = Date.now();
+const CACHE_NAME = `robo-topup-v${CACHE_VERSION}`;
+const STATIC_CACHE = 'robo-topup-static-v1';
+const DYNAMIC_CACHE = 'robo-topup-dynamic-v1';
+
 const urlsToCache = [
   '/',
   '/index.html',
@@ -10,9 +15,9 @@ const urlsToCache = [
 // Install event - cache resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Service Worker: Caching files');
+        console.log('Service Worker: Caching static files');
         return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' })));
       })
       .catch((error) => {
@@ -29,7 +34,8 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          // Delete all old caches
+          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
             console.log('Service Worker: Deleting old cache', cacheName);
             return caches.delete(cacheName);
           }
@@ -71,7 +77,7 @@ function shouldCache(request) {
   return true;
 }
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - Network First strategy for HTML/JS, Cache First for static assets
 self.addEventListener('fetch', (event) => {
   // Skip caching for unsupported request schemes
   if (!shouldCache(event.request)) {
@@ -86,45 +92,93 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request)
-          .then((response) => {
-            // Don't cache non-GET requests or non-successful responses
-            if (event.request.method !== 'GET' || !response || response.status !== 200) {
-              return response;
-            }
-            
-            // Check again if we should cache (double check)
-            if (!shouldCache(event.request)) {
-              return response;
-            }
-            
-            // Clone the response
+  const url = new URL(event.request.url);
+  const isHTML = event.request.destination === 'document' || url.pathname.endsWith('.html');
+  const isJS = url.pathname.endsWith('.js') || url.pathname.includes('/assets/');
+  const isCSS = url.pathname.endsWith('.css');
+  
+  // Network First strategy for HTML and JS (always get fresh content)
+  if (isHTML || isJS) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then((response) => {
+          // If network succeeds, update cache and return response
+          if (response && response.status === 200) {
             const responseToCache = response.clone();
-            
-            // Cache with error handling
-            caches.open(CACHE_NAME)
+            caches.open(DYNAMIC_CACHE)
               .then((cache) => {
                 try {
                   cache.put(event.request, responseToCache);
                 } catch (error) {
-                  console.warn('Service Worker: Failed to cache request', event.request.url, error);
+                  console.warn('Service Worker: Failed to cache', event.request.url);
                 }
-              })
-              .catch((error) => {
-                console.warn('Service Worker: Cache error', error);
               });
-            
+          }
+          return response;
+        })
+        .catch(() => {
+          // If network fails, try cache
+          return caches.match(event.request).then((cachedResponse) => {
+            if (cachedResponse) {
+              return cachedResponse;
+            }
+            // If it's HTML and no cache, return index.html
+            if (isHTML) {
+              return caches.match('/index.html');
+            }
+            return new Response('Offline', { status: 503 });
+          });
+        })
+    );
+    return;
+  }
+  
+  // Cache First strategy for CSS and other static assets
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        if (response) {
+          // Return cached version immediately, but also update in background
+          fetch(event.request, { cache: 'reload' })
+            .then((networkResponse) => {
+              if (networkResponse && networkResponse.status === 200) {
+                caches.open(STATIC_CACHE)
+                  .then((cache) => {
+                    try {
+                      cache.put(event.request, networkResponse.clone());
+                    } catch (error) {
+                      console.warn('Service Worker: Failed to update cache', event.request.url);
+                    }
+                  });
+              }
+            })
+            .catch(() => {
+              // Network failed, but we have cache, so it's fine
+            });
+          return response;
+        }
+        
+        // Not in cache, fetch from network
+        return fetch(event.request)
+          .then((response) => {
+            if (response && response.status === 200) {
+              const responseToCache = response.clone();
+              caches.open(STATIC_CACHE)
+                .then((cache) => {
+                  try {
+                    cache.put(event.request, responseToCache);
+                  } catch (error) {
+                    console.warn('Service Worker: Failed to cache', event.request.url);
+                  }
+                });
+            }
             return response;
           })
           .catch(() => {
-            // If fetch fails, return offline page if available
             if (event.request.destination === 'document') {
               return caches.match('/index.html');
             }
+            return new Response('Offline', { status: 503 });
           });
       })
   );
@@ -138,21 +192,27 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'CACHE_UPDATE') {
     // Force update cache for specific resources
     event.waitUntil(
-      caches.open(CACHE_NAME).then((cache) => {
-        return Promise.all(
-          urlsToCache.map((url) => {
-            return fetch(new Request(url, { cache: 'reload' }))
-              .then((response) => {
-                if (response.ok) {
-                  return cache.put(url, response);
-                }
-              })
-              .catch((error) => {
-                console.warn('Failed to update cache for', url, error);
-              });
-          })
-        );
-      })
+      Promise.all([
+        caches.open(STATIC_CACHE).then((cache) => {
+          return Promise.all(
+            urlsToCache.map((url) => {
+              return fetch(new Request(url, { cache: 'reload' }))
+                .then((response) => {
+                  if (response.ok) {
+                    return cache.put(url, response);
+                  }
+                })
+                .catch((error) => {
+                  console.warn('Failed to update cache for', url, error);
+                });
+            })
+          );
+        }),
+        // Clear dynamic cache to force fresh fetch
+        caches.delete(DYNAMIC_CACHE).then(() => {
+          return caches.open(DYNAMIC_CACHE);
+        })
+      ])
     );
   }
 });

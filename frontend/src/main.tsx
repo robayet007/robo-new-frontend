@@ -1,58 +1,101 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import UpdateNotification from './components/UpdateNotification'
 import './style.css'
 
-// Register Service Worker for PWA with auto-update (only in production, not in local dev)
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js', { updateViaCache: 'none' })
-      .then((registration) => {
-        // console.log('✅ Service Worker registered:', registration.scope);
-        
-        // Check for updates every hour
-        setInterval(() => {
-          registration.update();
-        }, 60 * 60 * 1000);
-        
-        // Check for updates when page becomes visible
-        document.addEventListener('visibilitychange', () => {
-          if (!document.hidden) {
-            registration.update();
-          }
+// Update notification wrapper component
+function AppWithUpdates() {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    // Register Service Worker for PWA with auto-update (only in production, not in local dev)
+    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js', { updateViaCache: 'none' })
+        .then((reg) => {
+          setRegistration(reg);
+          
+          // Check for updates every 2 minutes (more frequent)
+          setInterval(() => {
+            reg.update();
+          }, 2 * 60 * 1000);
+          
+          // Check for updates when page becomes visible
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+              reg.update();
+            }
+          });
+          
+          // Listen for service worker updates
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (newWorker) {
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  // New service worker available - show notification instead of auto-reload
+                  setUpdateAvailable(true);
+                }
+              });
+            }
+          });
+          
+          // Check immediately on load
+          reg.update();
+        })
+        .catch((_error) => {
+          // console.error('❌ Service Worker registration failed:', _error);
         });
-        
-        // Listen for service worker updates
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          if (newWorker) {
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                // New service worker available, reload to activate
-                // console.log('🔄 New service worker available, reloading...');
-                window.location.reload();
-              }
-            });
-          }
-        });
-      })
-      .catch((_error) => {
-        // console.error('❌ Service Worker registration failed:', _error);
+      
+      // Listen for controller change (when update is activated)
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        // Reload when new service worker takes control
+        window.location.reload();
       });
-    
-    // Also check for updates on page load
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    }
+  }, []);
+
+  const handleUpdate = () => {
+    if (registration?.waiting) {
+      // Tell the waiting service worker to skip waiting and activate
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      // Force reload after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 100);
+    } else {
+      // Force cache clear and reload
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => {
+            caches.delete(name);
+          });
+        });
+      }
       window.location.reload();
-    });
-  });
+    }
+  };
+
+  return (
+    <>
+      <App />
+      {updateAvailable && (
+        <UpdateNotification 
+          onUpdate={handleUpdate}
+          onDismiss={() => setUpdateAvailable(false)}
+        />
+      )}
+    </>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AppWithUpdates />
     </BrowserRouter>
   </React.StrictMode>,
 )
