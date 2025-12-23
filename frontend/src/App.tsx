@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Notice from './components/Notice';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
 import Steps from './components/Steps';
@@ -30,6 +31,7 @@ function App() {
     return (
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
         <Navbar />
+        <Notice />
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-slate-600">Loading products...</p>
@@ -42,6 +44,7 @@ function App() {
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
       <Navbar />
+      <Notice />
       <Routes>
         <Route
           path="/"

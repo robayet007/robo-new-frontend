@@ -163,8 +163,8 @@ const Niyom: React.FC = () => {
             <iframe
               width="100%"
               height={isMobile ? '200px' : isTablet ? '300px' : '400px'}
-              src="https://www.youtube.com/embed/PKwrT7gIxjk"
-              title="কম দামে FREE FIRE DIAMOND TOP UP 🥶🔥🔥🔥"
+              src="https://www.youtube.com/embed/lwBpjP4W8f0"
+              title="পানির দামে Free fire diamond"
               frameBorder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerPolicy="strict-origin-when-cross-origin"
@@ -178,7 +178,7 @@ const Niyom: React.FC = () => {
             <div style={styles.videoMeta}>
               <FaPlayCircle style={styles.playIcon} />
               <div>
-                <h3 style={styles.videoTitle}>কম দামে FREE FIRE DIAMOND TOP UP</h3>
+                <h3 style={styles.videoTitle}>পানির দামে Free fire diamond</h3>
                 <p style={styles.videoDescription}>
                   Free Fire ডায়মন্ড খুব কম দামে টপ আপ করুন। সম্পূর্ণ টিউটোরিয়াল দেখুন।
                 </p>
@@ -195,7 +195,7 @@ const Niyom: React.FC = () => {
         
         <div style={styles.youtubeActions}>
           <a 
-            href="https://www.youtube.com/watch?v=PKwrT7gIxjk" 
+            href="https://www.youtube.com/watch?v=lwBpjP4W8f0" 
             target="_blank" 
             rel="noopener noreferrer"
             style={styles.youtubeButton}
