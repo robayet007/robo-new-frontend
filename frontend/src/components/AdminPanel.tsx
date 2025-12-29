@@ -37,12 +37,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => {
       // Try numeric comparison first, fallback to string comparison
-      const aNum = Number(a.diamonds);
-      const bNum = Number(b.diamonds);
-      if (!isNaN(aNum) && !isNaN(bNum)) {
-        return aNum - bNum || a.name.localeCompare(b.name);
+      const aDiamonds = a.diamonds || '';
+      const bDiamonds = b.diamonds || '';
+      const aName = a.name || '';
+      const bName = b.name || '';
+      
+      const aNum = Number(aDiamonds);
+      const bNum = Number(bDiamonds);
+      if (!isNaN(aNum) && !isNaN(bNum) && aDiamonds !== '' && bDiamonds !== '') {
+        return aNum - bNum || aName.localeCompare(bName);
       }
-      return a.diamonds.localeCompare(b.diamonds) || a.name.localeCompare(b.name);
+      return aDiamonds.localeCompare(bDiamonds) || aName.localeCompare(bName);
     }),
     [products],
   );

@@ -50,8 +50,8 @@ export default function useRoboBalance() {
         socketRef.current = null;
       }
       
-      // Connect to Socket.IO server (Render backend)
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://robo-backend-sbms.onrender.com';
+      // Connect to Socket.IO server (Fly.io backend)
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,
