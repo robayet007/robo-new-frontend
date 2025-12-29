@@ -55,7 +55,7 @@ function AddMoney() {
         playerId: user.uid || '', // For add_money, we use userId as playerId
         productId: 'add_money',
         productName: `Add Money - ৳${amountValue}`,
-        diamonds: 0,
+        diamonds: '',
         price: amountValue,
         userEmail: user.email,
         userName: user.displayName || user.email.split('@')[0] || 'User',
