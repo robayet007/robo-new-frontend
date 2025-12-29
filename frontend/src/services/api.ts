@@ -152,7 +152,7 @@ export const paymentApi = {
     playerId: string;
     productId: string;
     productName?: string;
-    diamonds?: number;
+    diamonds?: string;
     price?: number;
     paymentMethod?: 'bkash' | 'robo';
     updatedBalance?: number; // For Robo Balance payments, send the remaining balance
@@ -237,7 +237,7 @@ export const paymentApi = {
     playerId: string;
     productId: string;
     productName?: string;
-    diamonds?: number;
+    diamonds?: string;
     price?: number;
     userEmail?: string;
     userName?: string;

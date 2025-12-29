@@ -13,7 +13,7 @@ type AdminOrder = {
   updatedBalance?: number | null;
   productId?: string;
   productName?: string;
-  diamonds?: number;
+  diamonds?: string;
   price?: number;
   status?: string;
   bkashNumber?: string;
@@ -72,9 +72,9 @@ function AdminOrders() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900">Order History (All)</h3>
+          <h3 className="text-lg font-bold sm:text-xl text-slate-900">Order History (All)</h3>
           <p className="text-xs sm:text-sm text-slate-600">
             Total orders: <span className="font-semibold text-slate-900">{orders.length}</span>
           </p>
@@ -85,26 +85,26 @@ function AdminOrders() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by email, name, product or TrxID..."
-            className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+            className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
           />
         </div>
       </div>
 
       {loading && (
         <div className="flex items-center justify-center py-10">
-          <div className="w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin" />
-          <p className="ml-3 text-slate-600 text-sm">Loading orders...</p>
+          <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin" />
+          <p className="ml-3 text-sm text-slate-600">Loading orders...</p>
         </div>
       )}
 
       {!loading && error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+        <div className="p-4 text-sm text-red-700 border border-red-200 rounded-xl bg-red-50">
           {error}
         </div>
       )}
 
       {!loading && !error && (
-        <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
+        <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
           <div className="grid grid-cols-[1.6fr_1.6fr_1fr_1fr_1.1fr_1.2fr] min-w-[980px] gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 text-[11px] sm:text-xs font-semibold text-slate-700">
             <div>User</div>
             <div>Product</div>
@@ -133,7 +133,7 @@ function AdminOrders() {
                   className="grid grid-cols-[1.6fr_1.6fr_1fr_1fr_1.1fr_1.2fr] min-w-[980px] gap-2 sm:gap-3 p-3 sm:p-4 border-b border-slate-100 text-[11px] sm:text-xs text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate">
+                    <p className="font-semibold truncate text-slate-900">
                       {o.userName || o.userEmail || 'Unknown user'}
                     </p>
                     <p className="text-[10px] text-slate-500 truncate">
@@ -144,7 +144,7 @@ function AdminOrders() {
                     </p>
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate">
+                    <p className="font-semibold truncate text-slate-900">
                       {o.productName || 'Top up'}
                     </p>
                     <p className="text-[10px] text-slate-500 truncate">
@@ -194,7 +194,7 @@ function AdminOrders() {
               );
             })
           ) : (
-            <div className="py-8 text-center text-slate-500 text-sm">
+            <div className="py-8 text-sm text-center text-slate-500">
               No orders found.
             </div>
           )}
