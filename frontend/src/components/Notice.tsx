@@ -10,7 +10,7 @@ const Notice: React.FC = () => {
             <FaRobot className="flex-shrink-0 text-lg text-purple-600 sm:text-xl md:text-2xl" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold leading-tight sm:text-sm md:text-base text-slate-800">
-                আমাদের ওয়েবসাইট আপডেটের আওতায় রয়েছে। এই সময়ের জন্য সৃষ্ট যেকোনো অসুবিধার জন্য আমরা দুঃখিত।
+                🚀 আমাদের সিস্টেম AI দ্বারা নিয়ন্ত্রিত, যার ফলে আপনি পাচ্ছেন ⚡ তাৎক্ষণিক প্রসেসিং এবং 📦 দ্রুত ও নির্ভুল ডেলিভারি।
               </p>
               <div className="flex flex-wrap items-center gap-3 mt-1 sm:gap-4">
                 <div className="flex items-center gap-1.5 sm:gap-2">
