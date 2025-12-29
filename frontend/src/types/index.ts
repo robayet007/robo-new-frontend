@@ -12,7 +12,7 @@ export interface BackendProduct {
   categoryId: string;
   categoryName: string;
   name: string;
-  diamonds: number;
+  diamonds: string;
   price: number;
   bonus?: string;
   tag?: string;
@@ -58,7 +58,7 @@ export type Product = {
   id: string;
   categoryId: string;
   name: string;
-  diamonds: number;
+  diamonds: string;
   price: number;
   bonus?: string;
   tag?: string;
