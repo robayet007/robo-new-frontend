@@ -34,11 +34,8 @@ function Checkout({ products }: { products: Product[] }) {
   const paymentAttemptsRef = useRef<Set<string>>(new Set());
   const verificationInProgressRef = useRef(false);
 
-  // Initialize UID from localStorage to persist across redirects
-  const [uid, setUid] = useState(() => {
-    const savedUid = localStorage.getItem("checkout_uid") || "";
-    return savedUid;
-  });
+  // Initialize UID (no localStorage persistence)
+  const [uid, setUid] = useState("");
 
   const [ffName, setFfName] = useState<string | null>(null);
   const [ffNameLoading, setFfNameLoading] = useState(false);
@@ -183,17 +180,12 @@ function Checkout({ products }: { products: Product[] }) {
 
   // Restore UID from URL params
   useEffect(() => {
+    // Only load UID from URL parameter (no localStorage)
     const urlUid = searchParams.get("uid");
-    const localUid = localStorage.getItem("checkout_uid");
-    const savedUid = urlUid || localUid || "";
-
-    if (savedUid && savedUid !== uid) {
-      setUid(savedUid);
-      if (urlUid) {
-        localStorage.setItem("checkout_uid", urlUid);
-      }
+    if (urlUid && urlUid !== uid) {
+      setUid(urlUid);
     }
-  }, [searchParams, uid]);
+  }, [searchParams]);
 
   // Track if user has manually selected a payment method
   const [paymentManuallySelected, setPaymentManuallySelected] = useState(false);
@@ -345,6 +337,10 @@ function Checkout({ products }: { products: Product[] }) {
           paymentAttemptsRef.current.add(response.data.invoiceId);
         }
         
+        // Clear UID input and localStorage before redirect
+        setUid('');
+        localStorage.removeItem("checkout_uid");
+        
         // Redirect immediately
         window.location.href = response.data.paymentUrl;
         return; // Stop execution
@@ -463,6 +459,10 @@ function Checkout({ products }: { products: Product[] }) {
         : balance;
 
       if (response && response.success) {
+        // Clear UID input and localStorage on successful payment
+        setUid('');
+        localStorage.removeItem("checkout_uid");
+        
         setPaymentResult({
           status: "success",
           message: "Payment successful! Your diamonds will arrive shortly.",
@@ -732,13 +732,7 @@ function Checkout({ products }: { products: Product[] }) {
               type="text"
               value={uid}
               onChange={(e) => {
-                const newUid = e.target.value;
-                setUid(newUid);
-                if (newUid.trim()) {
-                  localStorage.setItem("checkout_uid", newUid.trim());
-                } else {
-                  localStorage.removeItem("checkout_uid");
-                }
+                setUid(e.target.value);
               }}
               placeholder="Enter your Free Fire UID"
               className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
