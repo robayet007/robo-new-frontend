@@ -81,45 +81,59 @@ function ProductGrid({ categories, products }: { categories: Category[]; product
 
   return (
     <section id="diamonds" className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1">
           <p className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-purple-400/14 text-purple-700 border border-purple-400/35 font-semibold text-[11px] sm:text-[12px] md:text-[13px]">
             💎 Top-up categories
           </p>
-          <h2 className="mt-2 mb-0.5 text-lg sm:text-xl md:text-2xl text-slate-900">
+          <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
             {categoryName}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600">
-            First, <span className="font-semibold text-slate-800">tap a category button</span> below, then choose your perfect pack.
+          <p className="mb-2 text-xs sm:text-sm text-slate-600">
+            Select a category below to view products
           </p>
         </div>
         {sortedCategories.length > 0 && (
-          <div className="flex gap-1.5 sm:gap-2 flex-wrap overflow-x-auto pb-2 sm:pb-0 bg-slate-50/80 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2">
-            {sortedCategories.map((cat) => (
-              <button
-                key={cat.id}
-                className={`flex flex-col gap-1.5 sm:gap-2 items-center px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-lg cursor-pointer transition-all duration-150 text-xs sm:text-sm border ${
-                  selectedCategory === cat.id
-                    ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-purple-400/50 shadow-[0_10px_30px_rgba(168,85,247,0.25)]'
-                    : 'border-slate-200 bg-white text-slate-900 hover:border-purple-300 hover:bg-purple-50/40'
-                }`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                <img 
-                  src={getCategoryImage(cat.name)} 
-                  alt={cat.name}
-                  className="object-cover w-12 h-12 rounded-lg sm:w-16 sm:h-16 md:w-20 md:h-20"
-                />
-                <div className="flex flex-col items-center gap-1">
-                  <span className="font-semibold text-center">{cat.name}</span>
-                  {cat.badge ? (
-                    <span className="bg-white/20 text-inherit px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold">
-                      {cat.badge}
+          <div className="w-full">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 border-[3px] border-purple-500 rounded-xl p-2.5 sm:p-3 md:p-4">
+              {sortedCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  className={`flex flex-col gap-1.5 sm:gap-2 items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg cursor-pointer transition-all duration-150 border-[2px] ${
+                    selectedCategory === cat.id
+                      ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-teal-400 shadow-[0_4px_12px_rgba(168,85,247,0.3)] scale-[1.02]'
+                      : 'border-teal-300 bg-white text-slate-900 hover:border-teal-400 hover:bg-teal-50/40 hover:shadow-sm'
+                  }`}
+                  onClick={() => setSelectedCategory(cat.id)}
+                >
+                  <img 
+                    src={getCategoryImage(cat.name)} 
+                    alt={cat.name}
+                    className={`object-cover rounded-lg transition-transform duration-150 ${
+                      selectedCategory === cat.id 
+                        ? 'w-10 h-10 sm:w-14 sm:h-14 md:w-16 md:h-16' 
+                        : 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14'
+                    }`}
+                  />
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full">
+                    <span className={`font-semibold text-center text-[10px] sm:text-xs md:text-sm leading-tight px-1 ${
+                      selectedCategory === cat.id ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      {cat.name}
                     </span>
-                  ) : null}
-                </div>
-              </button>
-            ))}
+                    {cat.badge ? (
+                      <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold ${
+                        selectedCategory === cat.id
+                          ? 'bg-white/25 text-white'
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {cat.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
