@@ -12,6 +12,12 @@
   "icons": [
     {
       "src": "/logo-robo.png",
+      "sizes": "736x736",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-robo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"

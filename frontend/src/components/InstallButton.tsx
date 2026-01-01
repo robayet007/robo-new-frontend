@@ -134,7 +134,8 @@ function InstallButton() {
       // #endregion
       
       if (!currentPrompt) {
-        // Still no prompt - event hasn't fired yet
+        // Still no prompt - show Bengali instructions
+        alert('📱 App Install করার জন্য:\n\n1️⃣ Browser-এর উপরে ৩টি ডট (⋮) icon-এ click করুন\n2️⃣ নিচে scroll করুন\n3️⃣ "Add to Home Screen" বা "Install app" option-এ click করুন\n4️⃣ "Add" বা "Install" button-এ click করুন\n\n✅ App আপনার home screen-এ install হয়ে যাবে!');
         return;
       }
     }
