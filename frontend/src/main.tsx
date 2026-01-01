@@ -11,8 +11,9 @@ function AppWithUpdates() {
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
   useEffect(() => {
-    // Register Service Worker for PWA with auto-update (only in production, not in local dev)
-    if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    // Register Service Worker for PWA with auto-update
+    // Register in both dev and production for PWA install to work
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js', { updateViaCache: 'none' })
         .then((reg) => {
@@ -94,7 +95,12 @@ function AppWithUpdates() {
 
 ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <AppWithUpdates />
     </BrowserRouter>
   </React.StrictMode>,

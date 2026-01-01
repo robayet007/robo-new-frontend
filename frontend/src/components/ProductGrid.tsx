@@ -3,16 +3,75 @@ import { useNavigate } from 'react-router-dom';
 import type { Category, Product } from '../types';
 
 function ProductGrid({ categories, products }: { categories: Category[]; products: Product[] }) {
+  // Helper function to find the diamond top-up category
+  const findDiamondTopUpCategory = (cats: Category[]): string | null => {
+    if (!cats.length) return null;
+    
+    // Look for category with "diamond" and "top" in the name (case-insensitive)
+    const diamondCategory = cats.find(cat => {
+      const nameLower = cat.name.toLowerCase();
+      return (nameLower.includes('diamond') && nameLower.includes('top')) ||
+             nameLower.includes('top up diamond') ||
+             nameLower.includes('diamond topup') ||
+             nameLower.includes('diamond top up');
+    });
+    
+    return diamondCategory?.id || (cats.length ? cats[0].id : null);
+  };
+
+  // Helper function to get category image based on category name
+  const getCategoryImage = (categoryName: string): string => {
+    const nameLower = categoryName.toLowerCase();
+    
+    if (nameLower.includes('weekly')) {
+      return '/weekly.jpg';
+    } else if (nameLower.includes('monthly')) {
+      return '/monthly.jpg';
+    } else if (nameLower.includes('diamond') && (nameLower.includes('top') || nameLower.includes('up'))) {
+      return '/diamond-top-up.png';
+    } else if (nameLower.includes('evo') || nameLower.includes('badge')) {
+      return '/evo.png';
+    } else if (nameLower.includes('level') && nameLower.includes('up')) {
+      return '/level-up-pass.png';
+    }
+    
+    // Default fallback image
+    return '/diamond-top-up.png';
+  };
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    categories.length ? categories[0].id : null,
+    categories.length ? findDiamondTopUpCategory(categories) : null,
   );
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!selectedCategory && categories.length) {
-      setSelectedCategory(categories[0].id);
+      const defaultCategory = findDiamondTopUpCategory(categories);
+      setSelectedCategory(defaultCategory);
+    } else if (selectedCategory && categories.length) {
+      // Re-check if the selected category still exists, if not, find diamond category again
+      const categoryExists = categories.some(cat => cat.id === selectedCategory);
+      if (!categoryExists) {
+        const defaultCategory = findDiamondTopUpCategory(categories);
+        setSelectedCategory(defaultCategory);
+      }
     }
   }, [categories, selectedCategory]);
+
+  // Sort categories: E Badge & Evo Access and Level up pass should be at the end
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aName = a.name.toLowerCase();
+    const bName = b.name.toLowerCase();
+    
+    const aIsLast = (aName.includes('evo') && aName.includes('badge')) || 
+                    (aName.includes('level') && aName.includes('up'));
+    const bIsLast = (bName.includes('evo') && bName.includes('badge')) || 
+                    (bName.includes('level') && bName.includes('up'));
+    
+    if (aIsLast && !bIsLast) return 1; // a goes to end
+    if (!aIsLast && bIsLast) return -1; // b goes to end
+    return 0; // keep original order for others
+  });
 
   const filtered = selectedCategory
     ? products.filter((p) => p.categoryId === selectedCategory)
@@ -34,25 +93,31 @@ function ProductGrid({ categories, products }: { categories: Category[]; product
             First, <span className="font-semibold text-slate-800">tap a category button</span> below, then choose your perfect pack.
           </p>
         </div>
-        {categories.length > 0 && (
+        {sortedCategories.length > 0 && (
           <div className="flex gap-1.5 sm:gap-2 flex-wrap overflow-x-auto pb-2 sm:pb-0 bg-slate-50/80 border border-slate-200 rounded-xl px-2.5 sm:px-3 py-2">
-            {categories.map((cat) => (
+            {sortedCategories.map((cat) => (
               <button
                 key={cat.id}
-                className={`inline-flex gap-1.5 sm:gap-2 items-center px-3 sm:px-3.5 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-full cursor-pointer transition-all duration-150 whitespace-nowrap text-xs sm:text-sm ${
+                className={`flex flex-col gap-1.5 sm:gap-2 items-center px-3 sm:px-4 md:px-5 py-2.5 sm:py-3 md:py-3.5 rounded-lg cursor-pointer transition-all duration-150 text-xs sm:text-sm border ${
                   selectedCategory === cat.id
-                    ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-transparent shadow-[0_10px_30px_rgba(168,85,247,0.25)]'
-                    : 'border border-slate-300 bg-white text-slate-900 hover:border-purple-400/60 hover:bg-purple-50/40'
+                    ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-purple-400/50 shadow-[0_10px_30px_rgba(168,85,247,0.25)]'
+                    : 'border-slate-200 bg-white text-slate-900 hover:border-purple-300 hover:bg-purple-50/40'
                 }`}
                 onClick={() => setSelectedCategory(cat.id)}
               >
-                <span className="text-[11px] sm:text-xs opacity-80">Category</span>
-                <span className="font-semibold">{cat.name}</span>
-                {cat.badge ? (
-                  <span className="bg-white/20 text-inherit px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold">
-                    {cat.badge}
-                  </span>
-                ) : null}
+                <img 
+                  src={getCategoryImage(cat.name)} 
+                  alt={cat.name}
+                  className="object-cover w-12 h-12 rounded-lg sm:w-16 sm:h-16 md:w-20 md:h-20"
+                />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="font-semibold text-center">{cat.name}</span>
+                  {cat.badge ? (
+                    <span className="bg-white/20 text-inherit px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold">
+                      {cat.badge}
+                    </span>
+                  ) : null}
+                </div>
               </button>
             ))}
           </div>
