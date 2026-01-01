@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "Robo Top Up - Free Fire Diamonds",
   "short_name": "Robo Top Up",
   "description": "Free Fire Diamond Top-up Service - Fast and Reliable",
@@ -10,28 +11,16 @@
   "version": "1.0.1",
   "icons": [
     {
-      "src": "/logo-robo.jpg",
+      "src": "/logo-robo.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo-robo.jpg",
+      "src": "/logo-robo.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/logo-robo.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/logo-robo.jpg",
-      "sizes": "512x512",
-      "type": "image/jpeg",
-      "purpose": "any maskable"
     }
   ],
   "categories": ["games", "entertainment"],
@@ -42,14 +31,14 @@
       "short_name": "Add Money",
       "description": "Add money to your Robo Balance",
       "url": "/add-money",
-      "icons": [{ "src": "/logo-robo.jpg", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo-robo.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Admin Panel",
       "short_name": "Admin",
       "description": "Access admin panel",
       "url": "/admin",
-      "icons": [{ "src": "/logo-robo.jpg", "sizes": "192x192" }]
+      "icons": [{ "src": "/logo-robo.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]
 }

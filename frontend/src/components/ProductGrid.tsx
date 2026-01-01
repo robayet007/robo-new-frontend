@@ -95,14 +95,14 @@ function ProductGrid({ categories, products }: { categories: Category[]; product
         </div>
         {sortedCategories.length > 0 && (
           <div className="w-full">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 border-[3px] border-purple-500 rounded-xl p-2.5 sm:p-3 md:p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
               {sortedCategories.map((cat) => (
                 <button
                   key={cat.id}
                   className={`flex flex-col gap-1.5 sm:gap-2 items-center px-2 sm:px-3 md:px-4 py-2 sm:py-2.5 md:py-3 rounded-lg cursor-pointer transition-all duration-150 border-[2px] ${
                     selectedCategory === cat.id
-                      ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-teal-400 shadow-[0_4px_12px_rgba(168,85,247,0.3)] scale-[1.02]'
-                      : 'border-teal-300 bg-white text-slate-900 hover:border-teal-400 hover:bg-teal-50/40 hover:shadow-sm'
+                      ? 'bg-gradient-to-br from-purple-500 to-violet-600 text-white border-purple-400 shadow-[0_4px_12px_rgba(168,85,247,0.3)] scale-[1.02]'
+                      : 'border-purple-300 bg-white text-slate-900 hover:border-purple-400 hover:bg-purple-50/40 hover:shadow-sm'
                   }`}
                   onClick={() => setSelectedCategory(cat.id)}
                 >
