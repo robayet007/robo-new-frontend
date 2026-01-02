@@ -52,11 +52,14 @@ function ProductGrid({ categories }: { categories: Category[] }) {
             Browse Categories
           </h2>
           <p className="mb-2 text-xs sm:text-sm text-slate-600">
-            Click on a category below to view products
+            অফার দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন
           </p>
         </div>
         {sortedCategories.length > 0 && (
           <div className="w-full">
+            <h3 className="text-center text-lg sm:text-xl md:text-2xl font-bold text-purple-600 mb-3 sm:mb-4">
+              Regular Offers
+            </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
               {sortedCategories.map((cat) => (
                 <button
@@ -84,6 +87,16 @@ function ProductGrid({ categories }: { categories: Category[] }) {
             </div>
           </div>
         )}
+        
+        {/* Special Offers Section */}
+        <div className="w-full mt-6 sm:mt-8">
+          <h3 className="text-center text-lg sm:text-xl md:text-2xl font-bold text-purple-600 mb-3 sm:mb-4">
+            Special Offers
+          </h3>
+          <p className="text-center text-xs sm:text-sm text-slate-500">
+            No available offers yet
+          </p>
+        </div>
       </div>
     </section>
   );
