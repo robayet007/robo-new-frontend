@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 type FFBasicInfo = {
   accountId: string;
@@ -49,11 +49,100 @@ function FFIdInfo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<FFAccountResponse | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isCancelledRef = useRef(false);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isCancelledRef.current = true;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const fetchFFInfo = async (trimmedUid: string, attempt: number = 0): Promise<void> => {
+    if (isCancelledRef.current) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Create new AbortController for timeout
+      abortControllerRef.current = new AbortController();
+      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 10000); // 10 second timeout
+
+      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
+        trimmedUid
+      )}&region=BD`;
+      
+      const resp = await fetch(url, {
+        signal: abortControllerRef.current.signal,
+        cache: 'no-cache',
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!resp.ok) {
+        throw new Error(`Request failed: ${resp.status} ${resp.statusText}`);
+      }
+
+      const json = (await resp.json()) as FFAccountResponse;
+      
+      if (!json || !json.basicInfo) {
+        throw new Error('No account info found for this UID.');
+      }
+
+      if (!isCancelledRef.current) {
+        setData(json);
+        setError(null);
+        setLoading(false);
+        setRetryCount(0);
+      }
+    } catch (err: any) {
+      if (isCancelledRef.current) return;
+
+      // Don't retry on abort (timeout or manual cancellation)
+      if (err.name === 'AbortError') {
+        // Retry on timeout (up to 10 attempts)
+        if (attempt < 10) {
+          setRetryCount(attempt + 1);
+          const delay = Math.min(800 * (attempt + 1), 3000); // Faster retry: 800ms, 1600ms, 2400ms, max 3000ms
+          setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), delay);
+        } else {
+          setError('Request timeout. Please check your connection and try again.');
+          setLoading(false);
+          setRetryCount(0);
+        }
+        return;
+      }
+
+      // Retry on other errors (up to 8 attempts)
+      if (attempt < 8) {
+        setRetryCount(attempt + 1);
+        const delay = Math.min(600 * (attempt + 1), 2500); // Faster retry: 600ms, 1200ms, 1800ms, max 2500ms
+        setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), delay);
+      } else {
+        setError(err?.message || 'Failed to fetch account info after multiple attempts. Please try again.');
+        setLoading(false);
+        setRetryCount(0);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setData(null);
+    setRetryCount(0);
+    isCancelledRef.current = false;
+
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
     const trimmed = uid.trim();
     if (!trimmed) {
@@ -61,25 +150,8 @@ function FFIdInfo() {
       return;
     }
 
-    try {
-      setLoading(true);
-      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
-        trimmed
-      )}&region=BD`;
-      const resp = await fetch(url);
-      if (!resp.ok) {
-        throw new Error(`Request failed: ${resp.status} ${resp.statusText}`);
-      }
-      const json = (await resp.json()) as FFAccountResponse;
-      if (!json || !json.basicInfo) {
-        throw new Error('No account info found for this UID.');
-      }
-      setData(json);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to fetch account info. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    // Start fetching with retry logic
+    fetchFFInfo(trimmed, 0);
   };
 
   const basic = data?.basicInfo;
@@ -99,7 +171,7 @@ function FFIdInfo() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3 mb-4">
+      <form onSubmit={handleSubmit} className="mb-4 space-y-3">
         <label className="block text-sm font-semibold text-slate-800">
           Free Fire UID
           <input
@@ -115,7 +187,17 @@ function FFIdInfo() {
           disabled={loading || !uid.trim()}
           className="w-full px-4 py-2.5 mt-1 text-sm font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-purple-500/30"
         >
-          {loading ? 'Checking...' : 'Check Info'}
+          {loading ? (
+            <span className="inline-flex items-center gap-2">
+              <svg className="w-4 h-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Checking{retryCount > 0 ? ` (Retry ${retryCount})...` : '...'}
+            </span>
+          ) : (
+            'Check Info'
+          )}
         </button>
       </form>
 
@@ -127,7 +209,7 @@ function FFIdInfo() {
 
       {basic && (
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
             <h3 className="mb-2 text-sm font-bold text-slate-900 sm:text-base">
               Basic Info
             </h3>
@@ -174,7 +256,7 @@ function FFIdInfo() {
           </div>
 
           {clan && (
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
               <h3 className="mb-2 text-sm font-bold text-slate-900 sm:text-base">
                 Clan Info
               </h3>

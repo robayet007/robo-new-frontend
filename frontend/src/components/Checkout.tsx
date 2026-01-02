@@ -221,7 +221,7 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [product, balance, hasEnoughBalance, payment]);
 
-  // Auto-fetch FF name when UID changes
+  // Auto-fetch FF name when UID changes (optimized with caching)
   useEffect(() => {
     const trimmed = uid.trim();
     setFfName(null);
@@ -231,16 +231,48 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
 
-    const maxRetries = 3; // Reduced retries
+    // Check cache first (cache expires after 5 minutes)
+    const cacheKey = `ff_name_${trimmed}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const { name, timestamp } = JSON.parse(cached);
+        const cacheAge = Date.now() - timestamp;
+        const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+        
+        if (cacheAge < CACHE_EXPIRY) {
+          setFfName(name);
+          setFfNameLoading(false);
+          return; // Use cached data
+        } else {
+          localStorage.removeItem(cacheKey); // Remove expired cache
+        }
+      } catch (e) {
+        // Invalid cache, continue to fetch
+      }
+    }
+
+    const maxRetries = 2; // Reduced retries for faster failure
     let isCancelled = false;
+    let abortController: AbortController | null = null;
 
     const fetchFFName = async (attempt: number = 0): Promise<void> => {
       if (isCancelled) return;
 
       try {
         setFfNameLoading(true);
+        
+        // Create new AbortController for timeout
+        abortController = new AbortController();
+        const timeoutId = setTimeout(() => abortController?.abort(), 8000); // 8 second timeout
+
         const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(trimmed)}&region=BD`;
-        const resp = await fetch(url);
+        const resp = await fetch(url, {
+          signal: abortController.signal,
+          cache: 'no-cache',
+        });
+
+        clearTimeout(timeoutId);
 
         if (!resp.ok) throw new Error("UID info not found");
 
@@ -249,14 +281,30 @@ function Checkout({ products }: { products: Product[] }) {
 
         if (!nickname) throw new Error("Name not found for this UID");
 
-        setFfName(nickname);
-        setFfNameError(null);
-        setFfNameLoading(false);
+        // Cache the result
+        localStorage.setItem(cacheKey, JSON.stringify({
+          name: nickname,
+          timestamp: Date.now()
+        }));
+
+        if (!isCancelled) {
+          setFfName(nickname);
+          setFfNameError(null);
+          setFfNameLoading(false);
+        }
       } catch (err: any) {
         if (isCancelled) return;
 
+        // Don't retry on abort (timeout)
+        if (err.name === 'AbortError') {
+          setFfName(null);
+          setFfNameError("Request timeout. Please try again.");
+          setFfNameLoading(false);
+          return;
+        }
+
         if (attempt < maxRetries - 1) {
-          const delay = Math.min(1000 * (attempt + 1), 3000);
+          const delay = Math.min(500 * (attempt + 1), 1500); // Faster retry delays
           setTimeout(() => fetchFFName(attempt + 1), delay);
         } else {
           setFfName(null);
@@ -266,13 +314,15 @@ function Checkout({ products }: { products: Product[] }) {
       }
     };
 
+    // Reduced debounce time from 500ms to 200ms for faster response
     const timeoutId = setTimeout(() => {
       fetchFFName(0);
-    }, 500);
+    }, 200);
 
     return () => {
       isCancelled = true;
       clearTimeout(timeoutId);
+      abortController?.abort();
     };
   }, [uid]);
 
@@ -619,7 +669,7 @@ function Checkout({ products }: { products: Product[] }) {
 
               {paymentResult.ffName && (
                 <p className="mb-1 text-sm text-slate-600">
-                  Player: <span className="font-semibold text-slate-800">{paymentResult.ffName}</span>
+                  Player: <span className="inline-block px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-500 to-violet-600 text-white font-bold text-sm shadow-sm">{paymentResult.ffName}</span>
                 </p>
               )}
 
@@ -739,19 +789,18 @@ function Checkout({ products }: { products: Product[] }) {
             />
             <div className="mt-2 text-xs text-slate-600">
               {ffNameLoading && (
-                <div className="inline-flex items-center gap-2 px-2 py-1 text-[11px] font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                  <svg className="w-3 h-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-400 to-violet-500 border-2 border-purple-300 text-[11px] font-semibold text-white shadow-md shadow-purple-400/40">
+                  <svg className="w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>Loading player name...</span>
+                  <span className="font-medium">Loading player name...</span>
                 </div>
               )}
               {!ffNameLoading && ffName && (
-                <div className="inline-flex items-center px-2.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-semibold text-emerald-700">
-                  <span className="mr-1.5 text-xs">✅</span>
-                  <span className="mr-1 font-normal text-slate-600">Player:</span>
-                  <span className="text-emerald-800">{ffName}</span>
+                <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 border-2 border-purple-400 text-[11px] font-semibold text-white shadow-md shadow-purple-500/30">
+                  <span className="mr-1.5 font-normal text-purple-100">Player:</span>
+                  <span className="font-bold text-white">{ffName}</span>
                 </div>
               )}
             </div>

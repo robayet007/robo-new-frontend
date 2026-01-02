@@ -18,6 +18,9 @@ import useCatalog from './hooks/useCatalog';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
 import FFIdInfo from './components/FFIdInfo';
+import CategoryPage from './components/CategoryPage';
+import Footer from './components/Footer';
+import RulesAndServices from './components/RulesAndServices';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -44,22 +47,27 @@ function App() {
   return (
     <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
       <Navbar />
-      <Notice />
       <Routes>
         <Route
           path="/"
           element={
             <>
+              <Notice />
               <Hero />
               <ProductGrid 
                 categories={catalog.categories} 
-                products={catalog.products} 
               />
+              <RulesAndServices />
               <Steps />
+              <Footer />
             </>
           }
         />
         <Route path="/checkout" element={<Checkout products={catalog.products} />} />
+        <Route 
+          path="/category/:categoryId" 
+          element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+        />
         <Route path="/add-money" element={<AddMoney />} />
         <Route
           path="/change-password"

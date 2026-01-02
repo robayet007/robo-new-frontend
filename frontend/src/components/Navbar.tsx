@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useUserRole from '../hooks/useUserRole';
 import useRoboBalance from '../hooks/useRoboBalance';
-import { useEffect, useState } from 'react'; // useEffect, useState import করুন
+import { useEffect, useState, useRef } from 'react'; // useEffect, useState, useRef import করুন
 
 function Navbar() {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ function Navbar() {
   const { isAdmin } = useUserRole();
   const { backendBalance, loading, refreshBalance } = useRoboBalance(); // শুধু backendBalance ব্যবহার করুন
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -23,8 +24,25 @@ function Navbar() {
     }
   }, [user?.email, refreshBalance]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    if (isProfileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileMenuOpen]);
+
   return (
-    <header className="sticky top-0 z-10 flex items-center justify-between px-3 py-3 mb-3 transition-all duration-300 border shadow-lg sm:px-4 md:px-5 sm:py-4 sm:mb-4 md:mb-5 border-slate-200/60 rounded-xl sm:rounded-2xl backdrop-blur-xl bg-white/95 shadow-slate-900/5">
+    <header className="sticky top-0 z-10 flex items-center justify-between px-3 py-3 mb-3 transition-all duration-300 border shadow-lg sm:px-4 md:px-5 sm:py-4 sm:mb-4 md:mb-5 border-slate-200/40 rounded-xl sm:rounded-2xl backdrop-blur-2xl bg-white/70 shadow-slate-900/10">
       <Link 
         to="/" 
         className="flex items-center gap-2 transition-transform duration-200 sm:gap-3 group hover:scale-[1.02]"
@@ -47,6 +65,18 @@ function Navbar() {
       <nav className="flex items-center gap-1 sm:gap-2">
         {user ? (
           <>
+            {!isAdmin && (
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+                <span className="text-[10px] sm:text-xs font-medium text-green-700">Balance:</span>
+                <span className="text-xs font-bold text-green-600 sm:text-sm">
+                  {loading ? (
+                    <span className="inline-block w-8 h-3 bg-green-200 rounded animate-pulse"></span>
+                  ) : (
+                    `৳${(backendBalance !== null ? backendBalance : 0).toFixed(2)}`
+                  )}
+                </span>
+              </div>
+            )}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -58,7 +88,7 @@ function Navbar() {
             )}
             {/* Non-admin specific options are now only inside the profile menu */}
             {/* Profile avatar + dropdown menu */}
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 type="button"
                 onClick={() => setIsProfileMenuOpen((open) => !open)}
@@ -145,16 +175,19 @@ function Navbar() {
                   >
                     🔍 FF ID Info
                   </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-red-600 border-t hover:bg-red-50 border-slate-200"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      handleLogout();
+                    }}
+                  >
+                    ⬅️ Logout
+                  </button>
                 </div>
               )}
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200"
-            >
-              <span className="hidden sm:inline">Logout</span>
-              <span className="sm:hidden">🚪</span>
-            </button>
           </>
         ) : (
           <>
