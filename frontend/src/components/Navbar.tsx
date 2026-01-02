@@ -137,6 +137,16 @@ function Navbar() {
                   )}
                   <button
                     type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left border-b text-slate-700 hover:bg-slate-50 border-slate-100"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate('/my-account');
+                    }}
+                  >
+                    👤 My Account
+                  </button>
+                  <button
+                    type="button"
                     className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);

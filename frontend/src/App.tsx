@@ -21,6 +21,7 @@ import FFIdInfo from './components/FFIdInfo';
 import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
 import RulesAndServices from './components/RulesAndServices';
+import MyAccount from './components/MyAccount';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -84,6 +85,16 @@ function App() {
           element={
             user ? (
               <OrderHistory />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/my-account"
+          element={
+            user ? (
+              <MyAccount />
             ) : (
               <Navigate to="/login" replace />
             )
