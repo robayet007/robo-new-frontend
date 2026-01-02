@@ -3,7 +3,7 @@ import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { paymentApi } from '../services/api';
 import type { BackendPurchase } from '../types';
-import { FaUser, FaEnvelope, FaShoppingBag, FaMoneyBillWave, FaWallet, FaSyncAlt, FaCheckCircle, FaFolder, FaInfoCircle } from 'react-icons/fa';
+import { FaSyncAlt, FaCheckCircle, FaFolder, FaInfoCircle } from 'react-icons/fa';
 
 function MyAccount() {
   const { user } = useAuth();
@@ -162,7 +162,7 @@ function MyAccount() {
               </div>
               <div>
                 <p className="text-sm text-slate-600 mb-1">Phone :</p>
-                <p className="text-sm font-semibold text-slate-900">{user?.phoneNumber || '-'}</p>
+                <p className="text-sm font-semibold text-slate-900">-</p>
               </div>
             </div>
           </div>
