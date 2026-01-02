@@ -57,8 +57,8 @@ function App() {
               <ProductGrid 
                 categories={catalog.categories} 
               />
-              <RulesAndServices />
               <Steps />
+              <RulesAndServices />
               <Footer />
             </>
           }
