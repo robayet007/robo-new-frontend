@@ -38,7 +38,6 @@ type AdminOrder = {
   createdAt?: string;
 };
 
-const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
 function AdminDashboard() {
   const { categories, products } = useCatalog();
@@ -249,7 +248,7 @@ function AdminDashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
@@ -282,7 +281,7 @@ function AdminDashboard() {
                 <YAxis stroke="#64748b" />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  formatter={(value: number) => `৳${value.toFixed(2)}`}
+                  formatter={(value: number | undefined) => `৳${(value ?? 0).toFixed(2)}`}
                 />
                 <Legend />
                 <Bar dataKey="revenue" fill="#8b5cf6" name="Revenue (৳)" radius={[8, 8, 0, 0]} />

@@ -26,6 +26,8 @@ export interface BackendCategory {
   description?: string;
   badge?: string;
   isActive: boolean;
+  dealId?: string | null;
+  image?: string;
 }
 
 export interface BackendPurchase {
@@ -39,6 +41,7 @@ export interface BackendPurchase {
   productId: string;
   productName?: string;
   diamonds?: string;
+  playerId?: string;
   paymentMethod: 'bkash' | 'robo' | 'uddokta';
   status: 'pending' | 'verified' | 'rejected' | 'failed' | 'completed';
   updatedBalance?: number;
