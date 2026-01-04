@@ -114,7 +114,9 @@ function useCatalog() {
             id: c.id,
             name: c.name,
             description: c.description,
-            badge: c.badge
+            badge: c.badge,
+            dealId: c.dealId || null,
+            image: c.image || undefined
           }));
         setCategories(convertedCategories);
       } else {

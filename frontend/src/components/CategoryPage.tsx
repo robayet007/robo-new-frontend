@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useLayoutEffect } from 'react';
 import type { Category, Product } from '../types';
 
 function CategoryPage({ 
@@ -13,9 +13,15 @@ function CategoryPage({
   const navigate = useNavigate();
   const [category, setCategory] = useState<Category | null>(null);
 
-  // Helper function to get category image based on category name
-  const getCategoryImage = (categoryName: string): string => {
-    const nameLower = categoryName.toLowerCase();
+  // Helper function to get category image - use category.image if available, otherwise fallback to name-based logic
+  const getCategoryImage = (category: Category): string => {
+    // If category has an image URL, use it
+    if (category.image) {
+      return category.image;
+    }
+    
+    // Fallback to name-based logic
+    const nameLower = category.name.toLowerCase();
     
     if (nameLower.includes('weekly')) {
       return '/weekly.jpg';
@@ -32,6 +38,11 @@ function CategoryPage({
     // Default fallback image
     return '/diamond-top-up.png';
   };
+
+  // Scroll to top immediately when component mounts or category changes
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, [categoryId]);
 
   useEffect(() => {
     if (categoryId) {
@@ -69,9 +80,13 @@ function CategoryPage({
           {/* Category Image */}
           <div className="flex-shrink-0">
             <img 
-              src={getCategoryImage(category.name)} 
+              src={getCategoryImage(category)} 
               alt={category.name}
               className="object-cover w-16 h-16 border-2 border-purple-200 shadow-md sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl"
+              onError={(e) => {
+                // Fallback to default image if custom image fails to load
+                (e.target as HTMLImageElement).src = '/diamond-top-up.png';
+              }}
             />
           </div>
           <div className="flex-1 min-w-0">

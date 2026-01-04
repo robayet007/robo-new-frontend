@@ -42,112 +42,133 @@ function OrderHistory() {
   }, [user?.uid]);
 
   return (
-    <div className="max-w-2xl p-4 mx-auto mt-4 bg-white border shadow-xl sm:mt-6 md:mt-8 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-slate-200">
-      <div className="mb-6 text-center">
-        <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-400/10 text-amber-700 border border-amber-400/35 font-semibold text-sm mb-4">
-          📦 Order History
-        </p>
-        <h2 className="mb-1 text-2xl font-bold text-slate-900">Your Orders</h2>
+    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">My Orders</h2>
         <p className="text-sm text-slate-600">
           আপনার সব টপ-আপ ও পেমেন্টের হিস্ট্রি এখানে দেখতে পারবেন।
         </p>
       </div>
 
       {loading && (
-        <div className="py-8 text-sm text-center text-slate-500">
-          অর্ডার হিস্ট্রি লোড হচ্ছে...
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
+          <p className="ml-3 text-sm text-slate-600">অর্ডার হিস্ট্রি লোড হচ্ছে...</p>
         </div>
       )}
 
       {!loading && error && (
-        <div className="p-3 mb-4 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50">
+        <div className="p-4 mb-4 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50">
           {error}
         </div>
       )}
 
       {!loading && !error && orders.length === 0 && (
-        <div className="py-8 text-sm text-center text-slate-500">
-          এখনও কোনো অর্ডার পাওয়া যায়নি। আপনি প্রথম টপ-আপ করলেই এখানে দেখাবে।
+        <div className="py-12 text-center">
+          <p className="text-slate-500 mb-2">এখনও কোনো অর্ডার পাওয়া যায়নি।</p>
+          <p className="text-sm text-slate-400">আপনি প্রথম টপ-আপ করলেই এখানে দেখাবে।</p>
         </div>
       )}
 
       {!loading && orders.length > 0 && (
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-          {orders.map((order) => {
-            const date = order.createdAt ? new Date(order.createdAt) : null;
-            const dateLabel = date
-              ? date.toLocaleString('bn-BD', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                })
-              : 'Unknown date';
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="divide-y divide-slate-200">
+            {orders.map((order, index) => {
+              const date = order.createdAt ? new Date(order.createdAt) : null;
+              const dateLabel = date
+                ? date.toLocaleString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                  })
+                : 'Unknown date';
 
-            const isRobo = order.paymentMethod === 'robo';
-            const amount = (order.amount ?? order.price) ?? 0;
+              const amount = (order.amount ?? order.price) ?? 0;
+              const status = order.status || 'pending';
+              const isComplete = status === 'completed' || status === 'verified' || order.verifiedAt;
+              const statusText = isComplete ? 'complete' : 'pending';
 
-            return (
-              <div
-                key={order._id || order.transactionId}
-                className="flex items-start justify-between gap-3 p-3 border rounded-xl border-slate-200 bg-slate-50/60"
-              >
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-semibold text-slate-800">
-                      {order.productName || 'Top-up'}
-                    </span>
-                    {order.diamonds ? (
-                      <span className="px-2 py-0.5 rounded-full text-[11px] bg-sky-100 text-sky-700">
-                        💎 {order.diamonds}
-                      </span>
-                    ) : null}
+              // Extract serial number from transaction ID (last 5 digits or use index)
+              const serialNo = order.transactionId?.slice(-5) || String(10000 + orders.length - index);
+
+              return (
+                <div
+                  key={order._id || order.transactionId}
+                  className="p-4 sm:p-5 hover:bg-slate-50/50 transition-colors"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 sm:gap-4 items-start">
+                    {/* Serial NO */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Serial NO</p>
+                      <p className="text-sm font-semibold text-slate-900">{serialNo}</p>
+                    </div>
+
+                    {/* Date */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Date</p>
+                      <p className="text-sm text-slate-900">{dateLabel}</p>
+                    </div>
+
+                    {/* Package */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Package</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-medium text-slate-900">
+                          {order.diamonds ? `${order.diamonds} Diamond` : order.productName || 'Top-up'}
+                        </p>
+                        {order.diamonds && (
+                          <span className="text-blue-400">💎</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quantity */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Quantity</p>
+                      <p className="text-sm text-slate-900">1</p>
+                    </div>
+
+                    {/* Player ID */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Player ID</p>
+                      <p className="text-sm font-mono text-slate-900 break-all">
+                        {order.playerId || '-'}
+                      </p>
+                    </div>
+
+                    {/* Price & Status */}
+                    <div className="sm:col-span-1 flex flex-col sm:items-end">
+                      <div className="mb-2">
+                        <p className="text-xs text-slate-500 mb-1">Price</p>
+                        <p className="text-sm font-bold text-slate-900">
+                          {amount.toFixed(0)} Tk
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-500 mb-1">Status</p>
+                        <p className={`text-sm font-semibold ${
+                          isComplete ? 'text-green-600' : 'text-red-600'
+                        }`}>
+                          {statusText}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <p className="mb-1 text-xs text-slate-500">
-                    TrxID: {order.transactionId}
-                  </p>
-                  <p className="text-xs text-slate-500">{dateLabel}</p>
-                </div>
 
-                <div className="text-right">
-                  <p className="text-sm font-bold text-slate-900">
-                    ৳{amount.toFixed(2)}
-                  </p>
-                  <p className="mt-1 text-xs">
-                    <span className={
-                      isRobo ? 'text-purple-600' : 
-                      order.paymentMethod === 'uddokta' ? 'text-blue-600' :
-                      'text-rose-600'
-                    }>
-                      {isRobo ? 'Robo Pay' : 
-                       order.paymentMethod === 'uddokta' ? 'Uddokta Pay' :
-                       'bKash'}
-                    </span>
-                    <span className="text-slate-400"> • </span>
-                    <span
-                      className={
-                        order.status === 'verified' || order.status === 'completed'
-                          ? 'text-emerald-600'
-                          : order.status === 'pending'
-                          ? 'text-amber-600'
-                          : 'text-red-600'
-                      }
-                    >
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                    </span>
-                  </p>
-
-                  {typeof order.updatedBalance === 'number' && (
-                    <p className="mt-1 text-[11px] text-slate-500">
-                      Balance after: ৳{order.updatedBalance.toFixed(2)}
+                  {/* Transaction ID - Show on mobile */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 sm:hidden">
+                    <p className="text-xs text-slate-500">
+                      TrxID: <span className="text-slate-700 font-mono">{order.transactionId}</span>
                     </p>
-                  )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>

@@ -336,7 +336,7 @@ function UserManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success' 

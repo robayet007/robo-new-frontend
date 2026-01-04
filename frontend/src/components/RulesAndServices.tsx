@@ -72,6 +72,21 @@ const RulesAndServices = () => {
             </p>
           </div>
         </div>
+
+        {/* Rule 5 - Age Restriction */}
+        <div className="flex items-start gap-3 p-4 sm:p-5 rounded-xl bg-white/80 backdrop-blur-sm border-2 border-orange-300/50 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+          <div className="flex-shrink-0 p-2 rounded-lg bg-orange-100">
+            <FaExclamationTriangle className="text-orange-600 text-lg sm:text-xl" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-sm sm:text-base font-bold text-orange-900 mb-2">
+              বয়স সীমাবদ্ধতা
+            </h3>
+            <p className="text-xs sm:text-sm text-orange-800 leading-relaxed">
+              ১৮ বছরের নিচে কেউ top up করতে পারবে না। আমাদের সেবা শুধুমাত্র ১৮ বছর বা তার বেশি বয়সের ব্যবহারকারীদের জন্য।
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-5 sm:mt-6 p-4 sm:p-5 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 border-2 border-purple-400 shadow-lg">

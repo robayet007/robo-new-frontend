@@ -49,7 +49,6 @@ function AdminOrders() {
           setError(resp.message || 'Failed to load orders');
         }
       } catch (err: any) {
-        // console.error('Error loading orders:', err);
         setError(err?.message || 'Failed to load orders');
       } finally {
         setLoading(false);
@@ -66,17 +65,24 @@ function AdminOrders() {
       o.userEmail?.toLowerCase().includes(s) ||
       o.userName?.toLowerCase().includes(s) ||
       o.transactionId?.toLowerCase().includes(s) ||
-      o.productName?.toLowerCase().includes(s)
+      o.productName?.toLowerCase().includes(s) ||
+      o.playerId?.toLowerCase().includes(s)
     );
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+      {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-bold sm:text-xl text-slate-900">Order History (All)</h3>
           <p className="text-xs sm:text-sm text-slate-600">
             Total orders: <span className="font-semibold text-slate-900">{orders.length}</span>
+            {search && (
+              <span className="ml-2">
+                (Filtered: <span className="font-semibold text-slate-900">{filtered.length}</span>)
+              </span>
+            )}
           </p>
         </div>
         <div className="flex-1 sm:max-w-xs">
@@ -84,14 +90,14 @@ function AdminOrders() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by email, name, product or TrxID..."
+            placeholder="Search by email, name, product, TrxID or Player ID..."
             className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
           />
         </div>
       </div>
 
       {loading && (
-        <div className="flex items-center justify-center py-10">
+        <div className="flex items-center justify-center py-12">
           <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin" />
           <p className="ml-3 text-sm text-slate-600">Loading orders...</p>
         </div>
@@ -103,101 +109,132 @@ function AdminOrders() {
         </div>
       )}
 
-      {!loading && !error && (
-        <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
-          <div className="grid grid-cols-[1.6fr_1.6fr_1fr_1fr_1.1fr_1.2fr] min-w-[980px] gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 text-[11px] sm:text-xs font-semibold text-slate-700">
-            <div>User</div>
-            <div>Product</div>
-            <div>Amount</div>
-            <div>Payment</div>
-            <div>Balance After</div>
-            <div>Time</div>
-          </div>
-          {filtered.length > 0 ? (
-            filtered.map((o) => {
-              const date = o.verifiedAt || o.createdAt;
+      {!loading && !error && filtered.length === 0 && (
+        <div className="py-12 text-center bg-white rounded-xl border border-slate-200">
+          <p className="text-slate-500 mb-2">
+            {search ? 'No orders found matching your search.' : 'No orders found.'}
+          </p>
+        </div>
+      )}
+
+      {!loading && !error && filtered.length > 0 && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="divide-y divide-slate-200">
+            {filtered.map((order, index) => {
+              const date = order.verifiedAt || order.createdAt;
               const dateLabel = date
-                ? new Date(date).toLocaleString('bn-BD', {
-                    day: '2-digit',
-                    month: 'short',
+                ? new Date(date).toLocaleString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
                     year: 'numeric',
-                    hour: '2-digit',
+                    hour: 'numeric',
                     minute: '2-digit',
                     hour12: true,
                   })
-                : '-';
+                : 'Unknown date';
+
+              const amount = (order.price ?? order.amount ?? 0);
+              const status = order.status || 'pending';
+              const isComplete = status === 'completed' || status === 'verified' || order.verifiedAt;
+              const statusText = isComplete ? 'complete' : 'pending';
+
+              // Extract serial number from transaction ID
+              const serialNo = order.transactionId?.slice(-5) || String(10000 + filtered.length - index);
 
               return (
                 <div
-                  key={o._id || o.transactionId}
-                  className="grid grid-cols-[1.6fr_1.6fr_1fr_1fr_1.1fr_1.2fr] min-w-[980px] gap-2 sm:gap-3 p-3 sm:p-4 border-b border-slate-100 text-[11px] sm:text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                  key={order._id || order.transactionId}
+                  className="p-4 sm:p-5 hover:bg-slate-50/50 transition-colors"
                 >
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate text-slate-900">
-                      {o.userName || o.userEmail || 'Unknown user'}
-                    </p>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      {o.userEmail || '-'}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      UID: {o.userId || '-'}
-                    </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-7 gap-3 sm:gap-4 items-start">
+                    {/* Serial NO */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Serial NO</p>
+                      <p className="text-sm font-semibold text-slate-900">{serialNo}</p>
+                    </div>
+
+                    {/* Date */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Date</p>
+                      <p className="text-sm text-slate-900">{dateLabel}</p>
+                    </div>
+
+                    {/* User */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">User</p>
+                      <p className="text-sm font-medium text-slate-900 truncate">
+                        {order.userName || order.userEmail?.split('@')[0] || 'Unknown'}
+                      </p>
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {order.userEmail || '-'}
+                      </p>
+                    </div>
+
+                    {/* Package */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Package</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-medium text-slate-900">
+                          {order.diamonds ? `${order.diamonds} Diamond` : order.productName || 'Top-up'}
+                        </p>
+                        {order.diamonds && (
+                          <span className="text-blue-400">💎</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Player ID */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Player ID</p>
+                      <p className="text-sm font-mono text-slate-900 break-all">
+                        {order.playerId || '-'}
+                      </p>
+                    </div>
+
+                    {/* Price */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Price</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        {amount.toFixed(0)} Tk
+                      </p>
+                    </div>
+
+                    {/* Status */}
+                    <div className="sm:col-span-1">
+                      <p className="text-xs text-slate-500 mb-1">Status</p>
+                      <p className={`text-sm font-semibold ${
+                        isComplete ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {statusText}
+                      </p>
+                      {/* Payment Method */}
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {order.paymentMethod === 'robo' ? 'Robo Pay' : 
+                         order.paymentMethod === 'uddokta' ? 'Uddokta Pay' :
+                         'bKash'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="font-semibold truncate text-slate-900">
-                      {o.productName || 'Top up'}
-                    </p>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      {o.diamonds ? `💎 ${o.diamonds}` : o.productId}
-                    </p>
-                    <p className="text-[10px] text-slate-400 truncate">
-                      TrxID: {o.transactionId}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-bold text-slate-900">
-                      ৳{(o.price ?? o.amount ?? 0).toFixed(2)}
-                    </p>
-                    <p className="text-[10px] text-slate-500">
-                      Paid: ৳{(o.amount ?? 0).toFixed(2)}
-                    </p>
-                  </div>
-                  <div>
-                    <span
-                      className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        o.paymentMethod === 'robo'
-                          ? 'bg-purple-100 text-purple-700'
-                          : o.paymentMethod === 'uddokta'
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-rose-100 text-rose-700'
-                      }`}
-                    >
-                      {o.paymentMethod === 'robo' ? 'Robo Pay' : 
-                       o.paymentMethod === 'uddokta' ? 'Uddokta Pay' :
-                       'bKash'}
-                    </span>
-                    <p className="mt-1 text-[10px] text-slate-500">
-                      {o.status || '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-emerald-700">
-                      {typeof o.updatedBalance === 'number'
-                        ? `৳${o.updatedBalance.toFixed(2)}`
-                        : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-slate-600">{dateLabel}</p>
+
+                  {/* Additional Info - Show on mobile or when expanded */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 sm:hidden">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-slate-500">TrxID:</p>
+                        <p className="text-slate-700 font-mono">{order.transactionId}</p>
+                      </div>
+                      {typeof order.updatedBalance === 'number' && (
+                        <div>
+                          <p className="text-slate-500">Balance After:</p>
+                          <p className="text-slate-700">৳{order.updatedBalance.toFixed(2)}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
-            })
-          ) : (
-            <div className="py-8 text-sm text-center text-slate-500">
-              No orders found.
-            </div>
-          )}
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -205,5 +242,3 @@ function AdminOrders() {
 }
 
 export default AdminOrders;
-
-

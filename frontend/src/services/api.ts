@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
@@ -115,6 +115,11 @@ export const categoryApi = {
     return response.json();
   },
   
+  getAllForAdmin: async (): Promise<ApiResponse<BackendCategory[]>> => {
+    const response = await SmartAPIManager.smartFetch('/products/categories/admin');
+    return response.json();
+  },
+  
   getCategories: async (): Promise<ApiResponse<BackendCategory[]>> => {
     const response = await SmartAPIManager.smartFetch('/products/categories');
     return response.json();
@@ -141,7 +146,43 @@ export const categoryApi = {
       method: 'DELETE'
     });
     return response.json();
-  }
+  },
+};
+
+// Deals API
+export const dealApi = {
+  getAll: async (): Promise<ApiResponse<BackendDeal[]>> => {
+    const response = await SmartAPIManager.smartFetch('/products/deals');
+    return response.json();
+  },
+  
+  getById: async (id: string): Promise<ApiResponse<BackendDeal>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`);
+    return response.json();
+  },
+  
+  create: async (dealData: Omit<BackendDeal, '_id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<BackendDeal>> => {
+    const response = await SmartAPIManager.smartFetch('/products/deals', {
+      method: 'POST',
+      body: JSON.stringify(dealData)
+    });
+    return response.json();
+  },
+  
+  update: async (id: string, dealData: Partial<BackendDeal>): Promise<ApiResponse<BackendDeal>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(dealData)
+    });
+    return response.json();
+  },
+  
+  delete: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
 };
 
 // Payments API with smart fetch

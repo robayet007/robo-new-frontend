@@ -43,6 +43,16 @@ function Checkout({ products }: { products: Product[] }) {
   const [payment, setPayment] = useState<"robo" | "bkash" | "uddokta">("robo");
   const [processing, setProcessing] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
+  const [isHolding, setIsHolding] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdDuration = 2500; // 2.5 seconds
+  const holdIntervalRef = useRef<number | null>(null);
+  const holdStartTimeRef = useRef<number | null>(null);
+  const [showRoboPaymentModal, setShowRoboPaymentModal] = useState(false);
+  const [modalHolding, setModalHolding] = useState(false);
+  const [modalHoldProgress, setModalHoldProgress] = useState(0);
+  const modalHoldIntervalRef = useRef<number | null>(null);
+  const modalHoldStartTimeRef = useRef<number | null>(null);
   const [verifyingPayment, setVerifyingPayment] = useState<{
     invoiceId: string;
     status: "verifying" | "verified" | "failed";
@@ -337,6 +347,175 @@ function Checkout({ products }: { products: Product[] }) {
   };
 
   // ✅ FIX: Handle Uddokta Pay checkout with strict prevention
+  // Handle tap and hold for payment
+  const handleMouseDown = () => {
+    if (processing || ffNameLoading || !ffName) return;
+    
+    // For Robo Pay, show modal instead of direct payment
+    if (payment === "robo") {
+      setShowRoboPaymentModal(true);
+      return;
+    }
+    
+    setIsHolding(true);
+    setHoldProgress(0);
+    holdStartTimeRef.current = Date.now();
+    
+    const interval = window.setInterval(() => {
+      if (holdStartTimeRef.current) {
+        const elapsed = Date.now() - holdStartTimeRef.current;
+        const progress = Math.min((elapsed / holdDuration) * 100, 100);
+        setHoldProgress(progress);
+        
+        if (progress >= 100) {
+          window.clearInterval(interval);
+          holdIntervalRef.current = null;
+          setIsHolding(false);
+          setHoldProgress(0);
+          
+          // Trigger payment
+          if (payment === "bkash") {
+            handleBkashPayment();
+          }
+        }
+      }
+    }, 16); // ~60fps
+    
+    holdIntervalRef.current = interval;
+  };
+
+  // Handle modal tap and hold
+  const handleModalMouseDown = () => {
+    if (processing) return;
+    
+    setModalHolding(true);
+    setModalHoldProgress(0);
+    modalHoldStartTimeRef.current = Date.now();
+    
+    const interval = window.setInterval(() => {
+      if (modalHoldStartTimeRef.current) {
+        const elapsed = Date.now() - modalHoldStartTimeRef.current;
+        const progress = Math.min((elapsed / holdDuration) * 100, 100);
+        setModalHoldProgress(progress);
+        
+        if (progress >= 100) {
+          window.clearInterval(interval);
+          modalHoldIntervalRef.current = null;
+          setModalHolding(false);
+          setModalHoldProgress(0);
+          setShowRoboPaymentModal(false);
+          
+          // Trigger Robo payment
+          handleRoboBalancePayment();
+        }
+      }
+    }, 16); // ~60fps
+    
+    modalHoldIntervalRef.current = interval;
+  };
+
+  const handleModalMouseUp = () => {
+    if (modalHoldIntervalRef.current !== null) {
+      window.clearInterval(modalHoldIntervalRef.current);
+      modalHoldIntervalRef.current = null;
+    }
+    setModalHolding(false);
+    setModalHoldProgress(0);
+    modalHoldStartTimeRef.current = null;
+  };
+
+  const handleModalMouseLeave = () => {
+    handleModalMouseUp();
+  };
+
+  const handleMouseUp = () => {
+    if (holdIntervalRef.current !== null) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+    setIsHolding(false);
+    setHoldProgress(0);
+    holdStartTimeRef.current = null;
+  };
+
+  const handleMouseLeave = () => {
+    handleMouseUp();
+  };
+
+  // Handle bKash payment
+  const handleBkashPayment = async () => {
+    if (isPaymentInProgressRef.current) return;
+    if (!uid.trim()) {
+      alert("Please enter your Free Fire UID");
+      return;
+    }
+    if (!ffName) {
+      alert("Please wait for player name to load");
+      return;
+    }
+
+    isPaymentInProgressRef.current = true;
+    setProcessing(true);
+
+    const transactionId = `BKASH-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+    paymentAttemptsRef.current.add(transactionId);
+
+    try {
+      const paymentPayload = {
+        transactionId: transactionId,
+        amount: product.price,
+        playerId: uid.trim(),
+        productId: product.id,
+        productName: product.name || "Product",
+        diamonds: product.diamonds || '',
+        price: product.price,
+        paymentMethod: "bkash" as const,
+        userEmail: user?.email || "",
+        userName: user?.displayName || user?.email?.split("@")[0] || "User",
+        userId: user?.uid || "",
+        timestamp: new Date().toISOString(),
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      let response;
+      try {
+        response = await paymentApi.verify(paymentPayload, {
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        if (err.name === "AbortError") {
+          throw new Error("Payment request timeout. Please try again.");
+        }
+        throw err;
+      }
+
+      if (response.success) {
+        setPaymentResult({
+          status: "success",
+          message: "Payment successful! Your order is being processed.",
+          amount: product.price,
+          remaining: balance,
+          transactionId: transactionId,
+          productName: product.name,
+          paymentMethod: "bKash",
+          ffName: ffName,
+          playerId: uid.trim(),
+        });
+      } else {
+        throw new Error(response.message || "Payment failed");
+      }
+    } catch (err: any) {
+      alert("Payment Error: " + (err.message || "Unknown error"));
+    } finally {
+      isPaymentInProgressRef.current = false;
+      setProcessing(false);
+    }
+  };
+
   const handleUddoktaPayPayment = async () => {
     // console.log("🔄 Uddokta Pay payment initiated");
     
@@ -914,29 +1093,142 @@ function Checkout({ products }: { products: Product[] }) {
             </div>
           )}
 
-          {/* Buy Now Button */}
-          <button
-            onClick={() => {
-              if (!uid.trim()) {
-                alert("Please enter your Free Fire UID");
-                return;
-              }
+          {/* Pay Button with Tap and Hold */}
+          <div className="relative">
+            <button
+              onMouseDown={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
+              onMouseUp={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
+              onMouseLeave={payment === "robo" || payment === "bkash" ? handleMouseLeave : undefined}
+              onTouchStart={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
+              onTouchEnd={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
+              onClick={() => {
+                if (payment === "uddokta") {
+                  if (!uid.trim()) {
+                    alert("Please enter your Free Fire UID");
+                    return;
+                  }
+                  handleUddoktaPayPayment();
+                }
+              }}
+              disabled={processing || balanceLoading || (payment === "uddokta" && !user) || ffNameLoading || !ffName}
+              className="relative w-full px-6 py-4 overflow-hidden text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-purple-500/30"
+            >
+              {/* Progress bar */}
+              {isHolding && (
+                <div 
+                  className="absolute inset-0 transition-all duration-75 bg-gradient-to-r from-green-500 to-emerald-600"
+                  style={{ width: `${holdProgress}%` }}
+                />
+              )}
               
-              if (payment === "robo") {
-                handleRoboBalancePayment();
-              } else if (payment === "uddokta") {
-                handleUddoktaPayPayment();
-              }
-            }}
-            disabled={processing || balanceLoading || (payment === "uddokta" && !user)}
-            className="w-full px-6 py-4 text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-purple-500/30"
-          >
-            {processing ? "Processing..." : 
-             payment === "uddokta" && !user ? "Please Login" : 
-             "Buy Now"}
-          </button>
+              {/* Bird flying animation */}
+              {isHolding && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="text-4xl animate-bounce" style={{ animationDuration: '0.5s' }}>
+                    🐦
+                  </div>
+                </div>
+              )}
+              
+              {/* Button text */}
+              <span className="relative z-10">
+                {processing ? "Processing..." : 
+                 payment === "uddokta" && !user ? "Please Login" : 
+                 ffNameLoading ? "Loading Player Name..." :
+                 isHolding ? `Hold... ${Math.round(holdProgress)}%` :
+                 payment === "robo" || payment === "bkash" ? "Tap & Hold to Pay" :
+                 "Pay"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Robo Payment Confirmation Modal */}
+      {showRoboPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md mx-4 overflow-hidden bg-white shadow-2xl rounded-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h2 className="text-lg font-bold text-slate-900">মার্চেন্ট পেমেন্ট নিশ্চিত করুন</h2>
+              <button
+                onClick={() => {
+                  setShowRoboPaymentModal(false);
+                  handleModalMouseUp();
+                }}
+                className="p-2 transition-colors text-slate-600 hover:text-slate-900"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Merchant Info */}
+            <div className="p-4">
+              <div className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-300">
+                  <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Merchant</p>
+                  <p className="text-sm font-semibold text-slate-900">Robo Top Up Zone</p>
+                </div>
+              </div>
+
+              {/* Payment Summary */}
+              <div className="p-4 mt-4 bg-slate-100 rounded-xl">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <p className="mb-1 text-xs text-slate-500">সর্বমোট</p>
+                    <p className="text-lg font-bold text-slate-900">৳{product.price.toFixed(2)}</p>
+                    <p className="text-xs text-slate-600">৳{product.price.toFixed(2)} + ৳0.0</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="mb-1 text-xs text-slate-500">নতুন ব্যালেন্স</p>
+                    <p className="text-lg font-bold text-green-600">৳{(balance - product.price).toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="pt-3 mt-3 border-t border-slate-200">
+                  <p className="mb-1 text-xs text-slate-500">রেফারেন্স</p>
+                  <p className="font-mono text-sm text-slate-700">{uid.trim() || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tap and Hold Button */}
+            <div className="px-4 pb-4">
+              <button
+                onMouseDown={handleModalMouseDown}
+                onMouseUp={handleModalMouseUp}
+                onMouseLeave={handleModalMouseLeave}
+                onTouchStart={handleModalMouseDown}
+                onTouchEnd={handleModalMouseUp}
+                disabled={processing}
+                className="relative w-full px-6 py-4 overflow-hidden text-white bg-slate-800 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {/* Progress bar */}
+                {modalHolding && (
+                  <div 
+                    className="absolute inset-0 transition-all duration-75 bg-gradient-to-r from-green-500 to-emerald-600"
+                    style={{ width: `${modalHoldProgress}%` }}
+                  />
+                )}
+                
+                {/* Bird icon */}
+                <div className="relative z-10 flex items-center justify-between">
+                  <span className="text-sm font-medium">
+                    {modalHolding ? `Hold... ${Math.round(modalHoldProgress)}%` : 'মার্চেন্ট পেমেন্ট করতে ট্যাপ করে ধরে রাখুন'}
+                  </span>
+                  <span className="text-2xl">🐦</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

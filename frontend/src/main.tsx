@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import UpdateNotification from './components/UpdateNotification'
+import SplashScreen from './components/SplashScreen'
 import './style.css'
 
 // Update notification wrapper component
@@ -82,6 +83,7 @@ function AppWithUpdates() {
 
   return (
     <>
+      <SplashScreen />
       <App />
       {updateAvailable && (
         <UpdateNotification 

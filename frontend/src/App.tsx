@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Notice from './components/Notice';
 import Hero from './components/Hero';
@@ -28,13 +28,16 @@ function App() {
   const catalog = useCatalog();
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
+  const location = useLocation();
+  const isAdminRoute = location.pathname === '/admin';
+  
   // some changesw
   // Only show full page loading for catalog (products/categories)
   // Auth and role loading are non-blocking - they load in background
   if (catalog.loading) {
     return (
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
-        <Navbar />
+        {!isAdminRoute && <Navbar />}
         <Notice />
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -46,90 +49,99 @@ function App() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
-      <Navbar />
+    <>
+      {!isAdminRoute && (
+        <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
+          <Navbar />
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <>
+                  <Notice />
+                  <Hero />
+                  <ProductGrid 
+                    categories={catalog.categories} 
+                  />
+                  <Steps />
+                  <RulesAndServices />
+                  <Footer />
+                </>
+              }
+            />
+            <Route path="/checkout" element={<Checkout products={catalog.products} />} />
+            <Route 
+              path="/category/:categoryId" 
+              element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+            />
+            <Route path="/add-money" element={<AddMoney />} />
+            <Route
+              path="/change-password"
+              element={
+                user ? (
+                  <ChangePassword />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                user ? (
+                  <OrderHistory />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/my-account"
+              element={
+                user ? (
+                  <MyAccount />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/ff-info"
+              element={
+                user ? (
+                  <FFIdInfo />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/login"
+              element={
+                user ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <Login />
+                )
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                user ? (
+                  <Navigate to="/" replace />
+                ) : (
+                  <SignUp />
+                )
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <InstallButton />
+          <WhatsAppButton />
+        </div>
+      )}
       <Routes>
-        <Route
-          path="/"
-          element={
-            <>
-              <Notice />
-              <Hero />
-              <ProductGrid 
-                categories={catalog.categories} 
-              />
-              <Steps />
-              <RulesAndServices />
-              <Footer />
-            </>
-          }
-        />
-        <Route path="/checkout" element={<Checkout products={catalog.products} />} />
-        <Route 
-          path="/category/:categoryId" 
-          element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
-        />
-        <Route path="/add-money" element={<AddMoney />} />
-        <Route
-          path="/change-password"
-          element={
-            user ? (
-              <ChangePassword />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/orders"
-          element={
-            user ? (
-              <OrderHistory />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/my-account"
-          element={
-            user ? (
-              <MyAccount />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/ff-info"
-          element={
-            user ? (
-              <FFIdInfo />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/login"
-          element={
-            user ? (
-              <Navigate to="/" replace />
-            ) : (
-              <Login />
-            )
-          }
-        />
-        <Route
-          path="/signup"
-          element={
-            user ? (
-              <Navigate to="/" replace />
-            ) : (
-              <SignUp />
-            )
-          }
-        />
         <Route
           path="/admin"
           element={
@@ -142,11 +154,8 @@ function App() {
             )
           }
         />
-        <Route path="*" element={<NotFound />} />
       </Routes>
-      <InstallButton />
-      <WhatsAppButton />
-    </div>
+    </>
   );
 }
 

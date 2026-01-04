@@ -52,6 +52,26 @@ export type Category = {
   name: string;
   description?: string;
   badge?: string;
+  dealId?: string | null;
+  image?: string;
+}
+
+export interface BackendDeal {
+  _id: string;
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type Deal = {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
 }
 
 export type Product = {
