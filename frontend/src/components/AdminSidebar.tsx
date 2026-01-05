@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine } from 'react-icons/fa';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell } from 'react-icons/fa';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices') => void;
   onLogout: () => void;
 };
 
@@ -13,6 +13,8 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const menuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome },
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox },
+    { id: 'banners' as const, label: 'Banner Management', icon: FaImages },
+    { id: 'notices' as const, label: 'Notice Management', icon: FaBell },
     { id: 'users' as const, label: 'User Management', icon: FaUsers },
     { id: 'orders' as const, label: 'Order History', icon: FaHistory },
   ];

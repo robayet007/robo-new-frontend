@@ -3,9 +3,11 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { bannerApi } from "./services/api"
+import type { BackendBanner } from "./types"
 
 interface Slide {
-  id: number
+  id: string
   title: string
   subtitle: string
   buttonText: string
@@ -16,6 +18,8 @@ export default function GameHero() {
   const [activeSlide, setActiveSlide] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
+  const [slides, setSlides] = useState<Slide[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const checkSize = () => {
@@ -27,24 +31,33 @@ export default function GameHero() {
     return () => window.removeEventListener('resize', checkSize)
   }, [])
 
-  const slides: Slide[] = [
-    {
-      id: 1,
-      title: "",
-      subtitle: "",
-      buttonText: "",
-      image:
-        "https://i.ytimg.com/vi/Lq3kxtOLdZ0/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLDV5bpXTtYKwYyaOv5vaYRzJM18BA",
-    },
-    {
-      id: 2,
-      title: "",
-      subtitle: "",
-      buttonText: "",
-      image:
-        "https://i.ytimg.com/vi/ACC4-FeWu8Q/maxresdefault.jpg",
-    },
-  ]
+  useEffect(() => {
+    const loadBanners = async () => {
+      try {
+        setLoading(true)
+        const response = await bannerApi.getAll()
+        if (response.success && response.data) {
+          const bannerSlides: Slide[] = response.data.map((banner: BackendBanner) => ({
+            id: banner.id,
+            title: banner.title || '',
+            subtitle: banner.subtitle || '',
+            buttonText: banner.buttonText || '',
+            image: banner.image
+          }))
+          setSlides(bannerSlides)
+        } else {
+          // Fallback to empty array if API fails
+          setSlides([])
+        }
+      } catch (error) {
+        console.error('Failed to load banners:', error)
+        setSlides([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBanners()
+  }, [])
 
   useEffect(() => {
     if (slides.length <= 1) return
@@ -55,6 +68,13 @@ export default function GameHero() {
     return () => clearInterval(interval)
   }, [slides.length])
 
+  // Ensure activeSlide is within bounds
+  useEffect(() => {
+    if (slides.length > 0 && activeSlide >= slides.length) {
+      setActiveSlide(0)
+    }
+  }, [slides.length, activeSlide])
+
   const containerStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
@@ -64,21 +84,6 @@ export default function GameHero() {
     margin: "0 auto",
     overflow: "hidden",
     borderRadius: "8px",
-  }
-
-  const slideStyle: React.CSSProperties = {
-    position: "relative",
-    width: "100%",
-    height: "100%",
-    backgroundImage: `url(${slides[activeSlide].image})`,
-    // পুরো ইমেজ দেখানোর জন্য cover ব্যবহার করা হয়েছে যাতে container fill হয়
-    backgroundSize: "cover",
-    backgroundPosition: "center center",
-    backgroundRepeat: "no-repeat",
-    backgroundColor: "#000",
-    // ইমেজকে একটু উজ্জ্বল/সেটুরেটেড করা
-    filter: "brightness(1.18) saturate(1.1)",
-    transition: "background-image 0.5s ease-in-out",
   }
 
   const overlayStyle: React.CSSProperties = {
@@ -148,6 +153,59 @@ export default function GameHero() {
     borderRadius: "2px",
   })
 
+  if (loading) {
+    return (
+      <div style={containerStyle}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          backgroundColor: '#000'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #8b5cf6',
+            borderTopColor: 'transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}></div>
+        </div>
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  if (slides.length === 0) {
+    return null
+  }
+
+  // Get current slide safely
+  const currentSlide = slides[activeSlide] || slides[0]
+  if (!currentSlide) {
+    return null
+  }
+
+  const slideStyle: React.CSSProperties = {
+    position: "relative",
+    width: "100%",
+    height: "100%",
+    backgroundImage: `url(${currentSlide.image})`,
+    // পুরো ইমেজ দেখানোর জন্য cover ব্যবহার করা হয়েছে যাতে container fill হয়
+    backgroundSize: "cover",
+    backgroundPosition: "center center",
+    backgroundRepeat: "no-repeat",
+    backgroundColor: "#000",
+    // ইমেজকে একটু উজ্জ্বল/সেটুরেটেড করা
+    filter: "brightness(1.18) saturate(1.1)",
+    transition: "background-image 0.5s ease-in-out",
+  }
+
   return (
     <>
       <style>{`
@@ -179,16 +237,16 @@ export default function GameHero() {
               maxWidth: isTablet ? "70%" : "60%",
             }}
           >
-            <h1 style={titleStyle}>{slides[activeSlide].title}</h1>
-            {slides[activeSlide].subtitle && (
-              <p style={subtitleStyle}>{slides[activeSlide].subtitle}</p>
+            <h1 style={titleStyle}>{currentSlide.title}</h1>
+            {currentSlide.subtitle && (
+              <p style={subtitleStyle}>{currentSlide.subtitle}</p>
             )}
-            {slides[activeSlide].buttonText && (
+            {currentSlide.buttonText && (
               <button
                 type="button"
                 style={buttonStyle}
               >
-                {slides[activeSlide].buttonText}
+                {currentSlide.buttonText}
               </button>
             )}
           </div>

@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { categoryApi, dealApi } from '../services/api';
-import type { BackendDeal } from '../types';
+import { categoryApi, dealApi, bannerApi, noticeApi } from '../services/api';
+import type { BackendDeal, BackendBanner, BackendNotice } from '../types';
 import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
 import AdminDashboard from './AdminDashboard';
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -46,6 +46,22 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [dealDesc, setDealDesc] = useState('');
   const [dealOrder, setDealOrder] = useState('0');
   const [editingDeal, setEditingDeal] = useState<string | null>(null);
+  const [banners, setBanners] = useState<BackendBanner[]>([]);
+  const [bannerImage, setBannerImage] = useState('');
+  const [bannerTitle, setBannerTitle] = useState('');
+  const [bannerSubtitle, setBannerSubtitle] = useState('');
+  const [bannerButtonText, setBannerButtonText] = useState('');
+  const [bannerOrder, setBannerOrder] = useState('0');
+  const [editingBanner, setEditingBanner] = useState<string | null>(null);
+  const [notices, setNotices] = useState<BackendNotice[]>([]);
+  const [noticeMessage, setNoticeMessage] = useState('');
+  const [noticeTitle, setNoticeTitle] = useState('');
+  const [noticeIcon, setNoticeIcon] = useState('FaRobot');
+  const [noticeFeatures, setNoticeFeatures] = useState<Array<{ icon?: string; text: string }>>([]);
+  const [noticeOrder, setNoticeOrder] = useState('0');
+  const [editingNotice, setEditingNotice] = useState<string | null>(null);
+  const [newFeatureText, setNewFeatureText] = useState('');
+  const [newFeatureIcon, setNewFeatureIcon] = useState('FaShieldAlt');
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => {
@@ -89,12 +105,19 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       loadAllCategories();
       loadDeals();
     }
+    if (activeTab === 'banners' || activeTab === 'products') {
+      loadBanners();
+    }
+    if (activeTab === 'notices') {
+      loadNotices();
+    }
   }, [activeTab]);
 
   // Also load when component mounts
   useEffect(() => {
     loadAllCategories();
     loadDeals();
+    loadBanners();
   }, []);
 
   // Load deals
@@ -111,6 +134,30 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       }
     } catch (err) {
       console.error('Failed to load deals:', err);
+    }
+  };
+
+  // Load banners
+  const loadBanners = async () => {
+    try {
+      const response = await bannerApi.getAll(true);
+      if (response.success && Array.isArray(response.data)) {
+        setBanners(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load banners:', err);
+    }
+  };
+
+  // Load notices
+  const loadNotices = async () => {
+    try {
+      const response = await noticeApi.getAll(true);
+      if (response.success && Array.isArray(response.data)) {
+        setNotices(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load notices:', err);
     }
   };
 
@@ -268,6 +315,254 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     } catch (err: any) {
       setMessage({ type: 'error', text: err?.message || 'Failed to delete deal' });
     }
+  };
+
+  // Banner handlers
+  const handleAddBanner = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!bannerImage.trim()) {
+      setMessage({ type: 'error', text: 'Banner image URL is required' });
+      return;
+    }
+
+    try {
+      const bannerId = crypto.randomUUID();
+      const response = await bannerApi.create({
+        id: bannerId,
+        image: bannerImage.trim(),
+        title: bannerTitle.trim() || '',
+        subtitle: bannerSubtitle.trim() || '',
+        buttonText: bannerButtonText.trim() || '',
+        displayOrder: Number(bannerOrder) || 0,
+        isActive: true
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Banner added successfully!' });
+        setBannerImage('');
+        setBannerTitle('');
+        setBannerSubtitle('');
+        setBannerButtonText('');
+        setBannerOrder('0');
+        await loadBanners();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to create banner' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to create banner' });
+    }
+  };
+
+  const handleEditBanner = (banner: BackendBanner) => {
+    setEditingBanner(banner.id);
+    setBannerImage(banner.image);
+    setBannerTitle(banner.title || '');
+    setBannerSubtitle(banner.subtitle || '');
+    setBannerButtonText(banner.buttonText || '');
+    setBannerOrder(banner.displayOrder.toString());
+  };
+
+  const handleCancelBannerEdit = () => {
+    setEditingBanner(null);
+    setBannerImage('');
+    setBannerTitle('');
+    setBannerSubtitle('');
+    setBannerButtonText('');
+    setBannerOrder('0');
+  };
+
+  const handleUpdateBanner = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingBanner || !bannerImage.trim()) {
+      setMessage({ type: 'error', text: 'Banner image URL is required' });
+      return;
+    }
+
+    try {
+      const response = await bannerApi.update(editingBanner, {
+        image: bannerImage.trim(),
+        title: bannerTitle.trim() || '',
+        subtitle: bannerSubtitle.trim() || '',
+        buttonText: bannerButtonText.trim() || '',
+        displayOrder: Number(bannerOrder) || 0
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Banner updated successfully!' });
+        handleCancelBannerEdit();
+        await loadBanners();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update banner' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update banner' });
+    }
+  };
+
+  const handleRemoveBanner = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this banner?')) {
+      return;
+    }
+
+    try {
+      const response = await bannerApi.delete(id);
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Banner deleted successfully!' });
+        await loadBanners();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to delete banner' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to delete banner' });
+    }
+  };
+
+  const handleToggleBannerActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await bannerApi.update(id, { isActive: !currentStatus });
+      if (response.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `Banner ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
+        });
+        await loadBanners();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update banner status' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update banner status' });
+    }
+  };
+
+  // Notice handlers
+  const handleAddNotice = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!noticeMessage.trim()) {
+      setMessage({ type: 'error', text: 'Notice message is required' });
+      return;
+    }
+
+    try {
+      const noticeId = crypto.randomUUID();
+      const response = await noticeApi.create({
+        id: noticeId,
+        title: noticeTitle.trim() || '',
+        message: noticeMessage.trim(),
+        icon: noticeIcon,
+        features: noticeFeatures,
+        displayOrder: Number(noticeOrder) || 0,
+        isActive: true
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Notice added successfully!' });
+        setNoticeMessage('');
+        setNoticeTitle('');
+        setNoticeIcon('FaRobot');
+        setNoticeFeatures([]);
+        setNoticeOrder('0');
+        await loadNotices();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to create notice' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to create notice' });
+    }
+  };
+
+  const handleEditNotice = (notice: BackendNotice) => {
+    setEditingNotice(notice.id);
+    setNoticeMessage(notice.message);
+    setNoticeTitle(notice.title || '');
+    setNoticeIcon(notice.icon || 'FaRobot');
+    setNoticeFeatures(notice.features || []);
+    setNoticeOrder(notice.displayOrder.toString());
+  };
+
+  const handleCancelNoticeEdit = () => {
+    setEditingNotice(null);
+    setNoticeMessage('');
+    setNoticeTitle('');
+    setNoticeIcon('FaRobot');
+    setNoticeFeatures([]);
+    setNoticeOrder('0');
+    setNewFeatureText('');
+    setNewFeatureIcon('FaShieldAlt');
+  };
+
+  const handleUpdateNotice = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingNotice || !noticeMessage.trim()) {
+      setMessage({ type: 'error', text: 'Notice message is required' });
+      return;
+    }
+
+    try {
+      const response = await noticeApi.update(editingNotice, {
+        title: noticeTitle.trim() || '',
+        message: noticeMessage.trim(),
+        icon: noticeIcon,
+        features: noticeFeatures,
+        displayOrder: Number(noticeOrder) || 0
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Notice updated successfully!' });
+        handleCancelNoticeEdit();
+        await loadNotices();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update notice' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update notice' });
+    }
+  };
+
+  const handleRemoveNotice = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this notice?')) {
+      return;
+    }
+
+    try {
+      const response = await noticeApi.delete(id);
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Notice deleted successfully!' });
+        await loadNotices();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to delete notice' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to delete notice' });
+    }
+  };
+
+  const handleToggleNoticeActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await noticeApi.update(id, { isActive: !currentStatus });
+      if (response.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `Notice ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
+        });
+        await loadNotices();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update notice status' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update notice status' });
+    }
+  };
+
+  const handleAddFeature = () => {
+    if (newFeatureText.trim()) {
+      setNoticeFeatures([...noticeFeatures, { icon: newFeatureIcon, text: newFeatureText.trim() }]);
+      setNewFeatureText('');
+      setNewFeatureIcon('FaShieldAlt');
+    }
+  };
+
+  const handleRemoveFeature = (index: number) => {
+    setNoticeFeatures(noticeFeatures.filter((_, i) => i !== index));
   };
 
   const handleAssignCategoryToDeal = async (categoryId: string, dealId: string | null) => {
@@ -448,12 +743,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'products' && 'Products & Categories'}
+              {activeTab === 'banners' && 'Banner Management'}
+              {activeTab === 'notices' && 'Notice Management'}
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
             </h1>
             <p className="text-sm text-slate-600">
               {activeTab === 'dashboard' && 'Overview of your business metrics and analytics'}
               {activeTab === 'products' && 'Manage products and categories'}
+              {activeTab === 'banners' && 'Manage carousel banners and images'}
+              {activeTab === 'notices' && 'Manage site notices and announcements'}
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
             </p>
@@ -488,6 +787,388 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               <UserManagement />
             ) : activeTab === 'orders' ? (
               <AdminOrders />
+            ) : activeTab === 'banners' ? (
+              <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+                {/* Banner Management Section */}
+                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
+                  <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
+                  
+                  {/* Add/Edit Banner Form */}
+                  <form 
+                    className="mb-6 p-4 border rounded-lg bg-slate-50 border-slate-200" 
+                    onSubmit={editingBanner ? handleUpdateBanner : handleAddBanner}
+                  >
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      {editingBanner ? 'Edit Banner' : 'Add New Banner'}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Image URL *</span>
+                        <input
+                          required
+                          type="url"
+                          value={bannerImage}
+                          onChange={(e) => setBannerImage(e.target.value)}
+                          placeholder="https://example.com/banner.jpg"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        {bannerImage && (
+                          <div className="mt-2">
+                            <img 
+                              src={bannerImage} 
+                              alt="Preview" 
+                              className="w-full max-w-md h-32 object-cover rounded-lg border border-slate-300"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
+                        <input
+                          value={bannerTitle}
+                          onChange={(e) => setBannerTitle(e.target.value)}
+                          placeholder="Banner Title"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Subtitle (optional)</span>
+                        <input
+                          value={bannerSubtitle}
+                          onChange={(e) => setBannerSubtitle(e.target.value)}
+                          placeholder="Banner Subtitle"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Button Text (optional)</span>
+                        <input
+                          value={bannerButtonText}
+                          onChange={(e) => setBannerButtonText(e.target.value)}
+                          placeholder="Click Here"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
+                        <input
+                          type="number"
+                          value={bannerOrder}
+                          onChange={(e) => setBannerOrder(e.target.value)}
+                          placeholder="0"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        type="submit"
+                      >
+                        {editingBanner ? 'Update Banner' : 'Add Banner'}
+                      </button>
+                      {editingBanner && (
+                        <button 
+                          type="button"
+                          onClick={handleCancelBannerEdit}
+                          className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Banners List */}
+                  <div>
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      Existing Banners ({banners.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {banners.length > 0 ? (
+                        banners.map((banner) => {
+                          const isActive = banner.isActive !== false;
+                          return (
+                            <div key={banner.id} className={`p-4 transition-colors border rounded-lg ${
+                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
+                            } hover:bg-slate-50`}>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {!isActive && (
+                                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
+                                        Inactive
+                                      </span>
+                                    )}
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                                      Order: {banner.displayOrder}
+                                    </span>
+                                  </div>
+                                  <div className="mb-2">
+                                    <img 
+                                      src={banner.image} 
+                                      alt={banner.title || 'Banner'}
+                                      className="w-full max-w-md h-32 object-cover rounded-lg border border-slate-300"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                  {banner.title && (
+                                    <p className="text-sm font-semibold text-slate-900 mb-1">{banner.title}</p>
+                                  )}
+                                  {banner.subtitle && (
+                                    <p className="text-sm text-slate-600 mb-1">{banner.subtitle}</p>
+                                  )}
+                                  {banner.buttonText && (
+                                    <p className="text-xs text-slate-500">Button: {banner.buttonText}</p>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isActive}
+                                        onChange={() => handleToggleBannerActive(banner.id, isActive)}
+                                        className="sr-only peer"
+                                      />
+                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                    <span className="text-[10px] text-slate-500">
+                                      {isActive ? 'ON' : 'OFF'}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
+                                    onClick={() => handleEditBanner(banner)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
+                                    onClick={() => handleRemoveBanner(banner.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-8 text-center text-slate-500">
+                          No banners yet. Add your first banner.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : activeTab === 'notices' ? (
+              <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+                {/* Notice Management Section */}
+                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
+                  <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
+                  
+                  {/* Add/Edit Notice Form */}
+                  <form 
+                    className="mb-6 p-4 border rounded-lg bg-slate-50 border-slate-200" 
+                    onSubmit={editingNotice ? handleUpdateNotice : handleAddNotice}
+                  >
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      {editingNotice ? 'Edit Notice' : 'Add New Notice'}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <label className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
+                        <textarea
+                          required
+                          value={noticeMessage}
+                          onChange={(e) => setNoticeMessage(e.target.value)}
+                          placeholder="🚀 আমাদের সিস্টেম AI দ্বারা নিয়ন্ত্রিত..."
+                          rows={3}
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
+                        <input
+                          value={noticeTitle}
+                          onChange={(e) => setNoticeTitle(e.target.value)}
+                          placeholder="Notice Title"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Icon</span>
+                        <select
+                          value={noticeIcon}
+                          onChange={(e) => setNoticeIcon(e.target.value)}
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        >
+                          <option value="FaRobot">Robot</option>
+                          <option value="FaShieldAlt">Shield</option>
+                          <option value="FaBolt">Bolt</option>
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
+                        <input
+                          type="number"
+                          value={noticeOrder}
+                          onChange={(e) => setNoticeOrder(e.target.value)}
+                          placeholder="0"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      
+                      {/* Features Section */}
+                      <div className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Features (optional)</span>
+                        <div className="space-y-2 mb-2">
+                          {noticeFeatures.map((feature, index) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                              <span className="flex-1 text-sm">{feature.text}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveFeature(index)}
+                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newFeatureText}
+                            onChange={(e) => setNewFeatureText(e.target.value)}
+                            placeholder="Feature text"
+                            className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          />
+                          <select
+                            value={newFeatureIcon}
+                            onChange={(e) => setNewFeatureIcon(e.target.value)}
+                            className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          >
+                            <option value="FaShieldAlt">Shield</option>
+                            <option value="FaBolt">Bolt</option>
+                            <option value="FaRobot">Robot</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={handleAddFeature}
+                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200"
+                          >
+                            Add Feature
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        type="submit"
+                      >
+                        {editingNotice ? 'Update Notice' : 'Add Notice'}
+                      </button>
+                      {editingNotice && (
+                        <button 
+                          type="button"
+                          onClick={handleCancelNoticeEdit}
+                          className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Notices List */}
+                  <div>
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      Existing Notices ({notices.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {notices.length > 0 ? (
+                        notices.map((notice) => {
+                          const isActive = notice.isActive !== false;
+                          return (
+                            <div key={notice.id} className={`p-4 transition-colors border rounded-lg ${
+                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
+                            } hover:bg-slate-50`}>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {!isActive && (
+                                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
+                                        Inactive
+                                      </span>
+                                    )}
+                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                                      Order: {notice.displayOrder}
+                                    </span>
+                                  </div>
+                                  {notice.title && (
+                                    <p className="text-sm font-semibold text-slate-900 mb-1">{notice.title}</p>
+                                  )}
+                                  <p className="text-sm text-slate-700 mb-2">{notice.message}</p>
+                                  {notice.features && notice.features.length > 0 && (
+                                    <div className="flex flex-wrap gap-2">
+                                      {notice.features.map((feature, index) => (
+                                        <span key={index} className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                          {feature.text}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isActive}
+                                        onChange={() => handleToggleNoticeActive(notice.id, isActive)}
+                                        className="sr-only peer"
+                                      />
+                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                    <span className="text-[10px] text-slate-500">
+                                      {isActive ? 'ON' : 'OFF'}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
+                                    onClick={() => handleEditNotice(notice)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
+                                    onClick={() => handleRemoveNotice(notice.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-8 text-center text-slate-500">
+                          No notices yet. Add your first notice.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
         <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
 

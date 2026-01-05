@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useUserRole from '../hooks/useUserRole';
 import useRoboBalance from '../hooks/useRoboBalance';
+import { useRoboGameZone } from '../contexts/RoboGameZoneContext';
 import { useEffect, useState, useRef } from 'react'; // useEffect, useState, useRef import করুন
 
 function Navbar() {
@@ -10,6 +11,7 @@ function Navbar() {
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
   const { backendBalance, loading, refreshBalance } = useRoboBalance(); // শুধু backendBalance ব্যবহার করুন
+  const { isRoboGameZoneEnabled, setIsRoboGameZoneEnabled } = useRoboGameZone();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -185,6 +187,28 @@ function Navbar() {
                   >
                     🔍 FF ID Info
                   </button>
+                  <div className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50 border-t border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <span>🎮 Robo Game Zone</span>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isRoboGameZoneEnabled}
+                          onChange={(e) => {
+                            setIsRoboGameZoneEnabled(e.target.checked);
+                            setIsProfileMenuOpen(false);
+                            if (e.target.checked) {
+                              navigate('/robo-game-zone');
+                            } else {
+                              navigate('/');
+                            }
+                          }}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                      </label>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     className="block w-full px-3 py-2 text-xs font-semibold text-left text-red-600 border-t hover:bg-red-50 border-slate-200"

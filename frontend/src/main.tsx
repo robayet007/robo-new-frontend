@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import UpdateNotification from './components/UpdateNotification'
 import SplashScreen from './components/SplashScreen'
+import { RoboGameZoneProvider } from './contexts/RoboGameZoneContext'
 import './style.css'
 
 // Update notification wrapper component
@@ -103,7 +104,9 @@ ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
         v7_relativeSplatPath: true,
       }}
     >
-      <AppWithUpdates />
+      <RoboGameZoneProvider>
+        <AppWithUpdates />
+      </RoboGameZoneProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

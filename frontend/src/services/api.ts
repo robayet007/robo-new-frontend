@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
@@ -6,8 +6,8 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Local development default
     // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
-    // const backendUrl = "    http://localhost:5000";
+    // const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+    const backendUrl = "    http://localhost:5000";
     return `${backendUrl}/api`;
   }
   
@@ -179,6 +179,80 @@ export const dealApi = {
   
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+};
+
+// Banners API
+export const bannerApi = {
+  getAll: async (admin?: boolean): Promise<ApiResponse<BackendBanner[]>> => {
+    const url = admin ? '/products/banners?admin=true' : '/products/banners';
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getById: async (id: string): Promise<ApiResponse<BackendBanner>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`);
+    return response.json();
+  },
+  
+  create: async (bannerData: Omit<BackendBanner, '_id' | 'createdAt'>): Promise<ApiResponse<BackendBanner>> => {
+    const response = await SmartAPIManager.smartFetch('/products/banners', {
+      method: 'POST',
+      body: JSON.stringify(bannerData)
+    });
+    return response.json();
+  },
+  
+  update: async (id: string, bannerData: Partial<BackendBanner>): Promise<ApiResponse<BackendBanner>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(bannerData)
+    });
+    return response.json();
+  },
+  
+  delete: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+};
+
+// Notices API
+export const noticeApi = {
+  getAll: async (admin?: boolean): Promise<ApiResponse<BackendNotice[]>> => {
+    const url = admin ? '/products/notices?admin=true' : '/products/notices';
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getById: async (id: string): Promise<ApiResponse<BackendNotice>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`);
+    return response.json();
+  },
+  
+  create: async (noticeData: Omit<BackendNotice, '_id' | 'createdAt'>): Promise<ApiResponse<BackendNotice>> => {
+    const response = await SmartAPIManager.smartFetch('/products/notices', {
+      method: 'POST',
+      body: JSON.stringify(noticeData)
+    });
+    return response.json();
+  },
+  
+  update: async (id: string, noticeData: Partial<BackendNotice>): Promise<ApiResponse<BackendNotice>> => {
+    const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(noticeData)
+    });
+    return response.json();
+  },
+  
+  delete: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`, {
       method: 'DELETE'
     });
     return response.json();

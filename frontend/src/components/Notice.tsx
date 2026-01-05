@@ -1,12 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaRobot, FaShieldAlt, FaBolt, FaTimes } from 'react-icons/fa';
+import { noticeApi } from '../services/api';
+import type { BackendNotice } from '../types';
+
+// Icon mapping
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  FaRobot,
+  FaShieldAlt,
+  FaBolt,
+};
 
 const Notice: React.FC = () => {
   const [isVisible, setIsVisible] = useState(true);
+  const [notice, setNotice] = useState<BackendNotice | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!isVisible) {
+  useEffect(() => {
+    const loadNotice = async () => {
+      try {
+        setLoading(true);
+        const response = await noticeApi.getAll();
+        if (response.success && response.data && response.data.length > 0) {
+          // Get the first active notice
+          const activeNotice = response.data.find(n => n.isActive) || response.data[0];
+          setNotice(activeNotice);
+        }
+      } catch (error) {
+        console.error('Failed to load notice:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadNotice();
+  }, []);
+
+  if (!isVisible || loading || !notice) {
     return null;
   }
+
+  const IconComponent = iconMap[notice.icon || 'FaRobot'] || FaRobot;
 
   return (
     <div className="mb-4 sm:mb-6">
@@ -20,25 +52,26 @@ const Notice: React.FC = () => {
         </button>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 pr-8 sm:pr-10">
           <div className="flex items-center flex-1 min-w-0 gap-2 sm:gap-3">
-            <FaRobot className="flex-shrink-0 text-lg text-purple-600 sm:text-xl md:text-2xl" />
+            <IconComponent className="flex-shrink-0 text-lg text-purple-600 sm:text-xl md:text-2xl" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold leading-tight sm:text-sm md:text-base text-slate-800 pr-1">
-                🚀 আমাদের সিস্টেম AI দ্বারা নিয়ন্ত্রিত, যার ফলে আপনি পাচ্ছেন ⚡ তাৎক্ষণিক প্রসেসিং এবং 📦 দ্রুত ও নির্ভুল ডেলিভারি।
+                {notice.message}
               </p>
-              <div className="flex flex-wrap items-center gap-3 mt-1 sm:gap-4">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <FaShieldAlt className="flex-shrink-0 text-xs text-green-600 sm:text-sm" />
-                  <span className="text-[10px] sm:text-xs text-slate-700">
-                    সিকিউর পেমেন্ট
-                  </span>
+              {notice.features && notice.features.length > 0 && (
+                <div className="flex flex-wrap items-center gap-3 mt-1 sm:gap-4">
+                  {notice.features.map((feature, index) => {
+                    const FeatureIcon = feature.icon ? (iconMap[feature.icon] || FaShieldAlt) : FaShieldAlt;
+                    return (
+                      <div key={index} className="flex items-center gap-1.5 sm:gap-2">
+                        <FeatureIcon className="flex-shrink-0 text-xs text-green-600 sm:text-sm" />
+                        <span className="text-[10px] sm:text-xs text-slate-700">
+                          {feature.text}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <FaBolt className="flex-shrink-0 text-xs text-yellow-600 sm:text-sm" />
-                  <span className="text-[10px] sm:text-xs text-slate-700">
-                    অটো টপআপ
-                  </span>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </div>

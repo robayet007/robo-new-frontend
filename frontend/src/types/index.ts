@@ -70,6 +70,33 @@ export interface BackendDeal {
   updatedAt: string;
 }
 
+export interface BackendBanner {
+  _id: string;
+  id: string;
+  image: string;
+  title?: string;
+  subtitle?: string;
+  buttonText?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface BackendNotice {
+  _id: string;
+  id: string;
+  title?: string;
+  message: string;
+  icon?: string;
+  features?: Array<{
+    icon?: string;
+    text: string;
+  }>;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export type Deal = {
   id: string;
   name: string;

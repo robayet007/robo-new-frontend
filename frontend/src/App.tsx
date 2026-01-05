@@ -14,9 +14,11 @@ import OrderHistory from './components/OrderHistory';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
 import WhatsAppButton from './components/WhatsAppButton';
+import RoboGameZone from './components/RoboGameZone';
 import useCatalog from './hooks/useCatalog';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
+import { useRoboGameZone } from './contexts/RoboGameZoneContext';
 import FFIdInfo from './components/FFIdInfo';
 import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
@@ -28,8 +30,17 @@ function App() {
   const catalog = useCatalog();
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
+  const { isRoboGameZoneEnabled } = useRoboGameZone();
   const location = useLocation();
   const isAdminRoute = location.pathname === '/admin';
+  const isRoboGameZoneRoute = location.pathname === '/robo-game-zone';
+  const isLoginSignupRoute = location.pathname === '/login' || location.pathname === '/signup';
+  
+  // If toggle is ON and not on allowed routes, redirect to robo-game-zone
+  const shouldRedirectToRoboGameZone = isRoboGameZoneEnabled && 
+    !isAdminRoute && 
+    !isRoboGameZoneRoute && 
+    !isLoginSignupRoute;
   
   // some changesw
   // Only show full page loading for catalog (products/categories)
@@ -48,73 +59,19 @@ function App() {
     );
   }
 
+  // Redirect to robo-game-zone if toggle is ON and on restricted route
+  if (shouldRedirectToRoboGameZone) {
+    return <Navigate to="/robo-game-zone" replace />;
+  }
+
   return (
     <>
       {!isAdminRoute && (
         <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
           <Navbar />
           <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <Notice />
-                  <Hero />
-                  <ProductGrid 
-                    categories={catalog.categories} 
-                  />
-                  <Steps />
-                  <RulesAndServices />
-                  <Footer />
-                </>
-              }
-            />
-            <Route path="/checkout" element={<Checkout products={catalog.products} />} />
-            <Route 
-              path="/category/:categoryId" 
-              element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
-            />
-            <Route path="/add-money" element={<AddMoney />} />
-            <Route
-              path="/change-password"
-              element={
-                user ? (
-                  <ChangePassword />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/orders"
-              element={
-                user ? (
-                  <OrderHistory />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/my-account"
-              element={
-                user ? (
-                  <MyAccount />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/ff-info"
-              element={
-                user ? (
-                  <FFIdInfo />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
+            <Route path="/robo-game-zone" element={<RoboGameZone />} />
+            {/* Login and Signup routes always accessible */}
             <Route
               path="/login"
               element={
@@ -135,10 +92,84 @@ function App() {
                 )
               }
             />
-            <Route path="*" element={<NotFound />} />
+            {/* Other routes only accessible when toggle is OFF */}
+            {!isRoboGameZoneEnabled && (
+              <>
+                <Route
+                  path="/"
+                  element={
+                    <>
+                      <Notice />
+                      <Hero />
+                      <ProductGrid 
+                        categories={catalog.categories} 
+                      />
+                      <Steps />
+                      <RulesAndServices />
+                      <Footer />
+                    </>
+                  }
+                />
+                <Route path="/checkout" element={<Checkout products={catalog.products} />} />
+                <Route 
+                  path="/category/:categoryId" 
+                  element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+                />
+                <Route path="/add-money" element={<AddMoney />} />
+                <Route
+                  path="/change-password"
+                  element={
+                    user ? (
+                      <ChangePassword />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    user ? (
+                      <OrderHistory />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/my-account"
+                  element={
+                    user ? (
+                      <MyAccount />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/ff-info"
+                  element={
+                    user ? (
+                      <FFIdInfo />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route path="*" element={<NotFound />} />
+              </>
+            )}
+            {/* Catch-all for when toggle is ON */}
+            {isRoboGameZoneEnabled && (
+              <Route path="*" element={<Navigate to="/robo-game-zone" replace />} />
+            )}
           </Routes>
-          <InstallButton />
-          <WhatsAppButton />
+          {!isRoboGameZoneEnabled && (
+            <>
+              <InstallButton />
+              <WhatsAppButton />
+            </>
+          )}
         </div>
       )}
       <Routes>
