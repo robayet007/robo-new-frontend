@@ -105,7 +105,7 @@ ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
       }}
     >
       <RoboGameZoneProvider>
-        <AppWithUpdates />
+      <AppWithUpdates />
       </RoboGameZoneProvider>
     </BrowserRouter>
   </React.StrictMode>,

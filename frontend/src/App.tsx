@@ -96,67 +96,67 @@ function App() {
             {!isRoboGameZoneEnabled && (
               <>
                 <Route
-                  path="/"
-                  element={
-                    <>
-                      <Notice />
-                      <Hero />
-                      <ProductGrid 
-                        categories={catalog.categories} 
-                      />
-                      <Steps />
-                      <RulesAndServices />
-                      <Footer />
-                    </>
-                  }
-                />
-                <Route path="/checkout" element={<Checkout products={catalog.products} />} />
-                <Route 
-                  path="/category/:categoryId" 
-                  element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
-                />
-                <Route path="/add-money" element={<AddMoney />} />
-                <Route
-                  path="/change-password"
-                  element={
-                    user ? (
-                      <ChangePassword />
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
-                  }
-                />
-                <Route
-                  path="/orders"
-                  element={
-                    user ? (
-                      <OrderHistory />
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
-                  }
-                />
-                <Route
-                  path="/my-account"
-                  element={
-                    user ? (
-                      <MyAccount />
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
-                  }
-                />
-                <Route
-                  path="/ff-info"
-                  element={
-                    user ? (
-                      <FFIdInfo />
-                    ) : (
-                      <Navigate to="/login" replace />
-                    )
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
+              path="/"
+              element={
+                <>
+                  <Notice />
+                  <Hero />
+                  <ProductGrid 
+                    categories={catalog.categories} 
+                  />
+                  <Steps />
+                  <RulesAndServices />
+                  <Footer />
+                </>
+              }
+            />
+            <Route path="/checkout" element={<Checkout products={catalog.products} />} />
+            <Route 
+              path="/category/:categoryId" 
+              element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+            />
+            <Route path="/add-money" element={<AddMoney />} />
+            <Route
+              path="/change-password"
+              element={
+                user ? (
+                  <ChangePassword />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                user ? (
+                  <OrderHistory />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/my-account"
+              element={
+                user ? (
+                  <MyAccount />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/ff-info"
+              element={
+                user ? (
+                  <FFIdInfo />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route path="*" element={<NotFound />} />
               </>
             )}
             {/* Catch-all for when toggle is ON */}
@@ -166,8 +166,8 @@ function App() {
           </Routes>
           {!isRoboGameZoneEnabled && (
             <>
-              <InstallButton />
-              <WhatsAppButton />
+          <InstallButton />
+          <WhatsAppButton />
             </>
           )}
         </div>
