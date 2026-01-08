@@ -51,17 +51,9 @@ function InstallButton() {
       return;
     }
 
-    // Detect iOS
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isInStandaloneMode = ('standalone' in window.navigator) && (window.navigator as any).standalone;
-
-    // For iOS, show button if not in standalone mode
-    if (isIOS && !isInStandaloneMode) {
-      // #region agent log
-      silentAnalytics('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96', {location:'InstallButton.tsx:26',message:'iOS detected, showing button',data:{isIOS,isInStandaloneMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'});
-      // #endregion
-      setShowButton(true);
-    }
+    // Note: iOS doesn't support beforeinstallprompt, so we won't show the button on iOS
+    // Users need to manually add to home screen via Safari share menu
+    // The button will only appear when beforeinstallprompt event fires (Android/Chrome/Edge)
 
     // Listen for beforeinstallprompt event (Android/Chrome)
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -108,18 +100,8 @@ function InstallButton() {
     // Check if icons are accessible
     checkIcon('/logo-robo.png');
 
-    // Show button for non-iOS devices after a delay (event might fire later)
-    // Button will work when beforeinstallprompt event fires
-    if (!isIOS) {
-      setTimeout(() => {
-        if (!window.matchMedia('(display-mode: standalone)').matches) {
-          // #region agent log
-          silentAnalytics('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96', {location:'InstallButton.tsx:82',message:'showing button for non-iOS device',data:{hasDeferredPrompt:!!deferredPromptRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'});
-          // #endregion
-          setShowButton(true);
-        }
-      }, 2000);
-    }
+    // Don't show button until beforeinstallprompt event fires
+    // This ensures the button only appears when installation is actually possible
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt, { capture: true });
@@ -132,8 +114,10 @@ function InstallButton() {
     silentAnalytics('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96', {location:'InstallButton.tsx:66',message:'handleInstallClick called',data:{hasDeferredPrompt:!!deferredPrompt,showButton,isInstalled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'});
     // #endregion
     
-    // If we don't have deferredPrompt, wait a moment - event might fire after user interaction
+    // Get the prompt from state or ref
     let currentPrompt = deferredPrompt || deferredPromptRef.current;
+    
+    // If we don't have deferredPrompt, wait a moment - event might fire after user interaction
     if (!currentPrompt) {
       // #region agent log
       silentAnalytics('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96', {location:'InstallButton.tsx:69',message:'deferredPrompt is null, waiting briefly for event after user interaction',data:{userAgent:navigator.userAgent},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'});
@@ -148,16 +132,16 @@ function InstallButton() {
       silentAnalytics('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96', {location:'InstallButton.tsx:87',message:'after wait, checking deferredPromptRef',data:{hasPrompt:!!currentPrompt},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'});
       // #endregion
       
+      // If still no prompt, the button shouldn't have been shown
+      // This should rarely happen, but if it does, just return silently
       if (!currentPrompt) {
-        // Still no prompt - show Bengali instructions
-        alert('📱 App Install করার জন্য:\n\n1️⃣ Browser-এর উপরে ৩টি ডট (⋮) icon-এ click করুন\n2️⃣ নিচে scroll করুন\n3️⃣ "Add to Home Screen" বা "Install app" option-এ click করুন\n4️⃣ "Add" বা "Install" button-এ click করুন\n\n✅ App আপনার home screen-এ install হয়ে যাবে!');
         return;
       }
     }
 
     try {
-      // Use currentPrompt (either from state or ref)
-      const promptToUse = currentPrompt || deferredPrompt;
+      // Use the current prompt
+      const promptToUse = currentPrompt;
       if (!promptToUse) return;
       
       // #region agent log
