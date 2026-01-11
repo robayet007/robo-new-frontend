@@ -15,7 +15,7 @@ function SplashScreen() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-50 via-violet-50 to-fuchsia-50 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-violet-50 to-fuchsia-50">
       {/* Dragon Flying Animation */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div 
@@ -33,14 +33,14 @@ function SplashScreen() {
       <div className="relative z-10 flex flex-col items-center gap-4">
         <img 
           src="/logo-robo.png" 
-          alt="Robo Top Up Logo" 
-          className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-3xl shadow-2xl border-4 border-purple-200 animate-pulse"
+          alt="Robo Top Up Zone Logo" 
+          className="w-32 h-32 border-4 border-purple-200 shadow-2xl sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-3xl animate-pulse"
           style={{ borderRadius: '24px' }}
         />
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-          <div className="w-2 h-2 bg-violet-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-          <div className="w-2 h-2 bg-fuchsia-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-violet-500 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          <div className="w-2 h-2 rounded-full bg-fuchsia-500 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
         </div>
       </div>
 

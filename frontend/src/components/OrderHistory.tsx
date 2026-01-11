@@ -42,10 +42,10 @@ function OrderHistory() {
   }, [user?.uid]);
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+    <div className="max-w-4xl p-4 mx-auto sm:p-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">My Orders</h2>
+        <h2 className="mb-2 text-2xl font-bold sm:text-3xl text-slate-900">My Orders</h2>
         <p className="text-sm text-slate-600">
           আপনার সব টপ-আপ ও পেমেন্টের হিস্ট্রি এখানে দেখতে পারবেন।
         </p>
@@ -66,13 +66,13 @@ function OrderHistory() {
 
       {!loading && !error && orders.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-slate-500 mb-2">এখনও কোনো অর্ডার পাওয়া যায়নি।</p>
+          <p className="mb-2 text-slate-500">এখনও কোনো অর্ডার পাওয়া যায়নি।</p>
           <p className="text-sm text-slate-400">আপনি প্রথম টপ-আপ করলেই এখানে দেখাবে।</p>
         </div>
       )}
 
       {!loading && orders.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-hidden bg-white border shadow-sm rounded-xl border-slate-200">
           <div className="divide-y divide-slate-200">
             {orders.map((order, index) => {
               const date = order.createdAt ? new Date(order.createdAt) : null;
@@ -98,58 +98,58 @@ function OrderHistory() {
               return (
                 <div
                   key={order._id || order.transactionId}
-                  className="p-4 sm:p-5 hover:bg-slate-50/50 transition-colors"
+                  className="p-4 transition-colors sm:p-5 hover:bg-slate-50/50"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-6 gap-3 sm:gap-4 items-start">
+                  <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-6 sm:gap-4">
                     {/* Serial NO */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Serial NO</p>
+                      <p className="mb-1 text-xs text-slate-500">Serial NO</p>
                       <p className="text-sm font-semibold text-slate-900">{serialNo}</p>
                     </div>
 
                     {/* Date */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Date</p>
+                      <p className="mb-1 text-xs text-slate-500">Date</p>
                       <p className="text-sm text-slate-900">{dateLabel}</p>
                     </div>
 
                     {/* Package */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Package</p>
+                      <p className="mb-1 text-xs text-slate-500">Package</p>
                       <div className="flex items-center gap-1">
                         <p className="text-sm font-medium text-slate-900">
-                          {order.diamonds ? `${order.diamonds} Diamond` : order.productName || 'Top-up'}
+                          {order.diamonds ? `${order.productName}` : order.productName || 'Top-up'}
                         </p>
-                        {order.diamonds && (
-                          <span className="text-blue-400">💎</span>
-                        )}
+                        {/* {order.diamonds && (
+                          <span className="text-blue-400"></span>
+                        )} */}
                       </div>
                     </div>
 
                     {/* Quantity */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Quantity</p>
+                      <p className="mb-1 text-xs text-slate-500">Quantity</p>
                       <p className="text-sm text-slate-900">1</p>
                     </div>
 
                     {/* Player ID */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Player ID</p>
-                      <p className="text-sm font-mono text-slate-900 break-all">
+                      <p className="mb-1 text-xs text-slate-500">Player ID</p>
+                      <p className="font-mono text-sm break-all text-slate-900">
                         {order.playerId || '-'}
                       </p>
                     </div>
 
                     {/* Price & Status */}
-                    <div className="sm:col-span-1 flex flex-col sm:items-end">
+                    <div className="flex flex-col sm:col-span-1 sm:items-end">
                       <div className="mb-2">
-                        <p className="text-xs text-slate-500 mb-1">Price</p>
+                        <p className="mb-1 text-xs text-slate-500">Price</p>
                         <p className="text-sm font-bold text-slate-900">
                           {amount.toFixed(0)} Tk
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs text-slate-500 mb-1">Status</p>
+                        <p className="mb-1 text-xs text-slate-500">Status</p>
                         <p className={`text-sm font-semibold ${
                           isComplete ? 'text-green-600' : 'text-red-600'
                         }`}>
@@ -160,9 +160,9 @@ function OrderHistory() {
                   </div>
 
                   {/* Transaction ID - Show on mobile */}
-                  <div className="mt-3 pt-3 border-t border-slate-100 sm:hidden">
+                  <div className="pt-3 mt-3 border-t border-slate-100 sm:hidden">
                     <p className="text-xs text-slate-500">
-                      TrxID: <span className="text-slate-700 font-mono">{order.transactionId}</span>
+                      TrxID: <span className="font-mono text-slate-700">{order.transactionId}</span>
                     </p>
                   </div>
                 </div>

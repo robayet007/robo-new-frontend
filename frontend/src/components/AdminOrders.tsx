@@ -71,7 +71,7 @@ function AdminOrders() {
   });
 
   return (
-    <div className="space-y-4 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="pt-4 pb-4 pl-0 pr-4 space-y-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -110,15 +110,15 @@ function AdminOrders() {
       )}
 
       {!loading && !error && filtered.length === 0 && (
-        <div className="py-12 text-center bg-white rounded-xl border border-slate-200">
-          <p className="text-slate-500 mb-2">
+        <div className="py-12 text-center bg-white border rounded-xl border-slate-200">
+          <p className="mb-2 text-slate-500">
             {search ? 'No orders found matching your search.' : 'No orders found.'}
           </p>
         </div>
       )}
 
       {!loading && !error && filtered.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="overflow-hidden bg-white border shadow-sm rounded-xl border-slate-200">
           <div className="divide-y divide-slate-200">
             {filtered.map((order, index) => {
               const date = order.verifiedAt || order.createdAt;
@@ -144,25 +144,25 @@ function AdminOrders() {
               return (
                 <div
                   key={order._id || order.transactionId}
-                  className="p-4 sm:p-5 hover:bg-slate-50/50 transition-colors"
+                  className="p-4 transition-colors sm:p-5 hover:bg-slate-50/50"
                 >
-                  <div className="grid grid-cols-1 sm:grid-cols-7 gap-3 sm:gap-4 items-start">
+                  <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-7 sm:gap-4">
                     {/* Serial NO */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Serial NO</p>
+                      <p className="mb-1 text-xs text-slate-500">Serial NO</p>
                       <p className="text-sm font-semibold text-slate-900">{serialNo}</p>
                     </div>
 
                     {/* Date */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Date</p>
+                      <p className="mb-1 text-xs text-slate-500">Date</p>
                       <p className="text-sm text-slate-900">{dateLabel}</p>
                     </div>
 
                     {/* User */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">User</p>
-                      <p className="text-sm font-medium text-slate-900 truncate">
+                      <p className="mb-1 text-xs text-slate-500">User</p>
+                      <p className="text-sm font-medium truncate text-slate-900">
                         {order.userName || order.userEmail?.split('@')[0] || 'Unknown'}
                       </p>
                       <p className="text-[10px] text-slate-500 truncate">
@@ -172,28 +172,28 @@ function AdminOrders() {
 
                     {/* Package */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Package</p>
+                      <p className="mb-1 text-xs text-slate-500">Package</p>
                       <div className="flex items-center gap-1">
                         <p className="text-sm font-medium text-slate-900">
-                          {order.diamonds ? `${order.diamonds} Diamond` : order.productName || 'Top-up'}
+                          {order.diamonds ? `${order.productName}` : order.productName || 'Top-up'}
                         </p>
-                        {order.diamonds && (
+                        {/* {order.diamonds && (
                           <span className="text-blue-400">💎</span>
-                        )}
+                        )} */}
                       </div>
                     </div>
 
                     {/* Player ID */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Player ID</p>
-                      <p className="text-sm font-mono text-slate-900 break-all">
+                      <p className="mb-1 text-xs text-slate-500">Player ID</p>
+                      <p className="font-mono text-sm break-all text-slate-900">
                         {order.playerId || '-'}
                       </p>
                     </div>
 
                     {/* Price */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Price</p>
+                      <p className="mb-1 text-xs text-slate-500">Price</p>
                       <p className="text-sm font-bold text-slate-900">
                         {amount.toFixed(0)} Tk
                       </p>
@@ -201,7 +201,7 @@ function AdminOrders() {
 
                     {/* Status */}
                     <div className="sm:col-span-1">
-                      <p className="text-xs text-slate-500 mb-1">Status</p>
+                      <p className="mb-1 text-xs text-slate-500">Status</p>
                       <p className={`text-sm font-semibold ${
                         isComplete ? 'text-green-600' : 'text-red-600'
                       }`}>
@@ -217,11 +217,11 @@ function AdminOrders() {
                   </div>
 
                   {/* Additional Info - Show on mobile or when expanded */}
-                  <div className="mt-3 pt-3 border-t border-slate-100 sm:hidden">
+                  <div className="pt-3 mt-3 border-t border-slate-100 sm:hidden">
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <p className="text-slate-500">TrxID:</p>
-                        <p className="text-slate-700 font-mono">{order.transactionId}</p>
+                        <p className="font-mono text-slate-700">{order.transactionId}</p>
                       </div>
                       {typeof order.updatedBalance === 'number' && (
                         <div>
