@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
 import { gamePackageApi } from '../services/api';
 import type { BackendGamePackage, BackendGamePackagePurchase } from '../types';
 import useAuth from '../hooks/useAuth';
@@ -313,7 +312,6 @@ function RoboGameZone() {
                 {purchasedPackages.map((purchase) => {
                   const isExpired = purchase.isExpired || (purchase.credentialExpiresAt ? getTimeRemaining(purchase.credentialExpiresAt).expired : true);
                   const timeLeft = purchase.credentialExpiresAt ? (timeRemaining[purchase._id] || getTimeRemaining(purchase.credentialExpiresAt)) : { minutes: 0, seconds: 0, expired: true };
-                  const package_ = packages.find(p => p.id === purchase.packageId);
                   
                   return (
                     <div key={purchase._id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -393,7 +391,6 @@ function RoboGameZone() {
                   const isPurchased = !!existingPurchase;
                   const isExpired = existingPurchase ? (existingPurchase.isExpired || (existingPurchase.credentialExpiresAt ? getTimeRemaining(existingPurchase.credentialExpiresAt).expired : true)) : false;
                   const tournamentStatus = pkg.startTime ? tournamentTimeStatus[pkg.id] : null;
-                  const isTournamentActive = tournamentStatus?.status === 'active';
                   const canPurchase = user && balance >= pkg.entryFee && pkg.purchaseCount < pkg.maxPurchases;
                   const isLimitReached = pkg.purchaseCount >= pkg.maxPurchases;
                   
