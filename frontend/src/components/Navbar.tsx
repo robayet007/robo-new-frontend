@@ -130,7 +130,6 @@ function Navbar() {
           <>
             {!isAdmin && (
               <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
-                <span className="text-[10px] sm:text-xs font-medium text-green-700">Balance:</span>
                 <span className="text-xs font-bold text-green-600 sm:text-sm">
                   {loading ? (
                     <span className="inline-block w-8 h-3 bg-green-200 rounded animate-pulse"></span>
