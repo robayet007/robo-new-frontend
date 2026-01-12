@@ -4,7 +4,9 @@ import useAuth from '../hooks/useAuth';
 import useUserRole from '../hooks/useUserRole';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { useRoboGameZone } from '../contexts/RoboGameZoneContext';
-import { useEffect, useState, useRef } from 'react'; // useEffect, useState, useRef import করুন
+import { notificationApi } from '../services/api';
+import { useEffect, useState, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -14,6 +16,8 @@ function Navbar() {
   const { isRoboGameZoneEnabled, setIsRoboGameZoneEnabled } = useRoboGameZone();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -25,6 +29,63 @@ function Navbar() {
       refreshBalance();
     }
   }, [user?.email, refreshBalance]);
+
+  // Fetch unread notification count
+  const fetchUnreadCount = async () => {
+    if (!user?.uid) return;
+    try {
+      const response = await notificationApi.getUnreadCount(user.uid);
+      if (response.success && response.data?.unreadCount !== undefined) {
+        setUnreadCount(response.data.unreadCount);
+      }
+    } catch (err) {
+      console.error('Failed to fetch unread count:', err);
+    }
+  };
+
+  // Fetch unread count on mount and set up Socket.IO for real-time updates
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Set up Socket.IO connection for real-time notifications
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
+    const socket = io(socketUrl, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5
+    });
+
+    socket.on('connect', () => {
+      // Join user-specific room
+      socket.emit('join-user-room', user.uid);
+    });
+
+    // Listen for new notifications
+    socket.on('new-notification', (data: { notification: any }) => {
+      // Check if notification is for this user or all users
+      if (!data.notification.userId || data.notification.userId === user.uid) {
+        // Refresh unread count
+        fetchUnreadCount();
+      }
+    });
+
+    socketRef.current = socket;
+
+    // Fallback polling every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      clearInterval(interval);
+    };
+  }, [user?.uid]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -88,6 +149,31 @@ function Navbar() {
                 <span className="sm:hidden">⚙️</span>
               </Link>
             )}
+            {/* Notification icon */}
+            <Link
+              to="/notifications"
+              className="relative p-2 transition-colors rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200"
+              aria-label="Notifications"
+            >
+              <svg 
+                className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" 
+                />
+              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             {/* Non-admin specific options are now only inside the profile menu */}
             {/* Profile avatar + dropdown menu */}
             <div className="relative" ref={dropdownRef}>
@@ -187,7 +273,7 @@ function Navbar() {
                   >
                     🔍 FF ID Info
                   </button>
-                  <div className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50 border-t border-slate-200">
+                  <div className="block w-full px-3 py-2 text-xs font-semibold text-left border-t text-slate-700 hover:bg-slate-50 border-slate-200">
                     <div className="flex items-center justify-between">
                       <span>🎮 Robo Game Zone</span>
                       <label className="relative inline-flex items-center cursor-pointer">

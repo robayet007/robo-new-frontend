@@ -137,6 +137,18 @@ export interface BackendGamePackagePurchase {
   roomPassword?: string | null;
 }
 
+export interface BackendUserNotification {
+  _id: string;
+  userId?: string;
+  userEmail?: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  readAt?: string;
+  createdBy: string;
+  createdAt: string;
+}
+
 export type Deal = {
   id: string;
   name: string;

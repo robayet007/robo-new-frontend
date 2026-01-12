@@ -24,6 +24,7 @@ import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
 import RulesAndServices from './components/RulesAndServices';
 import MyAccount from './components/MyAccount';
+import Notifications from './components/Notifications';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -34,7 +35,7 @@ function App() {
   const location = useLocation();
   const isAdminRoute = location.pathname === '/admin';
   const isRoboGameZoneRoute = location.pathname === '/robo-game-zone';
-  const isLoginSignupRoute = location.pathname === '/login' || location.pathname === '/signup';
+  const isLoginSignupRoute = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/notifications';
   
   // If toggle is ON and not on allowed routes, redirect to robo-game-zone
   const shouldRedirectToRoboGameZone = isRoboGameZoneEnabled && 
@@ -89,6 +90,17 @@ function App() {
                   <Navigate to="/" replace />
                 ) : (
                   <SignUp />
+                )
+              }
+            />
+            {/* Notifications route always accessible */}
+            <Route
+              path="/notifications"
+              element={
+                user ? (
+                  <Notifications />
+                ) : (
+                  <Navigate to="/login" replace />
                 )
               }
             />
