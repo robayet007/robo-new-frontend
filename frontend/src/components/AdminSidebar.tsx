@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell } from 'react-icons/fa';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad } from 'react-icons/fa';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages') => void;
   onLogout: () => void;
 };
 
@@ -15,6 +15,7 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox },
     { id: 'banners' as const, label: 'Banner Management', icon: FaImages },
     { id: 'notices' as const, label: 'Notice Management', icon: FaBell },
+    { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad },
     { id: 'users' as const, label: 'User Management', icon: FaUsers },
     { id: 'orders' as const, label: 'Order History', icon: FaHistory },
   ];

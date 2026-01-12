@@ -97,6 +97,46 @@ export interface BackendNotice {
   createdAt: string;
 }
 
+export interface BackendGamePackage {
+  _id: string;
+  id: string;
+  title: string;
+  image: string;
+  entryFee: number;
+  winnerPrize: string;
+  description?: string;
+  roomId?: string;
+  roomPassword?: string;
+  maxPurchases: number;
+  purchaseCount: number;
+  isActive: boolean;
+  startTime: string;
+  endTime?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BackendGamePackagePurchase {
+  _id: string;
+  packageId: string;
+  userId: string;
+  userEmail: string;
+  userName?: string;
+  transactionId: string;
+  amount: number;
+  status: 'pending' | 'completed' | 'failed';
+  purchasedAt: string;
+  credentialExpiresAt?: string;
+  isExpired?: boolean;
+  // Additional fields when fetched with package details
+  title?: string;
+  image?: string;
+  winnerPrize?: string;
+  description?: string;
+  roomId?: string | null;
+  roomPassword?: string | null;
+}
+
 export type Deal = {
   id: string;
   name: string;

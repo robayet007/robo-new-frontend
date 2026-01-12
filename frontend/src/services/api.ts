@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
@@ -568,6 +568,69 @@ export const seedApi = {
     const response = await SmartAPIManager.smartFetch('/products/seed', {
       method: 'POST'
     });
+    return response.json();
+  }
+};
+
+// Game Packages API
+export const gamePackageApi = {
+  getAll: async (): Promise<ApiResponse<BackendGamePackage[]>> => {
+    const response = await SmartAPIManager.smartFetch('/game-packages');
+    return response.json();
+  },
+  
+  getAllForAdmin: async (): Promise<ApiResponse<BackendGamePackage[]>> => {
+    const response = await SmartAPIManager.smartFetch('/game-packages/admin');
+    return response.json();
+  },
+  
+  getById: async (id: string): Promise<ApiResponse<BackendGamePackage>> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`);
+    return response.json();
+  },
+  
+  create: async (packageData: Omit<BackendGamePackage, '_id' | 'createdAt' | 'updatedAt' | 'purchaseCount'>): Promise<ApiResponse<BackendGamePackage>> => {
+    const response = await SmartAPIManager.smartFetch('/game-packages', {
+      method: 'POST',
+      body: JSON.stringify(packageData)
+    });
+    return response.json();
+  },
+  
+  update: async (id: string, packageData: Partial<BackendGamePackage>): Promise<ApiResponse<BackendGamePackage>> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(packageData)
+    });
+    return response.json();
+  },
+  
+  delete: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+  
+  purchase: async (packageId: string, purchaseData: {
+    userId: string;
+    userEmail: string;
+    userName?: string;
+  }): Promise<ApiResponse<BackendGamePackagePurchase & { newBalance: number }>> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/${packageId}/purchase`, {
+      method: 'POST',
+      body: JSON.stringify(purchaseData)
+    });
+    return response.json();
+  },
+  
+  getUserPurchases: async (userId: string): Promise<ApiResponse<BackendGamePackagePurchase[]>> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/purchases/user/${userId}`);
+    return response.json();
+  },
+  
+  getPurchaseCount: async (packageId: string): Promise<ApiResponse<{ packageId: string; purchaseCount: number }>> => {
+    const response = await SmartAPIManager.smartFetch(`/game-packages/${packageId}/purchases`);
     return response.json();
   }
 };

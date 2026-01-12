@@ -1,14 +1,29 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { categoryApi, dealApi, bannerApi, noticeApi } from '../services/api';
-import type { BackendDeal, BackendBanner, BackendNotice } from '../types';
+import { categoryApi, dealApi, bannerApi, noticeApi, gamePackageApi } from '../services/api';
+import type { BackendDeal, BackendBanner, BackendNotice, BackendGamePackage } from '../types';
 import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
 import AdminDashboard from './AdminDashboard';
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices';
+// Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
+function utcToBDTimeForInput(utcDateString: string): string {
+  if (!utcDateString) return '';
+  const date = new Date(utcDateString);
+  // Add 6 hours to convert from UTC to GMT+6
+  const bdDate = new Date(date.getTime() + 6 * 60 * 60 * 1000);
+  // Format as datetime-local string (YYYY-MM-DDTHH:mm)
+  const year = bdDate.getFullYear();
+  const month = String(bdDate.getMonth() + 1).padStart(2, '0');
+  const day = String(bdDate.getDate()).padStart(2, '0');
+  const hours = String(bdDate.getHours()).padStart(2, '0');
+  const minutes = String(bdDate.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -62,6 +77,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [editingNotice, setEditingNotice] = useState<string | null>(null);
   const [newFeatureText, setNewFeatureText] = useState('');
   const [newFeatureIcon, setNewFeatureIcon] = useState('FaShieldAlt');
+  const [gamePackages, setGamePackages] = useState<BackendGamePackage[]>([]);
+  const [packageId, setPackageId] = useState('');
+  const [packageTitle, setPackageTitle] = useState('');
+  const [packageImage, setPackageImage] = useState('');
+  const [packageEntryFee, setPackageEntryFee] = useState('');
+  const [packageWinnerPrize, setPackageWinnerPrize] = useState('');
+  const [packageDescription, setPackageDescription] = useState('');
+  const [packageRoomId, setPackageRoomId] = useState('');
+  const [packageRoomPassword, setPackageRoomPassword] = useState('');
+  const [packageMaxPurchases, setPackageMaxPurchases] = useState('100');
+  const [packageStartTime, setPackageStartTime] = useState('');
+  const [editingPackage, setEditingPackage] = useState<string | null>(null);
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => {
@@ -111,6 +138,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     if (activeTab === 'notices') {
       loadNotices();
     }
+    if (activeTab === 'gamePackages') {
+      loadGamePackages();
+    }
   }, [activeTab]);
 
   // Also load when component mounts
@@ -119,6 +149,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     loadDeals();
     loadBanners();
   }, []);
+
+  // Load game packages
+  const loadGamePackages = async () => {
+    try {
+      const response = await gamePackageApi.getAllForAdmin();
+      if (response.success && Array.isArray(response.data)) {
+        setGamePackages(response.data);
+      }
+    } catch (err) {
+      console.error('Failed to load game packages:', err);
+    }
+  };
 
   // Load deals
   const loadDeals = async () => {
@@ -565,6 +607,148 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setNoticeFeatures(noticeFeatures.filter((_, i) => i !== index));
   };
 
+  // Game Package handlers
+  const handleAddGamePackage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!packageId.trim() || !packageTitle.trim() || !packageImage.trim() || !packageEntryFee || !packageWinnerPrize.trim() || !packageRoomId.trim() || !packageRoomPassword.trim() || !packageStartTime) {
+      setMessage({ type: 'error', text: 'Package ID, title, image, entry fee, winner prize, room ID, room password, and start time are required' });
+      return;
+    }
+
+    try {
+      const response = await gamePackageApi.create({
+        id: packageId.trim(),
+        title: packageTitle.trim(),
+        image: packageImage.trim(),
+        entryFee: Number(packageEntryFee),
+        winnerPrize: packageWinnerPrize.trim(),
+        description: packageDescription.trim() || undefined,
+        roomId: packageRoomId.trim(),
+        roomPassword: packageRoomPassword.trim(),
+        maxPurchases: Number(packageMaxPurchases) || 100,
+        startTime: packageStartTime,
+        isActive: true
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Game package created successfully!' });
+        setPackageId('');
+        setPackageTitle('');
+        setPackageImage('');
+        setPackageEntryFee('');
+        setPackageWinnerPrize('');
+        setPackageDescription('');
+        setPackageRoomId('');
+        setPackageRoomPassword('');
+        setPackageMaxPurchases('100');
+        setPackageStartTime('');
+        await loadGamePackages();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to create game package' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to create game package' });
+    }
+  };
+
+  const handleEditGamePackage = (pkg: BackendGamePackage) => {
+    setEditingPackage(pkg.id);
+    setPackageId(pkg.id);
+    setPackageTitle(pkg.title);
+    setPackageImage(pkg.image);
+    setPackageEntryFee(pkg.entryFee.toString());
+    setPackageWinnerPrize(pkg.winnerPrize);
+    setPackageDescription(pkg.description || '');
+    setPackageRoomId(pkg.roomId || '');
+    setPackageRoomPassword(pkg.roomPassword || '');
+    setPackageMaxPurchases(pkg.maxPurchases.toString());
+    setPackageStartTime(utcToBDTimeForInput(pkg.startTime));
+  };
+
+  const handleCancelGamePackageEdit = () => {
+    setEditingPackage(null);
+    setPackageId('');
+    setPackageTitle('');
+    setPackageImage('');
+    setPackageEntryFee('');
+    setPackageWinnerPrize('');
+    setPackageDescription('');
+    setPackageRoomId('');
+    setPackageRoomPassword('');
+    setPackageMaxPurchases('100');
+    setPackageStartTime('');
+  };
+
+  const handleUpdateGamePackage = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!editingPackage || !packageTitle.trim() || !packageImage.trim() || !packageEntryFee || !packageWinnerPrize.trim() || !packageRoomId.trim() || !packageRoomPassword.trim() || !packageStartTime) {
+      setMessage({ type: 'error', text: 'Title, image, entry fee, winner prize, room ID, room password, and start time are required' });
+      return;
+    }
+
+    try {
+      const response = await gamePackageApi.update(editingPackage, {
+        title: packageTitle.trim(),
+        image: packageImage.trim(),
+        entryFee: Number(packageEntryFee),
+        winnerPrize: packageWinnerPrize.trim(),
+        description: packageDescription.trim() || undefined,
+        roomId: packageRoomId.trim(),
+        roomPassword: packageRoomPassword.trim(),
+        maxPurchases: Number(packageMaxPurchases) || 100,
+        startTime: packageStartTime
+      });
+
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Game package updated successfully!' });
+        handleCancelGamePackageEdit();
+        await loadGamePackages();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update game package' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update game package' });
+    }
+  };
+
+  const handleRemoveGamePackage = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this game package?')) {
+      return;
+    }
+
+    try {
+      const response = await gamePackageApi.delete(id);
+      if (response.success) {
+        setMessage({ type: 'success', text: 'Game package deleted successfully!' });
+        await loadGamePackages();
+        if (editingPackage === id) {
+          handleCancelGamePackageEdit();
+        }
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to delete game package' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to delete game package' });
+    }
+  };
+
+  const handleToggleGamePackageActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await gamePackageApi.update(id, { isActive: !currentStatus });
+      if (response.success) {
+        setMessage({ 
+          type: 'success', 
+          text: `Game package ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
+        });
+        await loadGamePackages();
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Failed to update game package status' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Failed to update game package status' });
+    }
+  };
+
   const handleAssignCategoryToDeal = async (categoryId: string, dealId: string | null) => {
     try {
       const response = await categoryApi.update(categoryId, { dealId });
@@ -723,7 +907,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-400 rounded-full border-t-transparent animate-spin mx-auto mb-4"></div>
+          <div className="w-12 h-12 mx-auto mb-4 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
           <p className="text-slate-600">Loading admin panel...</p>
         </div>
       </div>
@@ -739,12 +923,13 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       <div className="flex-1 lg:ml-64">
         <div className="p-0">
           {/* Header */}
-          <div className="mb-4 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+          <div className="pt-4 pb-4 pl-0 pr-4 mb-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+            <h1 className="mb-2 text-2xl font-bold sm:text-3xl text-slate-900">
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'products' && 'Products & Categories'}
               {activeTab === 'banners' && 'Banner Management'}
               {activeTab === 'notices' && 'Notice Management'}
+              {activeTab === 'gamePackages' && 'Game Packages'}
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
             </h1>
@@ -753,6 +938,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'products' && 'Manage products and categories'}
               {activeTab === 'banners' && 'Manage carousel banners and images'}
               {activeTab === 'notices' && 'Manage site notices and announcements'}
+              {activeTab === 'gamePackages' && 'Manage RoboGameZone packages and room credentials'}
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
             </p>
@@ -788,20 +974,20 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             ) : activeTab === 'orders' ? (
               <AdminOrders />
             ) : activeTab === 'banners' ? (
-              <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Banner Management Section */}
                 <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
                   <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
                   
                   {/* Add/Edit Banner Form */}
                   <form 
-                    className="mb-6 p-4 border rounded-lg bg-slate-50 border-slate-200" 
+                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
                     onSubmit={editingBanner ? handleUpdateBanner : handleAddBanner}
                   >
                     <h4 className="mb-3 text-base font-semibold text-slate-700">
                       {editingBanner ? 'Edit Banner' : 'Add New Banner'}
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <label className="block md:col-span-2">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Image URL *</span>
                         <input
@@ -817,7 +1003,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                             <img 
                               src={bannerImage} 
                               alt="Preview" 
-                              className="w-full max-w-md h-32 object-cover rounded-lg border border-slate-300"
+                              className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
                               onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = 'none';
                               }}
@@ -911,17 +1097,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                     <img 
                                       src={banner.image} 
                                       alt={banner.title || 'Banner'}
-                                      className="w-full max-w-md h-32 object-cover rounded-lg border border-slate-300"
+                                      className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}
                                     />
                                   </div>
                                   {banner.title && (
-                                    <p className="text-sm font-semibold text-slate-900 mb-1">{banner.title}</p>
+                                    <p className="mb-1 text-sm font-semibold text-slate-900">{banner.title}</p>
                                   )}
                                   {banner.subtitle && (
-                                    <p className="text-sm text-slate-600 mb-1">{banner.subtitle}</p>
+                                    <p className="mb-1 text-sm text-slate-600">{banner.subtitle}</p>
                                   )}
                                   {banner.buttonText && (
                                     <p className="text-xs text-slate-500">Button: {banner.buttonText}</p>
@@ -968,21 +1154,263 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
               </div>
+            ) : activeTab === 'gamePackages' ? (
+              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+                {/* Game Package Management Section */}
+                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
+                  <h3 className="mb-4 text-lg font-bold text-slate-900">Game Package Management</h3>
+                  
+                  {/* Add/Edit Package Form */}
+                  <form 
+                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
+                    onSubmit={editingPackage ? handleUpdateGamePackage : handleAddGamePackage}
+                  >
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      {editingPackage ? 'Edit Game Package' : 'Add New Game Package'}
+                    </h4>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Package ID *</span>
+                        <input
+                          required
+                          value={packageId}
+                          onChange={(e) => setPackageId(e.target.value)}
+                          placeholder="package-001"
+                          disabled={!!editingPackage}
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:bg-slate-100"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title *</span>
+                        <input
+                          required
+                          value={packageTitle}
+                          onChange={(e) => setPackageTitle(e.target.value)}
+                          placeholder="Tournament Package"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Image URL *</span>
+                        <input
+                          required
+                          type="url"
+                          value={packageImage}
+                          onChange={(e) => setPackageImage(e.target.value)}
+                          placeholder="https://example.com/package.jpg"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        {packageImage && (
+                          <div className="mt-2">
+                            <img 
+                              src={packageImage} 
+                              alt="Preview" 
+                              className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        )}
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Entry Fee (৳) *</span>
+                        <input
+                          required
+                          type="number"
+                          min="0"
+                          value={packageEntryFee}
+                          onChange={(e) => setPackageEntryFee(e.target.value)}
+                          placeholder="50"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Winner Prize *</span>
+                        <input
+                          required
+                          value={packageWinnerPrize}
+                          onChange={(e) => setPackageWinnerPrize(e.target.value)}
+                          placeholder="500 Diamonds"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Room ID *</span>
+                        <input
+                          required
+                          value={packageRoomId}
+                          onChange={(e) => setPackageRoomId(e.target.value)}
+                          placeholder="123456"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Room Password *</span>
+                        <input
+                          required
+                          type="password"
+                          value={packageRoomPassword}
+                          onChange={(e) => setPackageRoomPassword(e.target.value)}
+                          placeholder="password123"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Max Purchases *</span>
+                        <input
+                          required
+                          type="number"
+                          min="1"
+                          value={packageMaxPurchases}
+                          onChange={(e) => setPackageMaxPurchases(e.target.value)}
+                          placeholder="100"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Description (optional)</span>
+                        <textarea
+                          value={packageDescription}
+                          onChange={(e) => setPackageDescription(e.target.value)}
+                          placeholder="Package description..."
+                          rows={3}
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Tournament Start Time (Bangladesh Time) *</span>
+                        <input
+                          required
+                          type="datetime-local"
+                          value={packageStartTime}
+                          onChange={(e) => setPackageStartTime(e.target.value)}
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Set when the tournament will start</p>
+                      </label>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <button 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        type="submit"
+                      >
+                        {editingPackage ? 'Update Package' : 'Add Package'}
+                      </button>
+                      {editingPackage && (
+                        <button 
+                          type="button"
+                          onClick={handleCancelGamePackageEdit}
+                          className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+
+                  {/* Packages List */}
+                  <div>
+                    <h4 className="mb-3 text-base font-semibold text-slate-700">
+                      Existing Packages ({gamePackages.length})
+                    </h4>
+                    <div className="space-y-2">
+                      {gamePackages.length > 0 ? (
+                        gamePackages.map((pkg) => {
+                          const isActive = pkg.isActive !== false;
+                          return (
+                            <div key={pkg.id} className={`p-4 transition-colors border rounded-lg ${
+                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
+                            } hover:bg-slate-50`}>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {!isActive && (
+                                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
+                                        Inactive
+                                      </span>
+                                    )}
+                                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                                      Purchases: {pkg.purchaseCount}/{pkg.maxPurchases}
+                                    </span>
+                                  </div>
+                                  <div className="mb-2">
+                                    <img 
+                                      src={pkg.image} 
+                                      alt={pkg.title}
+                                      className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                  <p className="mb-1 text-sm font-semibold text-slate-900">{pkg.title}</p>
+                                  <p className="mb-1 text-sm text-slate-600">Entry Fee: ৳{pkg.entryFee}</p>
+                                  <p className="mb-1 text-sm text-slate-600">Winner Prize: {pkg.winnerPrize}</p>
+                                  {pkg.description && (
+                                    <p className="mb-1 text-xs text-slate-500">{pkg.description}</p>
+                                  )}
+                                  <div className="p-2 mt-2 text-xs rounded bg-slate-100">
+                                    <p className="text-slate-600"><strong>Room ID:</strong> {pkg.roomId}</p>
+                                    <p className="text-slate-600"><strong>Password:</strong> {pkg.roomPassword}</p>
+                                  </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={isActive}
+                                        onChange={() => handleToggleGamePackageActive(pkg.id, isActive)}
+                                        className="sr-only peer"
+                                      />
+                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                    </label>
+                                    <span className="text-[10px] text-slate-500">
+                                      {isActive ? 'ON' : 'OFF'}
+                                    </span>
+                                  </div>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
+                                    onClick={() => handleEditGamePackage(pkg)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button 
+                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
+                                    onClick={() => handleRemoveGamePackage(pkg.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="p-8 text-center text-slate-500">
+                          No game packages yet. Add your first package.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : activeTab === 'notices' ? (
-              <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Notice Management Section */}
                 <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
                   <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
                   
                   {/* Add/Edit Notice Form */}
                   <form 
-                    className="mb-6 p-4 border rounded-lg bg-slate-50 border-slate-200" 
+                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
                     onSubmit={editingNotice ? handleUpdateNotice : handleAddNotice}
                   >
                     <h4 className="mb-3 text-base font-semibold text-slate-700">
                       {editingNotice ? 'Edit Notice' : 'Add New Notice'}
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <label className="block md:col-span-2">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
                         <textarea
@@ -1029,14 +1457,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       {/* Features Section */}
                       <div className="block md:col-span-2">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Features (optional)</span>
-                        <div className="space-y-2 mb-2">
+                        <div className="mb-2 space-y-2">
                           {noticeFeatures.map((feature, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-slate-200">
+                            <div key={index} className="flex items-center gap-2 p-2 bg-white border rounded-lg border-slate-200">
                               <span className="flex-1 text-sm">{feature.text}</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveFeature(index)}
-                                className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                                className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
                               >
                                 Remove
                               </button>
@@ -1063,7 +1491,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           <button
                             type="button"
                             onClick={handleAddFeature}
-                            className="px-4 py-2 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-200"
+                            className="px-4 py-2 text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200"
                           >
                             Add Feature
                           </button>
@@ -1115,13 +1543,13 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                     </span>
                                   </div>
                                   {notice.title && (
-                                    <p className="text-sm font-semibold text-slate-900 mb-1">{notice.title}</p>
+                                    <p className="mb-1 text-sm font-semibold text-slate-900">{notice.title}</p>
                                   )}
-                                  <p className="text-sm text-slate-700 mb-2">{notice.message}</p>
+                                  <p className="mb-2 text-sm text-slate-700">{notice.message}</p>
                                   {notice.features && notice.features.length > 0 && (
                                     <div className="flex flex-wrap gap-2">
                                       {notice.features.map((feature, index) => (
-                                        <span key={index} className="text-xs text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                                        <span key={index} className="px-2 py-1 text-xs rounded text-slate-600 bg-slate-100">
                                           {feature.text}
                                         </span>
                                       ))}
@@ -1170,7 +1598,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
             ) : (
-        <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+        <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
 
           {/* Deal Management Section */}
           <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
@@ -1178,13 +1606,13 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             
             {/* Add/Edit Deal Form */}
             <form 
-              className="mb-6 p-4 border rounded-lg bg-slate-50 border-slate-200" 
+              className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
               onSubmit={editingDeal ? handleUpdateDeal : handleAddDeal}
             >
               <h4 className="mb-3 text-base font-semibold text-slate-700">
                 {editingDeal ? 'Edit Deal' : 'Add New Deal'}
               </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <label className="block">
                   <span className="block mb-2 text-sm font-semibold text-slate-700">Deal Name *</span>
                   <input
@@ -1328,7 +1756,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       <img 
                         src={catImage} 
                         alt="Preview" 
-                        className="w-20 h-20 object-cover rounded-lg border border-slate-300"
+                        className="object-cover w-20 h-20 border rounded-lg border-slate-300"
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = 'none';
                         }}
@@ -1406,7 +1834,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                 <img 
                                   src={cat.image} 
                                   alt={cat.name}
-                                  className="w-16 h-16 object-cover rounded-lg border border-slate-300"
+                                  className="object-cover w-16 h-16 border rounded-lg border-slate-300"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).style.display = 'none';
                                   }}
