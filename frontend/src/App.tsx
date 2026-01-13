@@ -24,6 +24,7 @@ import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
 import RulesAndServices from './components/RulesAndServices';
 import MyAccount from './components/MyAccount';
+import SendMoney from './components/SendMoney';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -162,6 +163,16 @@ function App() {
                   element={
                     user ? (
                       <MyAccount />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/send-money"
+                  element={
+                    user ? (
+                      <SendMoney />
                     ) : (
                       <Navigate to="/login" replace />
                     )
