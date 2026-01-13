@@ -16,7 +16,6 @@ function MyAccount() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [isEmailValid, setIsEmailValid] = useState(false);
-  const [isValidatingEmail, setIsValidatingEmail] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const isProcessingRef = useRef(false);
@@ -109,7 +108,6 @@ function MyAccount() {
         return;
       }
 
-      setIsValidatingEmail(true);
       try {
         // Search for exact email match
         const response = await balanceApi.searchEmails(emailInput);
@@ -124,8 +122,6 @@ function MyAccount() {
       } catch (error) {
         console.error('Error validating email:', error);
         setIsEmailValid(false);
-      } finally {
-        setIsValidatingEmail(false);
       }
     };
 
