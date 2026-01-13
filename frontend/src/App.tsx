@@ -24,7 +24,6 @@ import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
 import RulesAndServices from './components/RulesAndServices';
 import MyAccount from './components/MyAccount';
-import Notifications from './components/Notifications';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -35,7 +34,11 @@ function App() {
   const location = useLocation();
   const isAdminRoute = location.pathname === '/admin';
   const isRoboGameZoneRoute = location.pathname === '/robo-game-zone';
-  const isLoginSignupRoute = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/notifications';
+  const isLoginSignupRoute = location.pathname === '/login' || location.pathname === '/signup';
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:35',message:'Location and route state',data:{pathname:location.pathname,isAdminRoute,isRoboGameZoneEnabled,catalogLoading:catalog.loading,shouldRenderMainRoutes:!isAdminRoute},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
+  // #endregion
   
   // If toggle is ON and not on allowed routes, redirect to robo-game-zone
   const shouldRedirectToRoboGameZone = isRoboGameZoneEnabled && 
@@ -52,9 +55,9 @@ function App() {
         {!isAdminRoute && <Navbar />}
         <Notice />
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="w-12 h-12 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="w-12 h-12 mb-4 border-4 rounded-full border-sky-400 border-t-transparent animate-spin"></div>
           <p className="text-slate-600">Loading products...</p>
-          {catalog.error && <p className="text-red-600 mt-2 text-sm">{catalog.error}</p>}
+          {catalog.error && <p className="mt-2 text-sm text-red-600">{catalog.error}</p>}
         </div>
       </div>
     );
@@ -62,22 +65,34 @@ function App() {
 
   // Redirect to robo-game-zone if toggle is ON and on restricted route
   if (shouldRedirectToRoboGameZone) {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:66',message:'Redirecting to robo-game-zone',data:{pathname:location.pathname,shouldRedirectToRoboGameZone},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     return <Navigate to="/robo-game-zone" replace />;
   }
+
+  // #region agent log
+  fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:70',message:'Rendering main routes',data:{pathname:location.pathname,isAdminRoute,willRenderMainRoutes:!isAdminRoute},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   return (
     <>
       {!isAdminRoute && (
         <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
           <Navbar />
+          {/* #region agent log */}
+          {(() => { fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:75',message:'Main Routes component rendering',data:{pathname:location.pathname,routeCount:'multiple',hasLoginRoute:true,hasRootRoute:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{}); return null; })()}
+          {/* #endregion */}
           <Routes>
+            {/* Always accessible routes */}
             <Route path="/robo-game-zone" element={<RoboGameZone />} />
+            
             {/* Login and Signup routes always accessible */}
             <Route
               path="/login"
               element={
                 user ? (
-                  <Navigate to="/" replace />
+                  <Navigate to={isRoboGameZoneEnabled ? "/robo-game-zone" : "/"} replace />
                 ) : (
                   <Login />
                 )
@@ -87,94 +102,95 @@ function App() {
               path="/signup"
               element={
                 user ? (
-                  <Navigate to="/" replace />
+                  <Navigate to={isRoboGameZoneEnabled ? "/robo-game-zone" : "/"} replace />
                 ) : (
                   <SignUp />
                 )
               }
             />
-            {/* Notifications route always accessible */}
+            
+            {/* Root route - always exists, redirects based on toggle state */}
             <Route
-              path="/notifications"
+              path="/"
               element={
-                user ? (
-                  <Notifications />
+                isRoboGameZoneEnabled ? (
+                  <Navigate to="/robo-game-zone" replace />
                 ) : (
-                  <Navigate to="/login" replace />
+                  <>
+                    <Notice />
+                    <Hero />
+                    <ProductGrid categories={catalog.categories} />
+                    <Steps />
+                    <RulesAndServices />
+                    <Footer />
+                  </>
                 )
               }
             />
+            
             {/* Other routes only accessible when toggle is OFF */}
             {!isRoboGameZoneEnabled && (
               <>
+                <Route path="/checkout" element={<Checkout products={catalog.products} />} />
+                <Route 
+                  path="/category/:categoryId" 
+                  element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+                />
+                <Route path="/add-money" element={<AddMoney />} />
                 <Route
-              path="/"
-              element={
-                <>
-                  <Notice />
-                  <Hero />
-                  <ProductGrid 
-                    categories={catalog.categories} 
-                  />
-                  <Steps />
-                  <RulesAndServices />
-                  <Footer />
-                </>
-              }
-            />
-            <Route path="/checkout" element={<Checkout products={catalog.products} />} />
-            <Route 
-              path="/category/:categoryId" 
-              element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
-            />
-            <Route path="/add-money" element={<AddMoney />} />
-            <Route
-              path="/change-password"
-              element={
-                user ? (
-                  <ChangePassword />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/orders"
-              element={
-                user ? (
-                  <OrderHistory />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/my-account"
-              element={
-                user ? (
-                  <MyAccount />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route
-              path="/ff-info"
-              element={
-                user ? (
-                  <FFIdInfo />
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-            <Route path="*" element={<NotFound />} />
+                  path="/change-password"
+                  element={
+                    user ? (
+                      <ChangePassword />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/orders"
+                  element={
+                    user ? (
+                      <OrderHistory />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/my-account"
+                  element={
+                    user ? (
+                      <MyAccount />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
+                <Route
+                  path="/ff-info"
+                  element={
+                    user ? (
+                      <FFIdInfo />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  }
+                />
               </>
             )}
-            {/* Catch-all for when toggle is ON */}
-            {isRoboGameZoneEnabled && (
-              <Route path="*" element={<Navigate to="/robo-game-zone" replace />} />
-            )}
+            
+            {/* Catch-all for unmatched routes - must be last */}
+            <Route 
+              path="*" 
+              element={
+                isRoboGameZoneEnabled ? (
+                  <Navigate to="/robo-game-zone" replace />
+                ) : (
+                  <NotFound />
+                )
+              } 
+            />
           </Routes>
           {!isRoboGameZoneEnabled && (
             <>
@@ -184,20 +200,25 @@ function App() {
           )}
         </div>
       )}
-      <Routes>
-        <Route
-          path="/admin"
-          element={
-            user && isAdmin ? (
-              <AdminPanel onLogout={logout} />
-            ) : user ? (
-              <NotFound />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-      </Routes>
+      {isAdminRoute && (
+        <Routes>
+          {/* #region agent log */}
+          {(() => { fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:220',message:'Admin Routes component rendering',data:{pathname:location.pathname,routeCount:1,hasAdminRoute:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{}); return null; })()}
+          {/* #endregion */}
+          <Route
+            path="/admin"
+            element={
+              user && isAdmin ? (
+                <AdminPanel onLogout={logout} />
+              ) : user ? (
+                <NotFound />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        </Routes>
+      )}
     </>
   );
 }

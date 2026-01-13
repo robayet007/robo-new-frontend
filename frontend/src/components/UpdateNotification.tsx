@@ -60,8 +60,8 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdate, onDis
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 animate-slide-down">
-      <div className="bg-gradient-to-r from-purple-600 to-violet-600 text-white rounded-xl shadow-2xl p-4 border border-purple-400">
+    <div className="fixed z-50 w-full max-w-md px-4 transform -translate-x-1/2 top-20 left-1/2 animate-slide-down">
+      <div className="p-4 text-white border border-purple-400 shadow-2xl bg-gradient-to-r from-purple-600 to-violet-600 rounded-xl">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
             <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -69,20 +69,20 @@ const UpdateNotification: React.FC<UpdateNotificationProps> = ({ onUpdate, onDis
             </svg>
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-sm sm:text-base mb-1">নতুন আপডেট পাওয়া গেছে! 🎉</h3>
-            <p className="text-xs sm:text-sm text-purple-100 mb-3">
+            <h3 className="mb-1 text-sm font-bold sm:text-base">নতুন আপডেট পাওয়া গেছে! 🎉</h3>
+            <p className="mb-3 text-xs text-purple-100 sm:text-sm">
               আপনার ওয়েবসাইটের নতুন ভার্সন পাওয়া গেছে। আপডেট করতে রিফ্রেশ করুন।
             </p>
             <div className="flex gap-2">
               <button
                 onClick={handleUpdate}
-                className="flex-1 bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-purple-50 transition-colors"
+                className="flex-1 px-4 py-2 text-sm font-semibold text-purple-600 transition-colors bg-white rounded-lg hover:bg-purple-50"
               >
                 এখনই আপডেট করুন
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-4 py-2 text-purple-100 hover:text-white text-sm font-medium transition-colors"
+                className="px-4 py-2 text-sm font-medium text-purple-100 transition-colors hover:text-white"
               >
                 পরে
               </button>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { categoryApi, dealApi, bannerApi, noticeApi, gamePackageApi, notificationApi } from '../services/api';
+import { categoryApi, dealApi, bannerApi, noticeApi, gamePackageApi } from '../services/api';
 import type { BackendDeal, BackendBanner, BackendNotice, BackendGamePackage } from '../types';
 import useAuth from '../hooks/useAuth';
 import UserManagement from './UserManagement';
@@ -24,7 +24,7 @@ function utcToBDTimeForInput(utcDateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'notifications';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { user } = useAuth();
@@ -91,18 +91,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [packageMaxPurchases, setPackageMaxPurchases] = useState('100');
   const [packageStartTime, setPackageStartTime] = useState('');
   const [editingPackage, setEditingPackage] = useState<string | null>(null);
-  const [notificationTitle, setNotificationTitle] = useState('');
-  const [notificationMessage, setNotificationMessage] = useState('');
-  const [notificationTarget, setNotificationTarget] = useState<'all' | 'specific'>('all');
-  const [notificationUserId, setNotificationUserId] = useState('');
-  const [notificationUserEmail, setNotificationUserEmail] = useState('');
-  const [sentNotifications, setSentNotifications] = useState<Array<{
-    title: string;
-    message: string;
-    target: string;
-    createdAt: string;
-    recipientsCount: number;
-  }>>([]);
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => {
@@ -763,56 +751,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  // Notification handlers
-  const handleSendNotification = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!notificationTitle.trim() || !notificationMessage.trim()) {
-      setMessage({ type: 'error', text: 'Title and message are required' });
-      return;
-    }
-
-    if (notificationTarget === 'specific' && !notificationUserId.trim() && !notificationUserEmail.trim()) {
-      setMessage({ type: 'error', text: 'User ID or Email is required for specific user notification' });
-      return;
-    }
-
-    try {
-      const response = await notificationApi.create({
-        userId: notificationTarget === 'specific' ? notificationUserId.trim() || undefined : undefined,
-        userEmail: notificationTarget === 'specific' ? notificationUserEmail.trim() || undefined : undefined,
-        title: notificationTitle.trim(),
-        message: notificationMessage.trim(),
-        createdBy: user?.email || user?.uid || 'admin'
-      });
-
-      if (response.success) {
-        const notificationsCreated = response.data?.notificationsCreated || 0;
-        const savedTitle = notificationTitle.trim();
-        const savedMessage = notificationMessage.trim();
-        const savedTarget = notificationTarget === 'all' ? 'All Users' : (notificationUserId || notificationUserEmail);
-        
-        setMessage({ type: 'success', text: `Notification sent successfully to ${notificationsCreated} user(s)!` });
-        setNotificationTitle('');
-        setNotificationMessage('');
-        setNotificationTarget('all');
-        setNotificationUserId('');
-        setNotificationUserEmail('');
-        // Add to sent notifications list
-        setSentNotifications(prev => [{
-          title: savedTitle,
-          message: savedMessage,
-          target: savedTarget,
-          createdAt: new Date().toISOString(),
-          recipientsCount: notificationsCreated
-        }, ...prev]);
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to send notification' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to send notification' });
-    }
-  };
-
   const handleAssignCategoryToDeal = async (categoryId: string, dealId: string | null) => {
     try {
       const response = await categoryApi.update(categoryId, { dealId });
@@ -994,7 +932,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'banners' && 'Banner Management'}
               {activeTab === 'notices' && 'Notice Management'}
               {activeTab === 'gamePackages' && 'Game Packages'}
-              {activeTab === 'notifications' && 'User Notifications'}
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
             </h1>
@@ -1004,7 +941,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'banners' && 'Manage carousel banners and images'}
               {activeTab === 'notices' && 'Manage site notices and announcements'}
               {activeTab === 'gamePackages' && 'Manage RoboGameZone packages and room credentials'}
-              {activeTab === 'notifications' && 'Send notifications to users'}
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
             </p>
@@ -1460,129 +1396,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-            ) : activeTab === 'notifications' ? (
-              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-                {/* Notification Management Section */}
-                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-                  <h3 className="mb-4 text-lg font-bold text-slate-900">Send Notification</h3>
-                  
-                  {/* Send Notification Form */}
-                  <form 
-                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
-                    onSubmit={handleSendNotification}
-                  >
-                    <h4 className="mb-3 text-base font-semibold text-slate-700">
-                      Create New Notification
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title *</span>
-                        <input
-                          required
-                          type="text"
-                          value={notificationTitle}
-                          onChange={(e) => setNotificationTitle(e.target.value)}
-                          placeholder="Notification title"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </label>
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
-                        <textarea
-                          required
-                          value={notificationMessage}
-                          onChange={(e) => setNotificationMessage(e.target.value)}
-                          placeholder="Notification message..."
-                          rows={4}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        />
-                      </label>
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Send To *</span>
-                        <div className="flex gap-4 mb-3">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="notificationTarget"
-                              value="all"
-                              checked={notificationTarget === 'all'}
-                              onChange={(e) => setNotificationTarget(e.target.value as 'all' | 'specific')}
-                              className="w-4 h-4 text-purple-600"
-                            />
-                            <span className="text-sm text-slate-700">All Users</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="notificationTarget"
-                              value="specific"
-                              checked={notificationTarget === 'specific'}
-                              onChange={(e) => setNotificationTarget(e.target.value as 'all' | 'specific')}
-                              className="w-4 h-4 text-purple-600"
-                            />
-                            <span className="text-sm text-slate-700">Specific User</span>
-                          </label>
-                        </div>
-                        {notificationTarget === 'specific' && (
-                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 mt-2">
-                            <input
-                              type="text"
-                              value={notificationUserId}
-                              onChange={(e) => setNotificationUserId(e.target.value)}
-                              placeholder="User ID (optional)"
-                              className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                            />
-                            <input
-                              type="email"
-                              value={notificationUserEmail}
-                              onChange={(e) => setNotificationUserEmail(e.target.value)}
-                              placeholder="User Email (optional)"
-                              className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
-                            />
-                            <p className="md:col-span-2 text-xs text-slate-500">
-                              Provide either User ID or Email to send to a specific user
-                            </p>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
-                        type="submit"
-                      >
-                        Send Notification
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Sent Notifications List */}
-                  {sentNotifications.length > 0 && (
-                    <div>
-                      <h4 className="mb-3 text-base font-semibold text-slate-700">
-                        Recent Notifications ({sentNotifications.length})
-                      </h4>
-                      <div className="space-y-2">
-                        {sentNotifications.map((notif, index) => (
-                          <div key={index} className="p-4 border rounded-lg bg-slate-50 border-slate-200">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h5 className="text-sm font-semibold text-slate-900">{notif.title}</h5>
-                              <span className="px-2 py-0.5 text-xs font-semibold text-purple-700 bg-purple-100 rounded-full">
-                                {notif.recipientsCount} recipient{notif.recipientsCount > 1 ? 's' : ''}
-                              </span>
-                            </div>
-                            <p className="text-sm text-slate-600 mb-2 line-clamp-2">{notif.message}</p>
-                            <div className="flex items-center justify-between text-xs text-slate-500">
-                              <span>To: {notif.target}</span>
-                              <span>{new Date(notif.createdAt).toLocaleString('en-BD')}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             ) : activeTab === 'notices' ? (

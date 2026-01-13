@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase, BackendUserNotification } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
@@ -6,8 +6,8 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Local development default
     // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
-    // const backendUrl = "    http://localhost:5000";
+    // const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+    const backendUrl = "    http://localhost:5000";
     return `${backendUrl}/api`;
   }
   
@@ -631,47 +631,6 @@ export const gamePackageApi = {
   
   getPurchaseCount: async (packageId: string): Promise<ApiResponse<{ packageId: string; purchaseCount: number }>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${packageId}/purchases`);
-    return response.json();
-  }
-};
-
-// User Notifications API
-export const notificationApi = {
-  getUserNotifications: async (userId: string): Promise<ApiResponse<BackendUserNotification[]> & { unreadCount?: number }> => {
-    const response = await SmartAPIManager.smartFetch(`/notifications/user/${userId}`);
-    return response.json();
-  },
-  
-  getUnreadCount: async (userId: string): Promise<ApiResponse<{ unreadCount: number }>> => {
-    const response = await SmartAPIManager.smartFetch(`/notifications/user/${userId}/unread-count`);
-    return response.json();
-  },
-  
-  markAsRead: async (notificationId: string): Promise<ApiResponse<BackendUserNotification>> => {
-    const response = await SmartAPIManager.smartFetch(`/notifications/${notificationId}/read`, {
-      method: 'PUT'
-    });
-    return response.json();
-  },
-  
-  markAllAsRead: async (userId: string): Promise<ApiResponse<{ updatedCount: number }>> => {
-    const response = await SmartAPIManager.smartFetch(`/notifications/user/${userId}/read-all`, {
-      method: 'PUT'
-    });
-    return response.json();
-  },
-  
-  create: async (notificationData: {
-    userId?: string;
-    userEmail?: string;
-    title: string;
-    message: string;
-    createdBy: string;
-  }): Promise<ApiResponse<{ notificationsCreated: number }>> => {
-    const response = await SmartAPIManager.smartFetch('/notifications', {
-      method: 'POST',
-      body: JSON.stringify(notificationData)
-    });
     return response.json();
   }
 };
