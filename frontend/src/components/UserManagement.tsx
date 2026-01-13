@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import useUsers, { type UserRole, type AppUser } from '../hooks/useUsers';
 import useAuth from '../hooks/useAuth';
-import { balanceApi, paymentApi } from '../services/api';
+import { balanceApi, paymentApi, adminRoleApi, type AdminModerationPermissions } from '../services/api';
 
 function UserManagement() {
   const { users, loading, updateUserRole, refreshUsers, addUser, syncCurrentUser } = useUsers();
@@ -12,6 +12,10 @@ function UserManagement() {
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceValue, setBalanceValue] = useState<string>('');
 
+  type ModerationPermissions = AdminModerationPermissions;
+
+  type Role = 'user' | 'moderator' | 'admin';
+
   type PaymentUserSummary = {
     userId: string;
     userEmail: string;
@@ -19,6 +23,8 @@ function UserManagement() {
     lastBalance: number | null;
     lastPaymentAt: string | null;
     totalOrders: number;
+    role?: Role;
+    moderationPermissions?: ModerationPermissions;
   };
 
   const [paymentUsers, setPaymentUsers] = useState<PaymentUserSummary[]>([]);
@@ -32,6 +38,17 @@ function UserManagement() {
 
   const [balanceRecords, setBalanceRecords] = useState<BalanceRecord[]>([]);
   const [balanceRecordsLoading, setBalanceRecordsLoading] = useState(false);
+
+  const [selectedModerator, setSelectedModerator] = useState<PaymentUserSummary | null>(null);
+  const [modPerms, setModPerms] = useState<ModerationPermissions>({
+    canAccessDashboard: false,
+    canManageProducts: false,
+    canManageBanners: false,
+    canManageNotices: false,
+    canManageGamePackages: false,
+    canManageUsers: false,
+    canManageOrders: false,
+  });
 
   // Add current user if not in list
   useEffect(() => {
@@ -74,6 +91,28 @@ function UserManagement() {
           return;
         }
 
+        // Load roles from backend
+        let roleMap = new Map<string, { role: Role; moderationPermissions?: ModerationPermissions }>();
+        try {
+          const rolesResp = await adminRoleApi.getAll();
+          if (rolesResp.success && Array.isArray(rolesResp.data)) {
+            roleMap = new Map(
+              (rolesResp.data as any[]).map((r) => {
+                const key = (r.userId || r.userEmail || '').toString();
+                return [
+                  key,
+                  {
+                    role: (r.role as Role) || 'user',
+                    moderationPermissions: r.moderationPermissions || {},
+                  },
+                ];
+              })
+            );
+          }
+        } catch {
+          // ignore role fetch errors; we'll just default to user
+        }
+
         const byKey = new Map<string, PaymentUserSummary>();
 
         (resp.data as any[]).forEach((p) => {
@@ -81,10 +120,12 @@ function UserManagement() {
           const uid: string | undefined = p.userId;
           if (!email && !uid) return;
 
-          const key = email || uid!;
+          const key = uid || email!;
           const createdTs = new Date(p.verifiedAt || p.createdAt || Date.now()).toISOString();
 
-          if (!byKey.has(key)) {
+          const existing = byKey.get(key);
+          if (!existing) {
+            const roleInfo = roleMap.get(key) || { role: 'user' as Role, moderationPermissions: {} };
             byKey.set(key, {
               userId: uid || email || 'unknown',
               userEmail: email || 'unknown',
@@ -93,19 +134,20 @@ function UserManagement() {
                 typeof p.updatedBalance === 'number' ? Number(p.updatedBalance) : null,
               lastPaymentAt: createdTs,
               totalOrders: 1,
+              role: roleInfo.role,
+              moderationPermissions: roleInfo.moderationPermissions || {},
             });
           } else {
-            const summary = byKey.get(key)!;
-            summary.totalOrders += 1;
+            existing.totalOrders += 1;
 
             // update last payment time if newer
             if (
-              summary.lastPaymentAt &&
-              new Date(createdTs).getTime() > new Date(summary.lastPaymentAt).getTime()
+              existing.lastPaymentAt &&
+              new Date(createdTs).getTime() > new Date(existing.lastPaymentAt).getTime()
             ) {
-              summary.lastPaymentAt = createdTs;
+              existing.lastPaymentAt = createdTs;
               if (typeof p.updatedBalance === 'number') {
-                summary.lastBalance = Number(p.updatedBalance);
+                existing.lastBalance = Number(p.updatedBalance);
               }
             }
           }
@@ -396,6 +438,194 @@ function UserManagement() {
         </div>
       </div>
 
+      {/* Moderator permissions editor */}
+      {selectedModerator && (
+        <div className="p-4 sm:p-5 rounded-xl border border-purple-200 bg-purple-50 mb-4">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <p className="text-xs font-semibold text-purple-700 mb-1">Moderator permissions</p>
+              <p className="text-sm sm:text-base font-bold text-slate-900">
+                {selectedModerator.userName || selectedModerator.userEmail}
+              </p>
+              <p className="text-[11px] sm:text-xs text-slate-600">
+                UID: {selectedModerator.userId}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedModerator(null)}
+              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+            >
+              ✕ Close
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px] sm:text-sm">
+            {/* Column: Navigation / Overview */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide mb-1">
+                Navigation &amp; overview
+              </p>
+
+              {/* Dashboard */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canAccessDashboard}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canAccessDashboard: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Dashboard</p>
+                  <p className="text-[11px] text-slate-500">
+                    See overall stats and quick overview cards.
+                  </p>
+                </div>
+              </label>
+
+              {/* Game Packages / Game Zone */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageGamePackages}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageGamePackages: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Game Packages / Game Zone</p>
+                  <p className="text-[11px] text-slate-500">
+                    Manage all game related packages and offers.
+                  </p>
+                </div>
+              </label>
+
+              {/* Order History */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageOrders}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageOrders: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Order History</p>
+                  <p className="text-[11px] text-slate-500">
+                    View and manage all orders placed by users.
+                  </p>
+                </div>
+              </label>
+            </div>
+
+            {/* Column: Management modules */}
+            <div className="space-y-2">
+              <p className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide mb-1">
+                Management modules
+              </p>
+
+              {/* Products & Categories */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageProducts}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Products &amp; Categories</p>
+                  <p className="text-[11px] text-slate-500">
+                    Create, edit and organise products and categories.
+                  </p>
+                </div>
+              </label>
+
+              {/* Banner Management */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageBanners}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageBanners: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Banner Management</p>
+                  <p className="text-[11px] text-slate-500">
+                    Control homepage banners, images and promo links.
+                  </p>
+                </div>
+              </label>
+
+              {/* Notice Management */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageNotices}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageNotices: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Notice Management</p>
+                  <p className="text-[11px] text-slate-500">
+                    Publish and update important user notices.
+                  </p>
+                </div>
+              </label>
+
+              {/* User Management */}
+              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageUsers}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageUsers: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">User Management</p>
+                  <p className="text-[11px] text-slate-500">
+                    See users, balances and roles for moderation.
+                  </p>
+                </div>
+              </label>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!selectedModerator) return;
+              await adminRoleApi.upsert({
+                userId: selectedModerator.userId,
+                userEmail: selectedModerator.userEmail,
+                role: 'moderator',
+                moderationPermissions: modPerms,
+              });
+              setPaymentUsers((prev) =>
+                prev.map((p) =>
+                  p.userId === selectedModerator.userId && p.userEmail === selectedModerator.userEmail
+                    ? { ...p, moderationPermissions: modPerms, role: 'moderator' }
+                    : p
+                )
+              );
+              setMessage({ type: 'success', text: 'Moderator permissions updated' });
+            }}
+            className="mt-4 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-all"
+          >
+            Save Permissions
+          </button>
+        </div>
+      )}
+
       {/* Balance editor for selected user */}
       {selectedUserForBalance && (
         <div className="p-4 sm:p-5 rounded-xl border border-amber-200 bg-amber-50 mb-4">
@@ -559,9 +789,32 @@ function UserManagement() {
                   {u.userEmail || '-'}
                 </div>
                 <div>
-                  <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] sm:text-xs font-semibold">
-                    User
-                  </span>
+                  <select
+                    value={u.role || 'user'}
+                    onChange={async (e) => {
+                      const newRole = e.target.value as Role;
+                      if (!u.userId && !u.userEmail) return;
+                      await adminRoleApi.upsert({
+                        userId: u.userId,
+                        userEmail: u.userEmail,
+                        role: newRole,
+                        moderationPermissions: u.moderationPermissions || {},
+                      });
+                      setMessage({ type: 'success', text: `Role updated to ${newRole}` });
+                      setPaymentUsers((prev) =>
+                        prev.map((p) =>
+                          p.userId === u.userId && p.userEmail === u.userEmail
+                            ? { ...p, role: newRole }
+                            : p
+                        )
+                      );
+                    }}
+                    className="px-2 py-1 rounded-lg border border-slate-300 text-[10px] sm:text-xs bg-white text-slate-700"
+                  >
+                    <option value="user">User</option>
+                    <option value="moderator">Moderator</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
                 <div>
                   {(() => {
@@ -588,7 +841,7 @@ function UserManagement() {
                     );
                   })()}
                 </div>
-                <div>
+                <div className="flex flex-col sm:flex-row gap-1">
                   <button
                     type="button"
                     onClick={() => openBalanceForPaymentUser(u)}
@@ -596,6 +849,18 @@ function UserManagement() {
                   >
                     View / Edit
                   </button>
+                  {u.role === 'moderator' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedModerator(u);
+                        setModPerms(u.moderationPermissions || {});
+                      }}
+                      className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-[10px] sm:text-xs text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                    >
+                      Edit Moderation
+                    </button>
+                  )}
                 </div>
               </div>
             ))

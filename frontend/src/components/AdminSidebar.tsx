@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad } from 'react-icons/fa';
+import useModeratorPermissions from '../hooks/useModeratorPermissions';
 
 type SidebarProps = {
   activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
@@ -10,15 +11,29 @@ type SidebarProps = {
 
 function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const menuItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome },
-    { id: 'products' as const, label: 'Products & Categories', icon: FaBox },
-    { id: 'banners' as const, label: 'Banner Management', icon: FaImages },
-    { id: 'notices' as const, label: 'Notice Management', icon: FaBell },
-    { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad },
-    { id: 'users' as const, label: 'User Management', icon: FaUsers },
-    { id: 'orders' as const, label: 'Order History', icon: FaHistory },
+  const { role, permissions } = useModeratorPermissions();
+
+  const allMenuItems = [
+    { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard' },
+    { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts' },
+    { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners' },
+    { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices' },
+    { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages' },
+    { id: 'users' as const, label: 'User Management', icon: FaUsers, permission: 'canManageUsers' },
+    { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders' },
   ];
+
+  // Filter menu items based on permissions
+  const menuItems = allMenuItems.filter(item => {
+    // Admins see everything
+    if (role === 'admin') return true;
+    // Moderators only see items they have permission for
+    if (role === 'moderator') {
+      return permissions[item.permission as keyof typeof permissions] === true;
+    }
+    // Regular users see nothing (shouldn't be here anyway)
+    return false;
+  });
 
   return (
     <>

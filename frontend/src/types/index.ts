@@ -77,6 +77,7 @@ export interface BackendBanner {
   title?: string;
   subtitle?: string;
   buttonText?: string;
+  link?: string;
   displayOrder: number;
   isActive: boolean;
   createdAt: string;

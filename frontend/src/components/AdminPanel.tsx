@@ -7,6 +7,7 @@ import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
 import AdminDashboard from './AdminDashboard';
+import useModeratorPermissions from '../hooks/useModeratorPermissions';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
 function utcToBDTimeForInput(utcDateString: string): string {
@@ -40,7 +41,40 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     retry 
   } = useCatalog();
 
+  const { role, permissions } = useModeratorPermissions();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+
+  // Permission check helper
+  const hasPermission = (permission: keyof typeof permissions): boolean => {
+    if (role === 'admin') return true;
+    if (role === 'moderator') return permissions[permission] === true;
+    return false;
+  };
+
+  // Redirect to first available tab if current tab is not accessible
+  useEffect(() => {
+    if (loading || role === 'user') return;
+
+    const tabPermissions: Record<TabType, keyof typeof permissions> = {
+      dashboard: 'canAccessDashboard',
+      products: 'canManageProducts',
+      banners: 'canManageBanners',
+      notices: 'canManageNotices',
+      gamePackages: 'canManageGamePackages',
+      users: 'canManageUsers',
+      orders: 'canManageOrders',
+    };
+
+    if (!hasPermission(tabPermissions[activeTab])) {
+      // Find first available tab
+      const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
+        tab => hasPermission(tabPermissions[tab])
+      );
+      if (availableTab) {
+        setActiveTab(availableTab);
+      }
+    }
+  }, [role, permissions, activeTab, loading]);
   const [catName, setCatName] = useState('');
   const [catDesc, setCatDesc] = useState('');
   const [catBadge, setCatBadge] = useState('');
@@ -66,6 +100,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [bannerTitle, setBannerTitle] = useState('');
   const [bannerSubtitle, setBannerSubtitle] = useState('');
   const [bannerButtonText, setBannerButtonText] = useState('');
+  const [bannerLink, setBannerLink] = useState('');
   const [bannerOrder, setBannerOrder] = useState('0');
   const [editingBanner, setEditingBanner] = useState<string | null>(null);
   const [notices, setNotices] = useState<BackendNotice[]>([]);
@@ -375,6 +410,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         title: bannerTitle.trim() || '',
         subtitle: bannerSubtitle.trim() || '',
         buttonText: bannerButtonText.trim() || '',
+        link: bannerLink.trim() || undefined,
         displayOrder: Number(bannerOrder) || 0,
         isActive: true
       });
@@ -385,6 +421,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         setBannerTitle('');
         setBannerSubtitle('');
         setBannerButtonText('');
+        setBannerLink('');
         setBannerOrder('0');
         await loadBanners();
       } else {
@@ -401,6 +438,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setBannerTitle(banner.title || '');
     setBannerSubtitle(banner.subtitle || '');
     setBannerButtonText(banner.buttonText || '');
+    setBannerLink(banner.link || '');
     setBannerOrder(banner.displayOrder.toString());
   };
 
@@ -410,6 +448,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setBannerTitle('');
     setBannerSubtitle('');
     setBannerButtonText('');
+    setBannerLink('');
     setBannerOrder('0');
   };
 
@@ -426,6 +465,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         title: bannerTitle.trim() || '',
         subtitle: bannerSubtitle.trim() || '',
         buttonText: bannerButtonText.trim() || '',
+        link: bannerLink.trim() || undefined,
         displayOrder: Number(bannerOrder) || 0
       });
 
@@ -967,13 +1007,13 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
           {/* Tab Content */}
           <div className="px-0">
-            {activeTab === 'dashboard' ? (
+            {activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
               <AdminDashboard />
-            ) : activeTab === 'users' ? (
+            ) : activeTab === 'users' && hasPermission('canManageUsers') ? (
               <UserManagement />
-            ) : activeTab === 'orders' ? (
+            ) : activeTab === 'orders' && hasPermission('canManageOrders') ? (
               <AdminOrders />
-            ) : activeTab === 'banners' ? (
+            ) : activeTab === 'banners' && hasPermission('canManageBanners') ? (
               <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Banner Management Section */}
                 <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
@@ -1037,6 +1077,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           placeholder="Click Here"
                           className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                         />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="block mb-2 text-sm font-semibold text-slate-700">Link (optional)</span>
+                        <input
+                          type="url"
+                          value={bannerLink}
+                          onChange={(e) => setBannerLink(e.target.value)}
+                          placeholder="https://example.com or /category/123"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">When user clicks on banner, they will be redirected to this link</p>
                       </label>
                       <label className="block">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
@@ -1154,7 +1205,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
               </div>
-            ) : activeTab === 'gamePackages' ? (
+            ) : activeTab === 'gamePackages' && hasPermission('canManageGamePackages') ? (
               <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Game Package Management Section */}
                 <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
@@ -1396,7 +1447,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
               </div>
-            ) : activeTab === 'notices' ? (
+            ) : activeTab === 'notices' && hasPermission('canManageNotices') ? (
               <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Notice Management Section */}
                 <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
@@ -1597,7 +1648,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : activeTab === 'products' && hasPermission('canManageProducts') ? (
         <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
 
           {/* Deal Management Section */}
@@ -2063,7 +2114,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </p>
           </div>
         </div>
-            )}
+            ) : (
+              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+                <div className="p-8 text-center bg-white border rounded-xl border-slate-200">
+                  <p className="text-lg font-semibold text-slate-700">Access Denied</p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    You don't have permission to access this section.
+                  </p>
+                </div>
+              </div>
+            )
+          }
           </div>
         </div>
       </div>

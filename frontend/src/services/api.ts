@@ -259,6 +259,79 @@ export const noticeApi = {
   },
 };
 
+// ==================== Admin Roles API ====================
+
+export type AdminModerationPermissions = {
+  // Sidebar: Dashboard
+  canAccessDashboard?: boolean;
+
+  // Sidebar: Products & Categories
+  canManageProducts?: boolean;
+
+  // Sidebar: Banner Management
+  canManageBanners?: boolean;
+
+  // Sidebar: Notice Management
+  canManageNotices?: boolean;
+
+  // Sidebar: Game Packages / Game Zone related
+  canManageGamePackages?: boolean;
+
+  // Sidebar: User Management
+  canManageUsers?: boolean;
+
+  // Sidebar: Order History
+  canManageOrders?: boolean;
+};
+
+export type AdminUserRole = {
+  _id: string;
+  userId?: string;
+  userEmail: string;
+  role: 'user' | 'moderator' | 'admin';
+  moderationPermissions?: AdminModerationPermissions;
+};
+
+export const adminRoleApi = {
+  getAll: async (): Promise<ApiResponse<AdminUserRole[]>> => {
+    const response = await SmartAPIManager.smartFetch('/admin/roles');
+    const json = await response.json();
+    if (json && Array.isArray(json.data)) {
+      return { success: true, data: json.data } as ApiResponse<AdminUserRole[]>;
+    }
+    return json;
+  },
+
+  getForUser: async (params: {
+    userId?: string | null;
+    userEmail?: string | null;
+  }): Promise<ApiResponse<AdminUserRole[]>> => {
+    const searchParams = new URLSearchParams();
+    if (params.userId) searchParams.append('userId', String(params.userId));
+    if (params.userEmail) searchParams.append('userEmail', String(params.userEmail));
+
+    const qs = searchParams.toString();
+    const response = await SmartAPIManager.smartFetch(
+      `/admin/roles${qs ? `?${qs}` : ''}`
+    );
+    const json = await response.json();
+    return json;
+  },
+
+  upsert: async (payload: {
+    userId?: string;
+    userEmail: string;
+    role: 'user' | 'moderator' | 'admin';
+    moderationPermissions?: AdminModerationPermissions;
+  }): Promise<ApiResponse<AdminUserRole>> => {
+    const response = await SmartAPIManager.smartFetch('/admin/roles', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+};
+
 // Payments API with smart fetch
 export const paymentApi = {
   verify: async (paymentData: {
@@ -559,7 +632,30 @@ export const balanceApi = {
       body: JSON.stringify(balanceData)
     });
     return response.json();
-  }
+  },
+
+  // Search emails for autocomplete
+  searchEmails: async (query: string): Promise<ApiResponse<string[]>> => {
+    const response = await SmartAPIManager.smartFetch(`/balance/search-emails?q=${encodeURIComponent(query)}`);
+    return response.json();
+  },
+};
+
+// Balance transfer API (P2P send money)
+export const balanceTransferApi = {
+  send: async (payload: {
+    senderUserId: string;
+    senderEmail: string;
+    receiverEmail: string;
+    amount: number;
+    note?: string;
+  }): Promise<ApiResponse<{ senderBalanceAfter: number }>> => {
+    const response = await SmartAPIManager.smartFetch('/balance/transfer', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
 };
 
 // Database seed (one-time use)

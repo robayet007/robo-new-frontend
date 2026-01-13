@@ -134,6 +134,16 @@ export default function useRoboBalance() {
     return { success: true, newBalance };
   };
 
+  // Optimistic balance update - update UI immediately before server confirms
+  // Socket.IO event will correct any discrepancies
+  const updateBalanceOptimistically = useCallback((amount: number) => {
+    const current = getCurrentBalance();
+    if (current !== null) {
+      const newBalance = current - amount;
+      setBackendBalance(newBalance);
+    }
+  }, []);
+
   return {
     // Original API
     backendBalance: balance,
@@ -147,5 +157,8 @@ export default function useRoboBalance() {
     deductMoney,
     refresh: fetchBalance,
     loading: isLoading,
+    
+    // Optimistic update for instant UI feedback
+    updateBalanceOptimistically,
   };
 }

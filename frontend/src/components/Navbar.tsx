@@ -161,6 +161,16 @@ function Navbar() {
                     className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
                     onClick={() => {
                       setIsProfileMenuOpen(false);
+                      navigate('/my-account#send-money');
+                    }}
+                  >
+                    📤 Send Money
+                  </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
                       navigate('/change-password');
                     }}
                   >

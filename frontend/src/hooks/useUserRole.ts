@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useAuth from './useAuth';
 import { isDefaultAdmin } from '../config/admin';
 import useUsers from './useUsers';
+import { adminRoleApi, type AdminUserRole } from '../services/api';
 
 function useUserRole() {
   const { user } = useAuth();
@@ -22,13 +23,30 @@ function useUserRole() {
         return;
       }
 
-      // Check role from Firestore in background (non-blocking)
       setLoading(true);
       try {
+        // 1) Check new payments-based role store first
+        try {
+          const resp = await adminRoleApi.getForUser({
+            userId: user.uid,
+            userEmail: user.email,
+          });
+
+          if (resp.success && Array.isArray(resp.data) && resp.data.length > 0) {
+            const roleEntry = resp.data[0] as AdminUserRole;
+            const role = roleEntry.role;
+            // Treat both admin and moderator as "can access admin panel"
+            setIsAdmin(role === 'admin' || role === 'moderator');
+            return;
+          }
+        } catch {
+          // ignore payments-role errors and fall back to Firestore roles
+        }
+
+        // 2) Fallback: Check role from Firestore (legacy path)
         const role = await getUserRole(user.email);
         setIsAdmin(role === 'admin');
-      } catch (error) {
-        // console.error('Error checking user role:', error);
+      } catch {
         setIsAdmin(false);
       } finally {
         setLoading(false);
@@ -36,7 +54,7 @@ function useUserRole() {
     };
 
     checkRole();
-  }, [user?.email, getUserRole]);
+  }, [user?.email, user?.uid, getUserRole]);
 
   return { isAdmin, loading };
 }

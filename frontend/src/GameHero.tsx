@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { bannerApi } from "./services/api"
 import type { BackendBanner } from "./types"
 
@@ -12,9 +13,11 @@ interface Slide {
   subtitle: string
   buttonText: string
   image: string
+  link?: string
 }
 
 export default function GameHero() {
+  const navigate = useNavigate()
   const [activeSlide, setActiveSlide] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const [isTablet, setIsTablet] = useState(false)
@@ -42,8 +45,13 @@ export default function GameHero() {
             title: banner.title || '',
             subtitle: banner.subtitle || '',
             buttonText: banner.buttonText || '',
-            image: banner.image
+            image: banner.image,
+            link: banner.link
           }))
+          // Debug: Log banners with links
+          if (import.meta.env.DEV) {
+            console.log('Banners loaded:', bannerSlides.map(s => ({ id: s.id, title: s.title, link: s.link })))
+          }
           setSlides(bannerSlides)
         } else {
           // Fallback to empty array if API fails
@@ -95,6 +103,7 @@ export default function GameHero() {
     // আগে অনেক ডার্ক ছিল, এখন লাইট করেছি যাতে ছবি বেশি ব্রাইট দেখা যায়
     background: "linear-gradient(to right, rgba(0,0,0,0.28), rgba(0,0,0,0.06))",
     zIndex: 1,
+    pointerEvents: "none", // Allow clicks to pass through overlay
   }
 
   const contentStyle: React.CSSProperties = {
@@ -222,7 +231,39 @@ export default function GameHero() {
       `}</style>
 
       <div style={containerStyle}>
-        <div style={slideStyle} key={activeSlide}>
+        <div 
+          style={{
+            ...slideStyle,
+            cursor: currentSlide.link?.trim() ? 'pointer' : 'default'
+          }} 
+          key={activeSlide}
+          onClick={() => {
+            const link = currentSlide.link?.trim()
+            if (!link) {
+              if (import.meta.env.DEV) {
+                console.log('Banner clicked but no link set', { slide: currentSlide })
+              }
+              return
+            }
+            
+            if (import.meta.env.DEV) {
+              console.log('Banner clicked, redirecting to:', link)
+            }
+            
+            // Handle external URLs
+            if (link.startsWith('http://') || link.startsWith('https://')) {
+              window.open(link, '_blank', 'noopener,noreferrer');
+            } 
+            // Handle internal routes
+            else if (link.startsWith('/')) {
+              navigate(link);
+            }
+            // Fallback for any other format
+            else {
+              window.location.href = link;
+            }
+          }}
+        >
           <div style={overlayStyle} />
 
           <div
@@ -235,6 +276,7 @@ export default function GameHero() {
               justifyContent: "center",
               padding: isMobile ? "16px" : "32px",
               maxWidth: isTablet ? "70%" : "60%",
+              pointerEvents: "none", // Allow clicks to pass through, except for button
             }}
           >
             <h1 style={titleStyle}>{currentSlide.title}</h1>
@@ -244,7 +286,37 @@ export default function GameHero() {
             {currentSlide.buttonText && (
               <button
                 type="button"
-                style={buttonStyle}
+                style={{
+                  ...buttonStyle,
+                  pointerEvents: "auto", // Button should be clickable
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const link = currentSlide.link?.trim()
+                  if (!link) {
+                    if (import.meta.env.DEV) {
+                      console.log('Button clicked but no link set')
+                    }
+                    return
+                  }
+                  
+                  if (import.meta.env.DEV) {
+                    console.log('Button clicked, redirecting to:', link)
+                  }
+                  
+                  // Handle external URLs
+                  if (link.startsWith('http://') || link.startsWith('https://')) {
+                    window.open(link, '_blank', 'noopener,noreferrer');
+                  } 
+                  // Handle internal routes
+                  else if (link.startsWith('/')) {
+                    navigate(link);
+                  }
+                  // Fallback for any other format
+                  else {
+                    window.location.href = link;
+                  }
+                }}
               >
                 {currentSlide.buttonText}
               </button>
@@ -257,7 +329,10 @@ export default function GameHero() {
                 <button
                   key={index}
                   style={dotStyle(index === activeSlide)}
-                  onClick={() => setActiveSlide(index)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent banner click when clicking dots
+                    setActiveSlide(index)
+                  }}
                   aria-label={`Go to slide ${index + 1}`}
                 />
               ))}
