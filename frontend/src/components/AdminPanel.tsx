@@ -3,7 +3,6 @@ import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
 import { categoryApi, dealApi, bannerApi, noticeApi, gamePackageApi } from '../services/api';
 import type { BackendDeal, BackendBanner, BackendNotice, BackendGamePackage } from '../types';
-import useAuth from '../hooks/useAuth';
 import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
@@ -27,7 +26,6 @@ function utcToBDTimeForInput(utcDateString: string): string {
 type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
-  const { user } = useAuth();
   const { 
     categories, 
     products, 
