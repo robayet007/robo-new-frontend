@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { digitalCodeApi } from '../services/api';
-import type { ApiResponse } from '../types';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct } from '../types';
 
 const STORAGE_KEY = 'rtu_digital_codes_backup';
@@ -45,8 +44,9 @@ function useDigitalCodes() {
       
       // Load categories
       const categoriesResponse = await digitalCodeApi.getCategories();
+      let activeCategories: BackendDigitalCodeCategory[] = [];
       if (categoriesResponse.success && Array.isArray(categoriesResponse.data)) {
-        const activeCategories = categoriesResponse.data.filter(cat => cat.isActive);
+        activeCategories = categoriesResponse.data.filter(cat => cat.isActive);
         setCategories(activeCategories);
       } else {
         throw new Error(categoriesResponse.message || 'Failed to load categories');
@@ -100,10 +100,6 @@ function useDigitalCodes() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const saveToStorage = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ categories, products }));
   };
 
   const retryLoad = () => {
