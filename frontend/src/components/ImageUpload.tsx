@@ -1,9 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // Get API base URL (same logic as SmartAPIManager)
 const getApiBaseURL = (): string => {
   const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
   return `${backendUrl}/api`;
+};
+
+// Get backend base URL (without /api)
+const getBackendBaseURL = (): string => {
+  const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+  return backendUrl;
 };
 
 interface ImageUploadProps {
@@ -29,6 +35,22 @@ function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Update preview when value changes (for existing images from database)
+  useEffect(() => {
+    if (value && value.trim()) {
+      // If value is a URL (starts with http or /), show it as preview
+      if (value.startsWith('http') || value.startsWith('/')) {
+        setPreview(value);
+      }
+    } else if (!value || !value.trim()) {
+      // Only clear preview if value is truly empty AND preview is not a data URL (file preview)
+      // Don't clear if user is uploading (preview is data URL)
+      if (preview && !preview.startsWith('data:')) {
+        setPreview(null);
+      }
+    }
+  }, [value, preview]);
 
   const handleFileSelect = async (file: File | null) => {
     if (!file) {
@@ -77,7 +99,22 @@ function ImageUpload({
       const result = await response.json();
 
       if (result.success && result.data?.url) {
-        onChange(result.data.url);
+        let uploadedUrl = result.data.url;
+        
+        // Ensure URL is absolute if it's a relative path
+        // If URL starts with /uploads, prepend backend base URL
+        if (uploadedUrl.startsWith('/uploads')) {
+          const backendBaseURL = getBackendBaseURL();
+          uploadedUrl = `${backendBaseURL}${uploadedUrl}`;
+        }
+        
+        // Debug log
+        console.log('Image uploaded successfully, URL:', uploadedUrl);
+        console.log('Calling onChange with URL:', uploadedUrl);
+        
+        // Set preview to uploaded URL (not data URL)
+        setPreview(uploadedUrl);
+        onChange(uploadedUrl);
         onFileSelect?.(file);
         setError(null);
       } else {
@@ -153,9 +190,6 @@ function ImageUpload({
         >
           {uploading ? 'Uploading...' : preview ? 'Change Image' : 'Choose Image'}
         </label>
-        {value && !preview && (
-          <span className="text-xs text-slate-600">Current: {value}</span>
-        )}
       </div>
 
       {/* Error Message */}

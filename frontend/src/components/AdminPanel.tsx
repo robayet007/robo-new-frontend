@@ -10,7 +10,6 @@ import AdminDashboard from './AdminDashboard';
 import ThemeCustomization from './ThemeCustomization';
 import AdminDigitalCodes from './AdminDigitalCodes';
 import useModeratorPermissions from '../hooks/useModeratorPermissions';
-import ImageUpload from './ImageUpload';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
 function utcToBDTimeForInput(utcDateString: string): string {
@@ -413,16 +412,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   // Banner handlers
   const handleAddBanner = async (e: FormEvent) => {
     e.preventDefault();
-    if (!bannerImage.trim()) {
-      setMessage({ type: 'error', text: 'Banner image is required' });
+    if (!bannerImage || !bannerImage.trim()) {
+      setMessage({ type: 'error', text: 'Banner image is required. Please upload an image.' });
       return;
     }
 
     try {
       const bannerId = crypto.randomUUID();
+      const imageUrl = bannerImage.trim();
+      
       const response = await bannerApi.create({
         id: bannerId,
-        image: bannerImage.trim(),
+        image: imageUrl,
         title: bannerTitle.trim() || '',
         subtitle: bannerSubtitle.trim() || '',
         buttonText: bannerButtonText.trim() || '',
@@ -441,6 +442,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         setBannerOrder('0');
         await loadBanners();
       } else {
+        // Debug log
+        if (import.meta.env.DEV) {
+          console.error('Banner creation failed:', response);
+        }
         setMessage({ type: 'error', text: response.message || 'Failed to create banner' });
       }
     } catch (err: any) {
@@ -1056,13 +1061,28 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     </h4>
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                       <div className="md:col-span-2">
-                        <ImageUpload
-                          value={bannerImage}
-                          onChange={setBannerImage}
-                          label="Banner Image *"
-                          uploadEndpoint="/upload/banner-image"
-                          maxSizeMB={5}
-                        />
+                        <label className="block">
+                          <span className="block mb-2 text-sm font-semibold text-slate-700">Banner Image URL *</span>
+                          <input
+                            required
+                            value={bannerImage}
+                            onChange={(e) => setBannerImage(e.target.value)}
+                            placeholder="https://example.com/banner.jpg"
+                            className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          />
+                          {bannerImage && (
+                            <div className="mt-2">
+                              <img
+                                src={bannerImage}
+                                alt="Preview"
+                                className="w-full max-w-xs h-32 object-cover rounded-lg border-2 border-slate-300"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                        </label>
                       </div>
                       <label className="block">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
@@ -1863,15 +1883,27 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
-                <div className="block">
-                  <ImageUpload
+                <label className="block">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Category Image URL (optional)</span>
+                  <input
                     value={catImage}
-                    onChange={setCatImage}
-                    label="Category Image (optional)"
-                    uploadEndpoint="/upload/category-image"
-                    maxSizeMB={5}
+                    onChange={(e) => setCatImage(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
-                </div>
+                  {catImage && (
+                    <div className="mt-2">
+                      <img
+                        src={catImage}
+                        alt="Preview"
+                        className="w-full max-w-xs h-32 object-cover rounded-lg border-2 border-slate-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </label>
                 <label className="block">
                   <span className="block mb-2 text-sm font-semibold text-slate-700">Deal (optional)</span>
                   <select
