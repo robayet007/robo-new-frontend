@@ -15,6 +15,7 @@ import InstallButton from './components/InstallButton';
 import WhatsAppButton from './components/WhatsAppButton';
 import RoboGameZone from './components/RoboGameZone';
 import useCatalog from './hooks/useCatalog';
+import useDigitalCodes from './hooks/useDigitalCodes';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
 import { useRoboGameZone } from './contexts/RoboGameZoneContext';
@@ -31,6 +32,7 @@ import SkeletonLoader from './components/SkeletonLoader';
 // ==================== MAIN APP ====================
 function App() {
   const catalog = useCatalog();
+  const digitalCodes = useDigitalCodes();
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
   const { isRoboGameZoneEnabled } = useRoboGameZone();
@@ -58,6 +60,8 @@ function App() {
         {!isAdminRoute && <Navbar />}
         <Notice />
         <SkeletonLoader />
+        {/* Pre-load DigitalCodesGrid data immediately - it will show its own loading state */}
+        <DigitalCodesGrid />
         {catalog.error && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-600">{catalog.error}</p>
@@ -151,7 +155,7 @@ function App() {
                 />
                 <Route 
                   path="/digital-codes/category/:categoryId" 
-                  element={<DigitalCodeCategoryPage />} 
+                  element={<DigitalCodeCategoryPage categories={digitalCodes.categories} products={digitalCodes.products} />} 
                 />
                 <Route path="/add-money" element={<AddMoney />} />
                 <Route

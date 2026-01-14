@@ -3,14 +3,21 @@ import { useEffect, useState, useLayoutEffect } from 'react';
 import { digitalCodeApi } from '../services/api';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct } from '../types';
 
-function DigitalCodeCategoryPage() {
+function DigitalCodeCategoryPage({ 
+  categories, 
+  products: allProducts 
+}: { 
+  categories: BackendDigitalCodeCategory[];
+  products: BackendDigitalCodeProduct[];
+}) {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
   const [category, setCategory] = useState<BackendDigitalCodeCategory | null>(null);
   const [products, setProducts] = useState<BackendDigitalCodeProduct[]>([]);
-  const [loading, setLoading] = useState(true);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [loadingStock, setLoadingStock] = useState(false);
+  const [stockChecked, setStockChecked] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Helper function to get category image
   const getCategoryImage = (category: BackendDigitalCodeCategory): string => {
@@ -44,16 +51,37 @@ function DigitalCodeCategoryPage() {
     window.scrollTo(0, 0);
   }, [categoryId]);
 
+  // Load category and products - use props if available, otherwise fallback to API
   useEffect(() => {
+    if (!categoryId) {
+      navigate('/');
+      return;
+    }
+
     const loadData = async () => {
-      if (!categoryId) {
-        navigate('/');
-        return;
+      setLoading(true);
+
+      // Check if props are available and not empty (optimized path)
+      const hasProps = categories.length > 0 && allProducts.length > 0;
+      
+      if (hasProps) {
+        // Use props (instant, optimized)
+        const foundCategory = categories.find(cat => cat.id === categoryId);
+        if (foundCategory && foundCategory.isActive) {
+          setCategory(foundCategory);
+          const categoryProducts = allProducts.filter(p => p.categoryId === categoryId && p.isActive);
+          setProducts(categoryProducts);
+          setLoading(false);
+          return;
+        } else if (foundCategory && !foundCategory.isActive) {
+          navigate('/');
+          return;
+        }
+        // Category not found in props, fallback to API
       }
 
+      // Fallback: Load from API (original behavior)
       try {
-        setLoading(true);
-        
         // Load category
         const categoryResponse = await digitalCodeApi.getCategoryById(categoryId);
         if (categoryResponse.success && categoryResponse.data) {
@@ -72,12 +100,28 @@ function DigitalCodeCategoryPage() {
         if (productsResponse.success && Array.isArray(productsResponse.data)) {
           const activeProducts = productsResponse.data.filter(p => p.isActive);
           setProducts(activeProducts);
-          
-          // Load stock for each product
+        }
+      } catch (err) {
+        console.error('Failed to load digital code category data:', err);
+        navigate('/');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [categoryId, categories, allProducts, navigate]);
+
+  // Lazy load stock checking after products are displayed (non-blocking)
+  useEffect(() => {
+    if (products.length > 0 && !stockChecked) {
+      // Load stock in background after a short delay to not block UI
+      const timer = setTimeout(() => {
+        const loadStock = async () => {
           setLoadingStock(true);
           const stockData: Record<string, number> = {};
           await Promise.all(
-            activeProducts.map(async (product) => {
+            products.map(async (product) => {
               try {
                 const stockResponse = await digitalCodeApi.checkProductStock(product.id);
                 if (stockResponse.success && stockResponse.data) {
@@ -93,18 +137,16 @@ function DigitalCodeCategoryPage() {
           );
           setProductStock(stockData);
           setLoadingStock(false);
-        }
-      } catch (err) {
-        console.error('Failed to load digital code category data:', err);
-        navigate('/');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [categoryId, navigate]);
+          setStockChecked(true);
+        };
+        loadStock();
+      }, 100); // Small delay to let UI render first
 
-  if (loading) {
+      return () => clearTimeout(timer);
+    }
+  }, [products, stockChecked]);
+
+  if (loading || !category) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div
@@ -114,10 +156,6 @@ function DigitalCodeCategoryPage() {
         <p className="text-slate-600">Loading category...</p>
       </div>
     );
-  }
-
-  if (!category) {
-    return null;
   }
 
   return (
