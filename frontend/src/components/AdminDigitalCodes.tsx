@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { digitalCodeApi, dealApi } from '../services/api';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct, BackendDigitalCode, BackendDeal } from '../types';
-import { FaChartBar, FaPlus, FaEdit, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
+import { FaChartBar, FaEdit, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
 
 type DigitalCodeTab = 'categories' | 'products' | 'codes' | 'deals' | 'status';
 
@@ -45,7 +45,6 @@ function AdminDigitalCodes() {
   const [codeProductId, setCodeProductId] = useState('');
   const [singleCode, setSingleCode] = useState('');
   const [singleCodePrefix, setSingleCodePrefix] = useState('');
-  const [codeStatusFilter, setCodeStatusFilter] = useState<'all' | 'active' | 'used'>('all');
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   
   // Deal form state
