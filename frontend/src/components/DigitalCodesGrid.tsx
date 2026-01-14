@@ -1,18 +1,29 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { dealApi } from '../services/api';
-import type { Category, Deal } from '../types';
+import { dealApi, digitalCodeApi } from '../services/api';
+import type { Deal } from '../types';
+import type { BackendDigitalCodeCategory } from '../types';
 
-function ProductGrid({ categories }: { categories: Category[] }) {
+function DigitalCodesGrid() {
+  const [categories, setCategories] = useState<BackendDigitalCodeCategory[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadDeals = async () => {
+    const loadData = async () => {
       try {
-        const response = await dealApi.getAll();
-        if (response.success && Array.isArray(response.data)) {
-          // Sort deals by displayOrder
-          const sortedDeals = response.data
+        setLoading(true);
+        // Load digital code categories
+        const categoriesResponse = await digitalCodeApi.getCategories();
+        if (categoriesResponse.success && Array.isArray(categoriesResponse.data)) {
+          const activeCategories = categoriesResponse.data.filter(cat => cat.isActive);
+          setCategories(activeCategories);
+        }
+
+        // Load deals
+        const dealsResponse = await dealApi.getAll();
+        if (dealsResponse.success && Array.isArray(dealsResponse.data)) {
+          const sortedDeals = dealsResponse.data
             .filter(d => d.isActive)
             .sort((a, b) => a.displayOrder - b.displayOrder)
             .map(d => ({
@@ -24,25 +35,24 @@ function ProductGrid({ categories }: { categories: Category[] }) {
           setDeals(sortedDeals);
         }
       } catch (err) {
-        console.error('Failed to load deals:', err);
+        console.error('Failed to load digital codes data:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    loadDeals();
-  }, [categories]); // Reload when categories change
+    loadData();
+  }, []);
 
-  // Helper function to get category image - use category.image if available, otherwise fallback to name-based logic
-  const getCategoryImage = (category: Category): string => {
-    // Safety check
+  // Helper function to get category image
+  const getCategoryImage = (category: BackendDigitalCodeCategory): string => {
     if (!category || !category.name) {
       return '/diamond-top-up.png';
     }
     
-    // If category has an image URL, use it
     if (category.image) {
       return category.image;
     }
     
-    // Fallback to name-based logic
     const nameLower = category.name.toLowerCase();
     
     if (nameLower.includes('weekly')) {
@@ -57,7 +67,6 @@ function ProductGrid({ categories }: { categories: Category[] }) {
       return '/level-up-pass.png';
     }
     
-    // Default fallback image
     return '/diamond-top-up.png';
   };
 
@@ -72,8 +81,26 @@ function ProductGrid({ categories }: { categories: Category[] }) {
   // Categories without a deal
   const categoriesWithoutDeal = categories.filter(cat => !cat.dealId || !deals.find(d => d.id === cat.dealId));
 
+  if (loading) {
+    return (
+      <section className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-col items-center justify-center min-h-[40vh]">
+          <div
+            className="w-12 h-12 mb-4 border-4 rounded-full border-t-transparent animate-spin"
+            style={{ borderColor: 'var(--theme-primary)' }}
+          ></div>
+          <p className="text-slate-600">Loading Digital Codes...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null; // Don't show section if no categories
+  }
+
   return (
-    <section id="diamonds" className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+    <section id="digital-codes" className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1">
           <p
@@ -84,13 +111,13 @@ function ProductGrid({ categories }: { categories: Category[] }) {
               color: 'var(--theme-primary)',
             }}
           >
-            💎 Top-up categories
+            🔑 Digital Codes
           </p>
           <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
-            Browse Categories
+            Digital Codes Categories
           </h2>
           <p className="mb-2 text-xs sm:text-sm text-slate-600">
-            অফার দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন
+            ডিজিটাল কোড দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন
           </p>
         </div>
         {/* Render categories grouped by deals */}
@@ -125,7 +152,7 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                     }}
                     onClick={() => {
                       window.scrollTo(0, 0);
-                      navigate(`/category/${cat.id}`);
+                      navigate(`/digital-codes/category/${cat.id}`);
                     }}
                   >
                     <div className="w-full aspect-square overflow-hidden">
@@ -134,7 +161,6 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                         alt={cat.name}
                         className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                         onError={(e) => {
-                          // Fallback to default image if custom image fails to load
                           (e.target as HTMLImageElement).src = '/diamond-top-up.png';
                         }}
                       />
@@ -191,7 +217,7 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                   }}
                   onClick={() => {
                     window.scrollTo(0, 0);
-                    navigate(`/category/${cat.id}`);
+                    navigate(`/digital-codes/category/${cat.id}`);
                   }}
                 >
                   <div className="w-full aspect-square overflow-hidden">
@@ -200,7 +226,6 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                       alt={cat.name}
                       className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                       onError={(e) => {
-                        // Fallback to default image if custom image fails to load
                         (e.target as HTMLImageElement).src = '/diamond-top-up.png';
                       }}
                     />
@@ -226,19 +251,9 @@ function ProductGrid({ categories }: { categories: Category[] }) {
             </div>
           </div>
         )}
-
-        {/* Show message if no categories */}
-        {categories.length === 0 && (
-          <div className="w-full mt-6 sm:mt-8">
-            <p className="text-center text-xs sm:text-sm text-slate-500">
-              No categories available yet
-            </p>
-          </div>
-        )}
       </div>
     </section>
   );
 }
 
-export default ProductGrid;
-
+export default DigitalCodesGrid;

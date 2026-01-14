@@ -146,6 +146,46 @@ const Niyom: React.FC = () => {
       marginRight: '10px',
       fontSize: '1.2rem',
     },
+    termsSection: {
+      backgroundColor: 'white',
+      borderRadius: '18px',
+      padding: isMobile ? '18px' : '26px',
+      marginTop: isMobile ? '16px' : '24px',
+      boxShadow: '0 12px 30px rgba(15,23,42,0.08)',
+      border: '1px solid rgba(148,163,184,0.25)',
+    },
+    termsTitle: {
+      fontSize: isMobile ? '1.25rem' : isTablet ? '1.5rem' : '1.75rem',
+      color: '#0f172a',
+      margin: '0 0 10px 0',
+      fontWeight: 800,
+    },
+    termsSubtitle: {
+      fontSize: isMobile ? '0.9rem' : '1rem',
+      color: '#64748b',
+      margin: '0 0 16px 0',
+    },
+    termsList: {
+      listStyle: 'none',
+      padding: 0,
+      margin: 0,
+      display: 'flex',
+      flexDirection: 'column' as const,
+      gap: isMobile ? '8px' : '10px',
+    },
+    termItem: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '8px',
+      fontSize: isMobile ? '0.9rem' : '1rem',
+      color: '#1f2933',
+    },
+    termBullet: {
+      marginTop: '3px',
+    },
+    termText: {
+      lineHeight: 1.5,
+    },
   };
 
   return (
@@ -214,6 +254,30 @@ const Niyom: React.FC = () => {
             চ্যানেলে সাবস্ক্রাইব করুন
           </a>
         </div>
+      </div>
+
+      {/* Terms & Conditions Section */}
+      <div style={styles.termsSection}>
+        <h2 style={styles.termsTitle}>টার্মস & নিয়মাবলী</h2>
+        <p style={styles.termsSubtitle}>
+          আমাদের সার্ভিস ব্যবহার করার আগে নিচের নিয়মগুলো ভালোভাবে পড়ে নিন।
+        </p>
+        <ul style={styles.termsList}>
+          <li style={styles.termItem}>
+            <span style={styles.termBullet}>✅</span>
+            <span style={styles.termText}>
+              <strong>১৮ বছরের নিচে কেউ টপ আপ করবে না:</strong> ১৮ বছরের কম বয়সী ব্যবহারকারীরা অভিভাবকের অনুমতি ছাড়া কোনো ধরনের
+              পেমেন্ট বা টপ আপ করতে পারবে না।
+            </span>
+          </li>
+          <li style={styles.termItem}>
+            <span style={styles.termBullet}>✅</span>
+            <span style={styles.termText}>
+              <strong>UID / প্লেয়ার আইডি ভুল দিলে দায় আমাদের নয়:</strong> আপনি যদি ভুল Free Fire UID / প্লেয়ার আইডি দেন এবং
+              ডায়মন্ড অন্য কারও আইডিতে চলে যায়, সে ক্ষেত্রে <strong>কোনো রিফান্ড বা পরিবর্তন</strong> দেওয়া সম্ভব হবে না।
+            </span>
+          </li>
+        </ul>
       </div>
 
     </section>

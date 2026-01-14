@@ -3,6 +3,7 @@ import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { balanceTransferApi, balanceApi } from '../services/api';
 import { FaCheckCircle, FaWallet, FaSyncAlt } from 'react-icons/fa';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Service charge per transaction
 const SERVICE_CHARGE = 5;
@@ -275,7 +276,12 @@ function SendMoney() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto mt-4 sm:mt-6 md:mt-8 p-4 sm:p-6 bg-gradient-to-br from-purple-50 via-violet-50/30 to-white min-h-screen">
+    <div 
+      className="max-w-3xl mx-auto mt-4 sm:mt-6 md:mt-8 p-4 sm:p-6 min-h-screen"
+      style={{
+        background: `radial-gradient(circle at 20% 20%, rgba(var(--theme-primary-rgb), 0.08), transparent 28%), radial-gradient(circle at 80% 0%, rgba(var(--theme-secondary-rgb), 0.08), transparent 24%), #ffffff`
+      }}
+    >
       <div className="space-y-6">
         {/* Header */}
         <div className="text-center mb-6">
@@ -285,11 +291,17 @@ function SendMoney() {
 
         {/* Available Balance Card */}
         <div className="max-w-md mx-auto mb-4">
-          <div className="p-5 rounded-xl bg-white border-2 border-purple-200 shadow-sm">
+          <div 
+            className="p-5 rounded-xl bg-white border-2 shadow-sm"
+            style={{ borderColor: 'rgba(var(--theme-primary-rgb), 0.3)' }}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <FaWallet className="text-purple-600 text-sm" />
+                <div 
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--theme-primary-light)' }}
+                >
+                  <FaWallet className="text-sm" style={{ color: 'var(--theme-primary)' }} />
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-medium">Available Balance</p>
@@ -316,7 +328,11 @@ function SendMoney() {
 
         {/* Send Money Form */}
         <div className="max-w-md mx-auto">
-          <div id="send-money" className="p-5 rounded-xl bg-white border-2 border-purple-200 shadow-sm">
+          <div 
+            id="send-money" 
+            className="p-5 rounded-xl bg-white border-2 shadow-sm"
+            style={{ borderColor: 'rgba(var(--theme-primary-rgb), 0.3)' }}
+          >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <FaCheckCircle className="text-blue-500 text-xl" />
@@ -360,22 +376,44 @@ function SendMoney() {
                   }}
                   placeholder="Receiver email"
                   disabled={transferLoading}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{
+                    '--tw-ring-color': 'var(--theme-primary)'
+                  } as React.CSSProperties}
                 />
                 {showSuggestions && emailSuggestions.length > 0 && (
                   <div
                     ref={suggestionsRef}
-                    className="absolute z-10 w-full mt-1 bg-white border border-purple-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    className="absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    style={{ borderColor: 'rgba(var(--theme-primary-rgb), 0.3)' }}
                   >
                     {emailSuggestions.map((email, index) => (
                       <div
                         key={email}
                         onClick={() => handleSuggestionClick(email)}
-                        className={`px-3 py-2 text-xs cursor-pointer hover:bg-purple-50 transition-colors ${
+                        className={`px-3 py-2 text-xs cursor-pointer transition-colors ${
                           index === selectedSuggestionIndex
-                            ? 'bg-purple-100 text-purple-700'
+                            ? 'text-slate-900'
                             : 'text-slate-700'
                         }`}
+                        style={{
+                          backgroundColor: index === selectedSuggestionIndex 
+                            ? 'var(--theme-primary-light)' 
+                            : 'transparent',
+                          color: index === selectedSuggestionIndex 
+                            ? 'var(--theme-primary)' 
+                            : 'rgb(51, 65, 85)'
+                        }}
+                        onMouseEnter={(e) => {
+                          if (index !== selectedSuggestionIndex) {
+                            e.currentTarget.style.backgroundColor = 'var(--theme-primary-light)';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (index !== selectedSuggestionIndex) {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }
+                        }}
                       >
                         {email}
                       </div>
@@ -394,7 +432,10 @@ function SendMoney() {
                       onChange={(e) => setTransferAmount(e.target.value)}
                       placeholder="Amount"
                       disabled={transferLoading}
-                      className="w-24 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-24 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
                     />
                     <input
                       type="text"
@@ -402,7 +443,10 @@ function SendMoney() {
                       onChange={(e) => setTransferNote(e.target.value)}
                       placeholder="Refer"
                       disabled={transferLoading}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
                     />
                   </div>
                   {transferAmount && Number(transferAmount) > 0 && (
@@ -418,7 +462,20 @@ function SendMoney() {
                 <button
                   type="submit"
                   disabled={transferLoading || balanceLoading || !user}
-                  className="mt-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-60 disabled:cursor-not-allowed w-full"
+                  className="mt-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed w-full"
+                  style={{
+                    background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!transferLoading && !balanceLoading && user) {
+                      e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!transferLoading && !balanceLoading && user) {
+                      e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
+                    }
+                  }}
                 >
                   {transferLoading ? 'Sending...' : 'Send Money'}
                 </button>

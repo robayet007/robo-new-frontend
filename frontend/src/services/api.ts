@@ -1,4 +1,4 @@
-import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase } from '../types';
+import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase, BackendDigitalCodeCategory, BackendDigitalCodeProduct, BackendDigitalCode, BackendDigitalCodePurchase } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
@@ -6,8 +6,8 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Local development default
     // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
-    // const backendUrl = "    http://localhost:5000";
+    // const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+    const backendUrl = "    http://localhost:5000";
     return `${backendUrl}/api`;
   }
   
@@ -727,6 +727,196 @@ export const gamePackageApi = {
   
   getPurchaseCount: async (packageId: string): Promise<ApiResponse<{ packageId: string; purchaseCount: number }>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${packageId}/purchases`);
+    return response.json();
+  }
+};
+
+// Theme Settings API (using MongoDB backend)
+export const themeApi = {
+  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; updatedAt?: string; updatedBy?: string }>> => {
+    try {
+      const response = await SmartAPIManager.smartFetch('/theme');
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch theme settings',
+        data: undefined
+      };
+    }
+  },
+  
+  update: async (themeData: { primaryColor: string; secondaryColor: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; updatedAt?: string; updatedBy?: string }>> => {
+    try {
+      const response = await SmartAPIManager.smartFetch('/theme', {
+        method: 'PUT',
+        body: JSON.stringify(themeData)
+      });
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to update theme settings',
+        data: undefined
+      };
+    }
+  }
+};
+
+// Digital Codes API
+export const digitalCodeApi = {
+  // Categories
+  getCategories: async (admin?: boolean): Promise<ApiResponse<BackendDigitalCodeCategory[]>> => {
+    const url = admin ? '/digital-codes/categories/admin' : '/digital-codes/categories';
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getCategoryById: async (id: string): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`);
+    return response.json();
+  },
+  
+  createCategory: async (categoryData: Omit<BackendDigitalCodeCategory, '_id'>): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/categories', {
+      method: 'POST',
+      body: JSON.stringify(categoryData)
+    });
+    return response.json();
+  },
+  
+  updateCategory: async (id: string, categoryData: Partial<BackendDigitalCodeCategory>): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData)
+    });
+    return response.json();
+  },
+  
+  deleteCategory: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+  
+  // Products
+  getProducts: async (admin?: boolean, categoryId?: string): Promise<ApiResponse<BackendDigitalCodeProduct[]>> => {
+    const params = new URLSearchParams();
+    if (admin) params.append('admin', 'true');
+    if (categoryId) params.append('categoryId', categoryId);
+    const url = `/digital-codes/products${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getAllProductsForAdmin: async (): Promise<ApiResponse<BackendDigitalCodeProduct[]>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/products/admin');
+    return response.json();
+  },
+  
+  getProductById: async (id: string): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${id}`);
+    return response.json();
+  },
+  
+  createProduct: async (productData: Omit<BackendDigitalCodeProduct, '_id'>): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/products', {
+      method: 'POST',
+      body: JSON.stringify(productData)
+    });
+    return response.json();
+  },
+  
+  updateProduct: async (id: string, productData: Partial<BackendDigitalCodeProduct>): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(productData)
+    });
+    return response.json();
+  },
+  
+  deleteProduct: async (id: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+  
+  // Codes
+  getCodes: async (status?: 'active' | 'used', categoryId?: string, productId?: string, limit?: number): Promise<ApiResponse<BackendDigitalCode[]>> => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (categoryId) params.append('categoryId', categoryId);
+    if (productId) params.append('productId', productId);
+    if (limit) params.append('limit', limit.toString());
+    const url = `/digital-codes/codes${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getCodeStats: async (categoryId?: string): Promise<ApiResponse<{ active: number; used: number; total: number }>> => {
+    const url = categoryId 
+      ? `/digital-codes/codes/stats?categoryId=${categoryId}`
+      : '/digital-codes/codes/stats';
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  bulkUploadCodes: async (bulkText: string, categoryId: string, productId?: string): Promise<ApiResponse<{ inserted: number; skipped: number; codes: BackendDigitalCode[] }>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/codes/bulk-upload', {
+      method: 'POST',
+      body: JSON.stringify({ bulkText, categoryId, productId })
+    });
+    return response.json();
+  },
+  
+  addCode: async (codeData: { categoryId: string; productId?: string; code: string; prefix?: string }): Promise<ApiResponse<BackendDigitalCode>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/codes', {
+      method: 'POST',
+      body: JSON.stringify(codeData)
+    });
+    return response.json();
+  },
+  
+  deleteCode: async (serialNumber: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/codes/${serialNumber}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  },
+  
+  // Purchases
+  purchase: async (purchaseData: {
+    productId: string;
+    userId: string;
+    userEmail: string;
+    userName?: string;
+    transactionId: string;
+    inputFieldValues?: Record<string, string>;
+  }): Promise<ApiResponse<{ purchase: BackendDigitalCodePurchase; code: string; prefix?: string }>> => {
+    const response = await SmartAPIManager.smartFetch('/digital-codes/purchase', {
+      method: 'POST',
+      body: JSON.stringify(purchaseData)
+    });
+    return response.json();
+  },
+  
+  getUserPurchases: async (userId: string, limit?: number): Promise<ApiResponse<BackendDigitalCodePurchase[]>> => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    const url = `/digital-codes/purchases/user/${userId}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await SmartAPIManager.smartFetch(url);
+    return response.json();
+  },
+  
+  getPurchaseByTransactionId: async (transactionId: string): Promise<ApiResponse<BackendDigitalCodePurchase>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/purchases/transaction/${transactionId}`);
+    return response.json();
+  },
+  
+  checkProductStock: async (productId: string): Promise<ApiResponse<{ available: number }>> => {
+    const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${productId}/stock`);
     return response.json();
   }
 };

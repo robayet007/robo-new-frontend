@@ -8,10 +8,22 @@
     @apply box-border;
   }
 
+  :root {
+    /* Theme color variables - defaults to purple */
+    --theme-primary: #a855f7;
+    --theme-secondary: #8b5cf6;
+    --theme-primary-rgb: 168, 85, 247;
+    --theme-secondary-rgb: 139, 92, 246;
+    --theme-primary-light: rgba(168, 85, 247, 0.14);
+    --theme-primary-dark: rgba(168, 85, 247, 0.8);
+    --theme-primary-hover: rgba(168, 85, 247, 0.9);
+    --theme-secondary-dark: rgb(119, 72, 230);
+  }
+
   body {
     @apply m-0 bg-slate-50 text-slate-900;
-    background: radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.12), transparent 28%),
-      radial-gradient(circle at 80% 0%, rgba(139, 92, 246, 0.12), transparent 24%),
+    background: radial-gradient(circle at 20% 20%, rgba(var(--theme-primary-rgb), 0.12), transparent 28%),
+      radial-gradient(circle at 80% 0%, rgba(var(--theme-secondary-rgb), 0.12), transparent 24%),
       #f8fafc;
   }
 
@@ -56,7 +68,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   position: relative;
   display: grid;
   place-items: center;
@@ -105,8 +117,8 @@
 .nav-links a:hover,
 .nav-links a.active {
   color: #0b1221;
-  background: #f3e8ff;
-  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.25);
+  background: var(--theme-primary-light);
+  box-shadow: 0 10px 30px rgba(var(--theme-primary-rgb), 0.25);
 }
 
 .hero {
@@ -115,7 +127,7 @@
   gap: 24px;
   padding: 28px;
   border-radius: 20px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(243, 232, 255, 0.8));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), var(--theme-primary-light));
   border: 1px solid rgba(15, 23, 42, 0.06);
   box-shadow: 0 16px 50px rgba(15, 23, 42, 0.08);
 }
@@ -126,9 +138,9 @@
   gap: 6px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(168, 85, 247, 0.14);
-  color: #7c3aed;
-  border: 1px solid rgba(168, 85, 247, 0.35);
+  background: var(--theme-primary-light);
+  color: var(--theme-primary);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.35);
   font-weight: 600;
   font-size: 13px;
 }
@@ -141,7 +153,7 @@
 }
 
 .text-highlight {
-  color: #a855f7;
+  color: var(--theme-primary);
 }
 
 .lead {
@@ -175,10 +187,10 @@
 }
 
 .btn.primary {
-  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   color: white;
   border-color: transparent;
-  box-shadow: 0 14px 35px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 14px 35px rgba(var(--theme-primary-rgb), 0.25);
 }
 
 .btn.ghost {
@@ -296,10 +308,10 @@
 }
 
 .tab.active {
-  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
   color: white;
   border-color: transparent;
-  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.25);
+  box-shadow: 0 10px 30px rgba(var(--theme-primary-rgb), 0.25);
 }
 
 .tab-badge {
@@ -331,7 +343,7 @@
   padding: 16px;
   border-radius: 14px;
   border: 1px solid rgba(15, 23, 42, 0.06);
-  background: linear-gradient(180deg, rgba(168, 85, 247, 0.08), rgba(255, 255, 255, 0.95));
+  background: linear-gradient(180deg, rgba(var(--theme-primary-rgb), 0.08), rgba(255, 255, 255, 0.95));
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -375,7 +387,7 @@
 
 .bonus {
   margin: 0;
-  color: #7c3aed;
+  color: var(--theme-primary);
   font-weight: 600;
 }
 
@@ -456,7 +468,7 @@ select {
 }
 
 input:focus {
-  outline: 2px solid rgba(168, 85, 247, 0.4);
+  outline: 2px solid rgba(var(--theme-primary-rgb), 0.4);
   border-color: transparent;
 }
 
@@ -866,6 +878,22 @@ input:focus {
 
 .animate-slide-down {
   animation: slide-down 0.3s ease-out;
+}
+
+/* Theme utility classes */
+.theme-gradient {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+}
+
+.theme-gradient-text {
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-gradient-hover:hover {
+  background: linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark));
 }
 
 

@@ -7,6 +7,8 @@ import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
 import AdminDashboard from './AdminDashboard';
+import ThemeCustomization from './ThemeCustomization';
+import AdminDigitalCodes from './AdminDigitalCodes';
 import useModeratorPermissions from '../hooks/useModeratorPermissions';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
@@ -24,7 +26,7 @@ function utcToBDTimeForInput(utcDateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -63,8 +65,21 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       gamePackages: 'canManageGamePackages',
       users: 'canManageUsers',
       orders: 'canManageOrders',
+      theme: 'canAccessDashboard', // Theme is admin-only, but uses dashboard permission for check
+      digitalCodes: 'canManageProducts', // Digital codes uses products permission
     };
 
+    // Theme tab is admin-only
+    if (activeTab === 'theme' && role !== 'admin') {
+      const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
+        tab => tab !== 'theme' && hasPermission(tabPermissions[tab])
+      );
+      if (availableTab) {
+        setActiveTab(availableTab);
+      }
+      return;
+    }
+    
     if (!hasPermission(tabPermissions[activeTab])) {
       // Find first available tab
       const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
@@ -947,7 +962,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
+          <div 
+            className="w-12 h-12 mx-auto mb-4 border-4 rounded-full border-t-transparent animate-spin"
+            style={{ borderColor: 'var(--theme-primary)' }}
+          ></div>
           <p className="text-slate-600">Loading admin panel...</p>
         </div>
       </div>
@@ -972,6 +990,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'gamePackages' && 'Game Packages'}
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
+              {activeTab === 'digitalCodes' && 'Digital Codes'}
+              {activeTab === 'theme' && 'Store Customize'}
             </h1>
             <p className="text-sm text-slate-600">
               {activeTab === 'dashboard' && 'Overview of your business metrics and analytics'}
@@ -981,6 +1001,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'gamePackages' && 'Manage RoboGameZone packages and room credentials'}
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
+              {activeTab === 'digitalCodes' && 'Manage digital codes, categories, products, and deals'}
+              {activeTab === 'theme' && 'Customize your store theme colors and branding'}
             </p>
             {error && (
               <div className="p-3 mt-3 border border-red-200 rounded-lg bg-red-50">
@@ -1007,7 +1029,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
           {/* Tab Content */}
           <div className="px-0">
-            {activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
+            {activeTab === 'theme' && role === 'admin' ? (
+              <ThemeCustomization />
+            ) : activeTab === 'digitalCodes' && hasPermission('canManageProducts') ? (
+              <AdminDigitalCodes />
+            ) : activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
               <AdminDashboard />
             ) : activeTab === 'users' && hasPermission('canManageUsers') ? (
               <UserManagement />
@@ -1036,7 +1062,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerImage}
                           onChange={(e) => setBannerImage(e.target.value)}
                           placeholder="https://example.com/banner.jpg"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                         {bannerImage && (
                           <div className="mt-2">
@@ -1057,7 +1083,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerTitle}
                           onChange={(e) => setBannerTitle(e.target.value)}
                           placeholder="Banner Title"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1066,7 +1092,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerSubtitle}
                           onChange={(e) => setBannerSubtitle(e.target.value)}
                           placeholder="Banner Subtitle"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1075,7 +1101,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerButtonText}
                           onChange={(e) => setBannerButtonText(e.target.value)}
                           placeholder="Click Here"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block md:col-span-2">
@@ -1085,7 +1111,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerLink}
                           onChange={(e) => setBannerLink(e.target.value)}
                           placeholder="https://example.com or /category/123"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                         <p className="mt-1 text-xs text-slate-500">When user clicks on banner, they will be redirected to this link</p>
                       </label>
@@ -1096,13 +1122,22 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={bannerOrder}
                           onChange={(e) => setBannerOrder(e.target.value)}
                           placeholder="0"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                     </div>
                     <div className="flex gap-2 mt-4">
                       <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
+                        style={{
+                          background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                        }}
                         type="submit"
                       >
                         {editingBanner ? 'Update Banner' : 'Add Banner'}
@@ -1173,7 +1208,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         onChange={() => handleToggleBannerActive(banner.id, isActive)}
                                         className="sr-only peer"
                                       />
-                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                      <div 
+                                        className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                                        style={{
+                                          '--tw-ring-color': 'var(--theme-primary)'
+                                        } as React.CSSProperties}
+                                      ></div>
                                     </label>
                                     <span className="text-[10px] text-slate-500">
                                       {isActive ? 'ON' : 'OFF'}
@@ -1228,7 +1268,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           onChange={(e) => setPackageId(e.target.value)}
                           placeholder="package-001"
                           disabled={!!editingPackage}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:bg-slate-100"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 disabled:bg-slate-100"
                         />
                       </label>
                       <label className="block">
@@ -1238,7 +1278,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageTitle}
                           onChange={(e) => setPackageTitle(e.target.value)}
                           placeholder="Tournament Package"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block md:col-span-2">
@@ -1249,7 +1289,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageImage}
                           onChange={(e) => setPackageImage(e.target.value)}
                           placeholder="https://example.com/package.jpg"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                         {packageImage && (
                           <div className="mt-2">
@@ -1273,7 +1313,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageEntryFee}
                           onChange={(e) => setPackageEntryFee(e.target.value)}
                           placeholder="50"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1283,7 +1323,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageWinnerPrize}
                           onChange={(e) => setPackageWinnerPrize(e.target.value)}
                           placeholder="500 Diamonds"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1293,7 +1333,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageRoomId}
                           onChange={(e) => setPackageRoomId(e.target.value)}
                           placeholder="123456"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1304,7 +1344,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageRoomPassword}
                           onChange={(e) => setPackageRoomPassword(e.target.value)}
                           placeholder="password123"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1316,7 +1356,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={packageMaxPurchases}
                           onChange={(e) => setPackageMaxPurchases(e.target.value)}
                           placeholder="100"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block md:col-span-2">
@@ -1326,7 +1366,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           onChange={(e) => setPackageDescription(e.target.value)}
                           placeholder="Package description..."
                           rows={3}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1336,14 +1376,23 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           type="datetime-local"
                           value={packageStartTime}
                           onChange={(e) => setPackageStartTime(e.target.value)}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                         <p className="mt-1 text-xs text-slate-500">Set when the tournament will start</p>
                       </label>
                     </div>
                     <div className="flex gap-2 mt-4">
                       <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
+                        style={{
+                          background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                        }}
                         type="submit"
                       >
                         {editingPackage ? 'Update Package' : 'Add Package'}
@@ -1381,7 +1430,13 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         Inactive
                                       </span>
                                     )}
-                                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                                    <span 
+                                      className="px-2 py-0.5 rounded-full text-xs font-semibold"
+                                      style={{
+                                        backgroundColor: 'var(--theme-primary-light)',
+                                        color: 'var(--theme-primary)'
+                                      }}
+                                    >
                                       Purchases: {pkg.purchaseCount}/{pkg.maxPurchases}
                                     </span>
                                   </div>
@@ -1415,7 +1470,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         onChange={() => handleToggleGamePackageActive(pkg.id, isActive)}
                                         className="sr-only peer"
                                       />
-                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                      <div 
+                                        className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                                        style={{
+                                          '--tw-ring-color': 'var(--theme-primary)'
+                                        } as React.CSSProperties}
+                                      ></div>
                                     </label>
                                     <span className="text-[10px] text-slate-500">
                                       {isActive ? 'ON' : 'OFF'}
@@ -1470,7 +1530,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           onChange={(e) => setNoticeMessage(e.target.value)}
                           placeholder="🚀 আমাদের সিস্টেম AI দ্বারা নিয়ন্ত্রিত..."
                           rows={3}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1479,7 +1539,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={noticeTitle}
                           onChange={(e) => setNoticeTitle(e.target.value)}
                           placeholder="Notice Title"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       <label className="block">
@@ -1487,7 +1547,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                         <select
                           value={noticeIcon}
                           onChange={(e) => setNoticeIcon(e.target.value)}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         >
                           <option value="FaRobot">Robot</option>
                           <option value="FaShieldAlt">Shield</option>
@@ -1501,7 +1561,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           value={noticeOrder}
                           onChange={(e) => setNoticeOrder(e.target.value)}
                           placeholder="0"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
                       
@@ -1528,12 +1588,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                             value={newFeatureText}
                             onChange={(e) => setNewFeatureText(e.target.value)}
                             placeholder="Feature text"
-                            className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                           />
                           <select
                             value={newFeatureIcon}
                             onChange={(e) => setNewFeatureIcon(e.target.value)}
-                            className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                           >
                             <option value="FaShieldAlt">Shield</option>
                             <option value="FaBolt">Bolt</option>
@@ -1551,7 +1611,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     </div>
                     <div className="flex gap-2 mt-4">
                       <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
+                        style={{
+                          background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                        }}
                         type="submit"
                       >
                         {editingNotice ? 'Update Notice' : 'Add Notice'}
@@ -1616,7 +1685,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         onChange={() => handleToggleNoticeActive(notice.id, isActive)}
                                         className="sr-only peer"
                                       />
-                                      <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                      <div 
+                                        className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                                        style={{
+                                          '--tw-ring-color': 'var(--theme-primary)'
+                                        } as React.CSSProperties}
+                                      ></div>
                                     </label>
                                     <span className="text-[10px] text-slate-500">
                                       {isActive ? 'ON' : 'OFF'}
@@ -1671,7 +1745,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={dealName}
                     onChange={(e) => setDealName(e.target.value)}
                     placeholder="Regular Offers"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
                 <label className="block">
@@ -1680,7 +1754,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={dealDesc}
                     onChange={(e) => setDealDesc(e.target.value)}
                     placeholder="Regular top-up offers"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
                 <label className="block">
@@ -1690,13 +1764,22 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={dealOrder}
                     onChange={(e) => setDealOrder(e.target.value)}
                     placeholder="0"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
               </div>
               <div className="flex gap-2 mt-4">
                 <button 
-                  className="px-4 py-2 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700" 
+                  className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
+                  style={{
+                    background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                  }}
                   type="submit"
                 >
                   {editingDeal ? 'Update Deal' : 'Add Deal'}
@@ -1772,7 +1855,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catName}
                     onChange={(e) => setCatName(e.target.value)}
                     placeholder="Diamond TopUp"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
                 <label className="block">
@@ -1781,7 +1864,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catBadge}
                     onChange={(e) => setCatBadge(e.target.value)}
                     placeholder="Hot"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
                 <label className="block">
@@ -1790,7 +1873,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catDesc}
                     onChange={(e) => setCatDesc(e.target.value)}
                     placeholder="Fast delivery packs"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
                 <label className="block">
@@ -1800,7 +1883,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     value={catImage}
                     onChange={(e) => setCatImage(e.target.value)}
                     placeholder="https://example.com/image.jpg or /image.jpg"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                   {catImage && (
                     <div className="mt-2">
@@ -1820,7 +1903,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   <select
                     value={catDealId}
                     onChange={(e) => setCatDealId(e.target.value)}
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   >
                     <option value="">Select a Deal</option>
                     {deals.map((deal) => (
@@ -1833,7 +1916,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </div>
               <div className="flex gap-2 mt-4">
                 <button 
-                  className="flex-1 px-4 py-3 font-semibold text-white transition-all shadow-lg rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-purple-500/30" 
+                  className="flex-1 px-4 py-3 font-semibold text-white transition-all shadow-lg rounded-xl" 
+                  style={{
+                    background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
+                    boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3), 0 4px 6px -2px rgba(var(--theme-primary-rgb), 0.2)`
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                  }}
                   type="submit"
                 >
                   {editingCategory ? 'Update Category' : 'Add Category to Database'}
@@ -1900,7 +1993,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                               <select
                                 value={cat.dealId || ''}
                                 onChange={(e) => handleAssignCategoryToDeal(cat.id, e.target.value || null)}
-                                className="px-2 py-1 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                className="px-2 py-1 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
                               >
                                 <option value="">Select a Deal</option>
                                 {deals.map((deal) => (
@@ -1920,7 +2013,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                     onChange={() => handleToggleCategoryActive(cat.id, isActive)}
                                     className="sr-only peer"
                                   />
-                                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                                 </label>
                                 <span className="text-[10px] text-slate-500">
                                   {isActive ? 'ON' : 'OFF'}
@@ -2072,7 +2165,18 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       </div>
                       <div className="flex items-center justify-end flex-shrink-0 w-full gap-2 sm:w-auto sm:justify-start">
                         <button 
-                          className="flex-shrink-0 px-4 py-2 text-sm font-semibold text-white transition-all rounded-lg shadow-md bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 hover:shadow-lg whitespace-nowrap" 
+                          className="flex-shrink-0 px-4 py-2 text-sm font-semibold text-white transition-all rounded-lg shadow-md whitespace-nowrap" 
+                          style={{
+                            background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                            e.currentTarget.style.boxShadow = `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.4)`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                            e.currentTarget.style.boxShadow = `0 4px 6px -1px rgba(var(--theme-primary-rgb), 0.1)`;
+                          }}
                           onClick={() => handleEditProduct(item)}
                           type="button"
                         >

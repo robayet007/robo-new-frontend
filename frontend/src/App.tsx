@@ -3,7 +3,6 @@ import Navbar from './components/Navbar';
 import Notice from './components/Notice';
 import Hero from './components/Hero';
 import ProductGrid from './components/ProductGrid';
-import Steps from './components/Steps';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import AdminPanel from './components/AdminPanel';
@@ -22,9 +21,11 @@ import { useRoboGameZone } from './contexts/RoboGameZoneContext';
 import FFIdInfo from './components/FFIdInfo';
 import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
-import RulesAndServices from './components/RulesAndServices';
+import Niyom from './Niyom';
 import MyAccount from './components/MyAccount';
 import SendMoney from './components/SendMoney';
+import DigitalCodesGrid from './components/DigitalCodesGrid';
+import DigitalCodeCategoryPage from './components/DigitalCodeCategoryPage';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -121,11 +122,20 @@ function App() {
                     <Notice />
                     <Hero />
                     <ProductGrid categories={catalog.categories} />
-                    <Steps />
-                    <RulesAndServices />
+                    <DigitalCodesGrid />
                     <Footer />
                   </>
                 )
+              }
+            />
+            <Route
+              path="/terms-tutorials"
+              element={
+                <>
+                  <Notice />
+                  <Niyom />
+                  <Footer />
+                </>
               }
             />
             
@@ -136,6 +146,10 @@ function App() {
                 <Route 
                   path="/category/:categoryId" 
                   element={<CategoryPage categories={catalog.categories} products={catalog.products} />} 
+                />
+                <Route 
+                  path="/digital-codes/category/:categoryId" 
+                  element={<DigitalCodeCategoryPage />} 
                 />
                 <Route path="/add-money" element={<AddMoney />} />
                 <Route

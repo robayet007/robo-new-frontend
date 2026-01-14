@@ -5,6 +5,7 @@ import useUserRole from '../hooks/useUserRole';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { useRoboGameZone } from '../contexts/RoboGameZoneContext';
 import { useEffect, useState, useRef } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -51,13 +52,20 @@ function Navbar() {
       >
         <div className="flex flex-col">
           <p
-            className="m-0 text-lg font-extrabold tracking-tight text-transparent sm:text-2xl bg-clip-text bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-500 drop-shadow-sm"
-            style={{ fontFamily: "'Poppins', 'Inter', system-ui", letterSpacing: '0.5px' }}
+            className="m-0 text-lg font-extrabold tracking-tight text-transparent sm:text-2xl bg-clip-text drop-shadow-sm theme-gradient-text"
+            style={{ 
+              fontFamily: "'Poppins', 'Inter', system-ui", 
+              letterSpacing: '0.5px',
+              backgroundImage: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-primary))`
+            }}
           >
             Robo Top Up Zone
           </p>
           <div className="mt-0.5 flex items-center gap-1">
-            <span className="inline-block h-[3px] w-10 rounded-full bg-gradient-to-r from-purple-400 via-sky-400 to-emerald-400" />
+            <span 
+              className="inline-block h-[3px] w-10 rounded-full"
+              style={{ background: `linear-gradient(to right, var(--theme-primary), #0ea5e9, #10b981)` }}
+            />
             <span className="text-[10px] sm:text-xs font-medium text-slate-500">
               Free Fire Diamonds
             </span>
@@ -81,7 +89,18 @@ function Navbar() {
             {isAdmin && (
               <Link
                 to="/admin"
-                className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+                className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 transition-all duration-200"
+                style={{
+                  color: 'rgb(51, 65, 85)',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = 'var(--theme-primary)';
+                  e.currentTarget.style.backgroundColor = 'var(--theme-primary-light)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = 'rgb(51, 65, 85)';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
                 <span className="hidden sm:inline">Admin</span>
                 <span className="sm:hidden">⚙️</span>
@@ -102,7 +121,12 @@ function Navbar() {
                     className="w-5 h-5 rounded-full sm:w-6 sm:h-6"
                   />
                 ) : (
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white text-[10px] sm:text-xs font-bold">
+                  <div 
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold"
+                    style={{
+                      background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
+                    }}
+                  >
                     {user.displayName?.[0] || user.email?.[0] || 'U'}
                   </div>
                 )}
@@ -196,6 +220,16 @@ function Navbar() {
                   >
                     🔍 FF ID Info
                   </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate('/terms-tutorials');
+                    }}
+                  >
+                    📚 Terms & Tutorials
+                  </button>
                   <div className="block w-full px-3 py-2 text-xs font-semibold text-left border-t text-slate-700 hover:bg-slate-50 border-slate-200">
                     <div className="flex items-center justify-between">
                       <span>🎮 Robo Game Zone</span>
@@ -214,7 +248,12 @@ function Navbar() {
                           }}
                           className="sr-only peer"
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-purple-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                        <div 
+                          className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                          style={{
+                            '--tw-ring-color': 'var(--theme-primary)'
+                          } as React.CSSProperties}
+                        ></div>
                       </label>
                     </div>
                   </div>
@@ -236,13 +275,34 @@ function Navbar() {
           <>
             <Link
               to="/login"
-              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 hover:text-purple-600 hover:bg-purple-50 transition-all duration-200"
+              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 transition-all duration-200"
+              style={{
+                color: 'rgb(51, 65, 85)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--theme-primary)';
+                e.currentTarget.style.backgroundColor = 'var(--theme-primary-light)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'rgb(51, 65, 85)';
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               Login
             </Link>
             <Link
               to="/signup"
-              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm bg-gradient-to-r from-purple-500 to-violet-600 text-white hover:from-purple-600 hover:to-violet-700 transition-all duration-200 shadow-lg shadow-purple-500/30"
+              className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-white transition-all duration-200 shadow-lg"
+              style={{
+                background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`,
+                boxShadow: `0 10px 30px rgba(var(--theme-primary-rgb), 0.3)`
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
+              }}
             >
               Register
             </Link>

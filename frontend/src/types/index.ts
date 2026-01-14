@@ -155,3 +155,69 @@ export type Product = {
   tag?: string;
 }
 
+export interface BackendDigitalCodeCategory {
+  _id: string;
+  id: string;
+  name: string;
+  description?: string;
+  badge?: string;
+  isActive: boolean;
+  dealId?: string | null;
+  image?: string;
+  createdAt?: string;
+}
+
+export interface BackendDigitalCodeProduct {
+  _id: string;
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  name: string;
+  description?: string;
+  price: number;
+  inputFields?: Array<{
+    name: string;
+    placeholder?: string;
+    required?: boolean;
+  }>;
+  tag?: string;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface BackendDigitalCode {
+  _id: string;
+  serialNumber: string;
+  categoryId: string;
+  productId?: string;
+  code: string;
+  prefix?: string;
+  status: 'active' | 'used';
+  purchasedAt?: string;
+  purchasedBy?: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+  };
+  purchaseId?: string;
+  createdAt?: string;
+}
+
+export interface BackendDigitalCodePurchase {
+  _id: string;
+  productId: string;
+  productName: string;
+  categoryId: string;
+  userId: string;
+  userEmail: string;
+  userName?: string;
+  transactionId: string;
+  amount: number;
+  codeId: string;
+  code: string;
+  prefix?: string;
+  inputFieldValues?: Record<string, string>;
+  status: 'pending' | 'completed' | 'failed';
+  purchasedAt: string;
+}
+

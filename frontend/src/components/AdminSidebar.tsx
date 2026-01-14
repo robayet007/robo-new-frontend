@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad } from 'react-icons/fa';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad, FaPalette, FaKey } from 'react-icons/fa';
 import useModeratorPermissions from '../hooks/useModeratorPermissions';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes') => void;
   onLogout: () => void;
 };
 
@@ -14,17 +14,21 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const { role, permissions } = useModeratorPermissions();
 
   const allMenuItems = [
-    { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard' },
-    { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts' },
-    { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners' },
-    { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices' },
-    { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages' },
-    { id: 'users' as const, label: 'User Management', icon: FaUsers, permission: 'canManageUsers' },
-    { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders' },
+    { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard', adminOnly: false },
+    { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts', adminOnly: false },
+    { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageProducts', adminOnly: false },
+    { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners', adminOnly: false },
+    { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices', adminOnly: false },
+    { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages', adminOnly: false },
+    { id: 'users' as const, label: 'User Management', icon: FaUsers, permission: 'canManageUsers', adminOnly: false },
+    { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders', adminOnly: false },
+    { id: 'theme' as const, label: 'Store Customize', icon: FaPalette, permission: 'canAccessDashboard', adminOnly: true },
   ];
 
   // Filter menu items based on permissions
   const menuItems = allMenuItems.filter(item => {
+    // Theme customization is admin-only
+    if (item.adminOnly && role !== 'admin') return false;
     // Admins see everything
     if (role === 'admin') return true;
     // Moderators only see items they have permission for
@@ -65,19 +69,29 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
           to="/" 
           className="flex items-center gap-3 transition-transform duration-200 group hover:scale-[1.02]"
         >
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg">
+          <div 
+            className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg theme-gradient"
+            style={{ background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))` }}
+          >
             <FaChartLine className="text-white text-lg" />
           </div>
           <div className="flex flex-col">
             <h2 className="text-lg font-bold text-white mb-0.5">Admin Panel</h2>
             <p
-              className="m-0 text-sm font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-500 drop-shadow-sm"
-              style={{ fontFamily: "'Poppins', 'Inter', system-ui", letterSpacing: '0.5px' }}
+              className="m-0 text-sm font-extrabold tracking-tight text-transparent bg-clip-text drop-shadow-sm"
+              style={{ 
+                fontFamily: "'Poppins', 'Inter', system-ui", 
+                letterSpacing: '0.5px',
+                backgroundImage: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-primary))`
+              }}
             >
               Robo Top Up Zone
             </p>
             <div className="mt-0.5 flex items-center gap-1">
-              <span className="inline-block h-[2px] w-8 rounded-full bg-gradient-to-r from-purple-400 via-sky-400 to-emerald-400" />
+              <span 
+                className="inline-block h-[2px] w-8 rounded-full"
+                style={{ background: `linear-gradient(to right, var(--theme-primary), #0ea5e9, #10b981)` }}
+              />
               <span className="text-[9px] font-medium text-slate-400">
                 Free Fire Diamonds
               </span>
@@ -100,9 +114,13 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                 isActive
-                  ? 'bg-gradient-to-r from-purple-600 to-violet-600 text-white shadow-lg shadow-purple-500/30'
+                  ? 'text-white shadow-lg'
                   : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
               }`}
+              style={isActive ? {
+                background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
+                boxShadow: `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.3), 0 4px 6px -2px rgba(var(--theme-primary-rgb), 0.2)`
+              } : {}}
             >
               <Icon className={`text-lg ${isActive ? 'text-white' : 'text-slate-400'}`} />
               <span className="font-semibold text-sm">{item.label}</span>

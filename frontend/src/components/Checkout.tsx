@@ -5,8 +5,8 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { paymentApi } from "../services/api";
-import type { Product } from "../types";
+import { paymentApi, digitalCodeApi } from "../services/api";
+import type { Product, BackendDigitalCodeProduct } from "../types";
 import useRoboBalance from "../hooks/useRoboBalance";
 import useAuth from "../hooks/useAuth";
 import { FaCheck, FaSyncAlt } from "react-icons/fa";
@@ -22,12 +22,21 @@ function Checkout({ products }: { products: Product[] }) {
     getCurrentBalance,
     loading: balanceLoading,
   } = useRoboBalance();
+  const [searchParams] = useSearchParams();
+  const locationState = location.state as { productId?: string; isDigitalCode?: boolean } | undefined;
   const productId =
-    (location.state as { productId?: string } | undefined)?.productId ??
+    locationState?.productId ??
     new URLSearchParams(location.search).get("productId") ??
     "";
+  // Check both location.state and URL params for isDigitalCode (URL params persist through external redirects)
+  const isDigitalCodeFromUrl = searchParams.get("isDigitalCode") === "true";
+  const isDigitalCode = locationState?.isDigitalCode ?? isDigitalCodeFromUrl ?? false;
   const product = products.find((p) => p.id === productId) ?? products[0];
-  const [searchParams] = useSearchParams();
+  
+  // Digital code product state
+  const [digitalCodeProduct, setDigitalCodeProduct] = useState<BackendDigitalCodeProduct | null>(null);
+  const [digitalCodeInputFields, setDigitalCodeInputFields] = useState<Record<string, string>>({});
+  const [loadingDigitalCodeProduct, setLoadingDigitalCodeProduct] = useState(false);
 
   // ✅ FIX: Use refs for tracking payment state (prevents re-render issues)
   const isPaymentInProgressRef = useRef(false);
@@ -71,8 +80,42 @@ function Checkout({ products }: { products: Product[] }) {
   } | null>(null);
 
   useEffect(() => {
-    if (!products.length) navigate("/");
-  }, [products, navigate]);
+    if (!products.length && !isDigitalCode) navigate("/");
+  }, [products, navigate, isDigitalCode]);
+
+  // Load digital code product if needed
+  useEffect(() => {
+    const loadDigitalCodeProduct = async () => {
+      if (!isDigitalCode || !productId) return;
+      
+      try {
+        setLoadingDigitalCodeProduct(true);
+        const response = await digitalCodeApi.getProductById(productId);
+        if (response.success && response.data) {
+          setDigitalCodeProduct(response.data);
+          // Initialize input fields
+          const initialFields: Record<string, string> = {};
+          if (response.data.inputFields) {
+            response.data.inputFields.forEach(field => {
+              initialFields[field.name] = '';
+            });
+          }
+          setDigitalCodeInputFields(initialFields);
+        } else {
+          alert('Digital code product not found');
+          navigate('/');
+        }
+      } catch (err: any) {
+        console.error('Failed to load digital code product:', err);
+        alert('Failed to load product details');
+        navigate('/');
+      } finally {
+        setLoadingDigitalCodeProduct(false);
+      }
+    };
+    
+    loadDigitalCodeProduct();
+  }, [isDigitalCode, productId, navigate]);
 
   // ✅ FIX: Handle URL params with strict duplicate prevention
   useEffect(() => {
@@ -132,13 +175,32 @@ function Checkout({ products }: { products: Product[] }) {
             });
 
             // Show success message
+            const transactionIdForResult = response.data?.payment?.transactionId || transactionId || invoiceId;
+            
+            // If digital code product, assign code after payment
+            if (isDigitalCode && digitalCodeProduct && user && user.email) {
+              try {
+                await digitalCodeApi.purchase({
+                  productId: digitalCodeProduct.id,
+                  userId: user.uid,
+                  userEmail: user.email,
+                  userName: user.displayName || user.email.split('@')[0] || 'User',
+                  transactionId: transactionIdForResult,
+                  inputFieldValues: digitalCodeInputFields,
+                });
+              } catch (err: any) {
+                console.error('Failed to assign digital code:', err);
+                // Still show success message, but log error
+              }
+            }
+            
             setPaymentResult({
               status: "success",
               message: "Payment verified! Your order is being processed.",
-              amount: product.price,
+              amount: displayProduct.price,
               remaining: balance,
-              transactionId: response.data?.payment?.transactionId || transactionId || invoiceId,
-              productName: product.name,
+              transactionId: transactionIdForResult,
+              productName: displayProduct.name,
               paymentMethod: "uddokta",
               ffName: ffName,
               playerId: uid
@@ -149,9 +211,17 @@ function Checkout({ products }: { products: Product[] }) {
               await refresh();
             }
 
-            // Clear URL params after 2 seconds
+            // Redirect based on product type
+            // Use isDigitalCode from URL params (persists through external redirect) or state
+            const shouldRedirectToDigitalCodes = isDigitalCode || isDigitalCodeFromUrl;
             setTimeout(() => {
-              navigate("/checkout", { replace: true });
+              if (shouldRedirectToDigitalCodes) {
+                // Redirect digital code purchases to order history
+                navigate("/orders?tab=digitalCodes", { replace: true });
+              } else {
+                // Regular products stay on checkout
+                navigate("/checkout", { replace: true });
+              }
             }, 2000);
           } else {
             setVerifyingPayment({
@@ -197,39 +267,49 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [searchParams]);
 
+  // Use digital code product if available, otherwise use regular product
+  // Calculate this early so it can be used in useEffect hooks
+  const displayProduct = isDigitalCode && digitalCodeProduct ? {
+    id: digitalCodeProduct.id,
+    name: digitalCodeProduct.name,
+    price: digitalCodeProduct.price,
+    diamonds: '',
+    categoryId: digitalCodeProduct.categoryId || '',
+  } : (product || null);
+
   // Track if user has manually selected a payment method
   const [paymentManuallySelected, setPaymentManuallySelected] = useState(false);
 
   useEffect(() => {
-    if (paymentManuallySelected) {
+    if (paymentManuallySelected || !displayProduct) {
       return;
     }
 
     const hasEnough =
-      typeof hasEnoughBalance === "function" && product
-        ? hasEnoughBalance(product.price)
+      typeof hasEnoughBalance === "function" && displayProduct
+        ? hasEnoughBalance(displayProduct.price)
         : false;
 
-    if (user && product && !isNaN(balance) && balance > 0 && hasEnough) {
+    if (user && displayProduct && !isNaN(balance) && balance > 0 && hasEnough) {
       setPayment("robo");
     } else {
       setPayment("uddokta");
     }
-  }, [user, product, balance, hasEnoughBalance, paymentManuallySelected]);
+  }, [user, displayProduct, balance, hasEnoughBalance, paymentManuallySelected]);
 
   // Ensure Robo Pay can't stay selected if balance becomes insufficient
   useEffect(() => {
-    if (!product) return;
+    if (!displayProduct) return;
 
     const hasEnough =
       typeof hasEnoughBalance === "function"
-        ? hasEnoughBalance(product.price)
-        : balance >= product.price;
+        ? hasEnoughBalance(displayProduct.price)
+        : balance >= displayProduct.price;
 
     if (!hasEnough && payment === "robo") {
       setPayment("uddokta");
     }
-  }, [product, balance, hasEnoughBalance, payment]);
+  }, [displayProduct, balance, hasEnoughBalance, payment]);
 
   // Auto-fetch FF name when UID changes (optimized with caching)
   useEffect(() => {
@@ -336,9 +416,15 @@ function Checkout({ products }: { products: Product[] }) {
     };
   }, [uid]);
 
-  if (!product) {
+  if (!product && !digitalCodeProduct) {
     return <Navigate to="/" replace />;
   }
+
+  if (!displayProduct) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Early return check - displayProduct is already declared above
 
   const handleRefreshBalance = async () => {
     setRefreshingBalance(true);
@@ -346,10 +432,37 @@ function Checkout({ products }: { products: Product[] }) {
     setRefreshingBalance(false);
   };
 
+  // Validate digital code input fields
+  const validateDigitalCodeInputs = (): { isValid: boolean; errorMessage?: string } => {
+    if (!isDigitalCode || !digitalCodeProduct || !digitalCodeProduct.inputFields) {
+      return { isValid: true }; // No validation needed if no input fields
+    }
+    
+    const requiredFields = digitalCodeProduct.inputFields.filter(f => f.required);
+    for (const field of requiredFields) {
+      const value = digitalCodeInputFields[field.name];
+      if (!value || value.trim() === '') {
+        return { 
+          isValid: false, 
+          errorMessage: `Please fill in the required field: ${field.name}` 
+        };
+      }
+    }
+    
+    return { isValid: true };
+  };
+
   // ✅ FIX: Handle Uddokta Pay checkout with strict prevention
   // Handle tap and hold for payment
   const handleMouseDown = () => {
-    if (processing || ffNameLoading || !ffName) return;
+    // For digital codes, validate input fields instead of ffName
+    if (isDigitalCode) {
+      const validation = validateDigitalCodeInputs();
+      if (processing || !validation.isValid) return;
+    } else {
+      // For regular products, check ffName
+      if (processing || ffNameLoading || !ffName) return;
+    }
     
     // For Robo Pay, show modal instead of direct payment
     if (payment === "robo") {
@@ -438,20 +551,27 @@ function Checkout({ products }: { products: Product[] }) {
     holdStartTimeRef.current = null;
   };
 
-  const handleMouseLeave = () => {
-    handleMouseUp();
-  };
-
   // Handle bKash payment
   const handleBkashPayment = async () => {
     if (isPaymentInProgressRef.current) return;
-    if (!uid.trim()) {
-      alert("Please enter your Free Fire UID");
-      return;
-    }
-    if (!ffName) {
-      alert("Please wait for player name to load");
-      return;
+    
+    // For digital codes, validate input fields instead of UID
+    if (isDigitalCode) {
+      const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else {
+      // For regular products, validate UID
+      if (!uid.trim()) {
+        alert("Please enter your Free Fire UID");
+        return;
+      }
+      if (!ffName) {
+        alert("Please wait for player name to load");
+        return;
+      }
     }
 
     isPaymentInProgressRef.current = true;
@@ -463,12 +583,12 @@ function Checkout({ products }: { products: Product[] }) {
     try {
       const paymentPayload = {
         transactionId: transactionId,
-        amount: product.price,
-        playerId: uid.trim(),
-        productId: product.id,
-        productName: product.name || "Product",
-        diamonds: product.diamonds || '',
-        price: product.price,
+        amount: displayProduct.price,
+        playerId: isDigitalCode ? "" : uid.trim(), // Empty for digital codes
+        productId: displayProduct.id,
+        productName: displayProduct.name || "Product",
+        diamonds: displayProduct.diamonds || '',
+        price: displayProduct.price,
         paymentMethod: "bkash" as const,
         userEmail: user?.email || "",
         userName: user?.displayName || user?.email?.split("@")[0] || "User",
@@ -494,16 +614,33 @@ function Checkout({ products }: { products: Product[] }) {
       }
 
       if (response.success) {
+        // If digital code product, assign code after payment
+        if (isDigitalCode && digitalCodeProduct && user && user.email) {
+          try {
+            await digitalCodeApi.purchase({
+              productId: digitalCodeProduct.id,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || user.email.split('@')[0] || 'User',
+              transactionId: transactionId,
+              inputFieldValues: digitalCodeInputFields,
+            });
+          } catch (err: any) {
+            console.error('Failed to assign digital code:', err);
+            // Still show success message, but log error
+          }
+        }
+        
         setPaymentResult({
           status: "success",
           message: "Payment successful! Your order is being processed.",
-          amount: product.price,
+          amount: displayProduct.price,
           remaining: balance,
           transactionId: transactionId,
-          productName: product.name,
+          productName: displayProduct.name,
           paymentMethod: "bKash",
-          ffName: ffName,
-          playerId: uid.trim(),
+          ffName: isDigitalCode ? null : ffName,
+          playerId: isDigitalCode ? "" : uid.trim(),
         });
       } else {
         throw new Error(response.message || "Payment failed");
@@ -524,9 +661,19 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
     
-    if (!uid.trim()) {
-      alert("Please enter your Free Fire UID");
-      return;
+    // For digital codes, validate input fields instead of UID
+    if (isDigitalCode) {
+      const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else {
+      // For regular products, validate UID
+      if (!uid.trim()) {
+        alert("Please enter your Free Fire UID");
+        return;
+      }
     }
 
     if (!user?.email) {
@@ -539,18 +686,18 @@ function Checkout({ products }: { products: Product[] }) {
 
     try {
       const checkoutData = {
-        amount: product.price,
-        playerId: uid.trim(),
-        productId: product.id,
-        productName: product.name || "Product",
-        diamonds: product.diamonds || '',
-        price: product.price,
+        amount: displayProduct.price,
+        playerId: isDigitalCode ? "" : uid.trim(), // Empty for digital codes
+        productId: displayProduct.id,
+        productName: displayProduct.name || "Product",
+        diamonds: displayProduct.diamonds || '',
+        price: displayProduct.price,
         userEmail: user.email,
         userName: user.displayName || user.email.split("@")[0] || "User",
         userId: user.uid || "",
         fullName: user.displayName || user.email.split("@")[0] || "Customer",
         email: user.email,
-        redirectUrl: `${window.location.origin}/checkout?status=completed&payment=uddokta`,
+        redirectUrl: `${window.location.origin}/checkout?status=completed&payment=uddokta&isDigitalCode=${isDigitalCode}&productId=${displayProduct.id}`,
         cancelUrl: `${window.location.origin}/checkout?status=cancelled&payment=uddokta`
       };
 
@@ -566,9 +713,11 @@ function Checkout({ products }: { products: Product[] }) {
           paymentAttemptsRef.current.add(response.data.invoiceId);
         }
         
-        // Clear UID input and localStorage before redirect
-        setUid('');
-        localStorage.removeItem("checkout_uid");
+        // Clear UID input and localStorage before redirect (only for regular products)
+        if (!isDigitalCode) {
+          setUid('');
+          localStorage.removeItem("checkout_uid");
+        }
         
         // Redirect immediately
         window.location.href = response.data.paymentUrl;
@@ -593,9 +742,19 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
     
-    if (!uid.trim()) {
-      alert("Please enter your Free Fire UID");
-      return;
+    // For digital codes, validate input fields instead of UID
+    if (isDigitalCode) {
+      const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else {
+      // For regular products, validate UID
+      if (!uid.trim()) {
+        alert("Please enter your Free Fire UID");
+        return;
+      }
     }
 
     isPaymentInProgressRef.current = true;
@@ -624,9 +783,9 @@ function Checkout({ products }: { products: Product[] }) {
         : balance;
 
       // Check balance
-      if (currentBalance < product.price) {
+      if (currentBalance < displayProduct.price) {
         const shouldAddMoney = confirm(
-          `Insufficient balance. You have ৳${currentBalance.toFixed(2)} but need ৳${product.price.toFixed(2)}.\n\nDo you want to add money?`
+          `Insufficient balance. You have ৳${currentBalance.toFixed(2)} but need ৳${displayProduct.price.toFixed(2)}.\n\nDo you want to add money?`
         );
         if (shouldAddMoney) {
           navigate("/add-money");
@@ -637,14 +796,14 @@ function Checkout({ products }: { products: Product[] }) {
       // Prepare payment payload
       const paymentPayload = {
         transactionId: transactionId,
-        amount: product.price,
-        playerId: uid.trim(),
-        productId: product.id,
-        productName: product.name || "Product",
-        diamonds: product.diamonds || '',
-        price: product.price,
+        amount: displayProduct.price,
+        playerId: isDigitalCode ? "" : uid.trim(), // Empty for digital codes
+        productId: displayProduct.id,
+        productName: displayProduct.name || "Product",
+        diamonds: displayProduct.diamonds || '',
+        price: displayProduct.price,
         paymentMethod: "robo" as const,
-        updatedBalance: currentBalance - product.price,
+        updatedBalance: currentBalance - displayProduct.price,
         userEmail: user?.email || "",
         userName: user?.displayName || user?.email?.split("@")[0] || "User",
         userId: user?.uid || "",
@@ -688,30 +847,47 @@ function Checkout({ products }: { products: Product[] }) {
         : balance;
 
       if (response && response.success) {
+        // If digital code product, assign code after payment
+        if (isDigitalCode && digitalCodeProduct && user && user.email) {
+          try {
+            await digitalCodeApi.purchase({
+              productId: digitalCodeProduct.id,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || user.email.split('@')[0] || 'User',
+              transactionId: paymentPayload.transactionId,
+              inputFieldValues: digitalCodeInputFields,
+            });
+          } catch (err: any) {
+            console.error('Failed to assign digital code:', err);
+            // Still show success message, but log error
+          }
+        }
+        
         // Clear UID input and localStorage on successful payment
         setUid('');
         localStorage.removeItem("checkout_uid");
         
         setPaymentResult({
           status: "success",
-          message: "Payment successful! Your diamonds will arrive shortly.",
-          amount: product.price,
+          message: isDigitalCode ? "Payment successful! Your digital code will be available in order history." : "Payment successful! Your diamonds will arrive shortly.",
+          amount: displayProduct.price,
           remaining: actualBalance,
           transactionId: paymentPayload.transactionId,
-          productName: product.name,
+          productName: displayProduct.name,
           paymentMethod: "Robo Balance",
-          ffName: ffName,
-          playerId: uid.trim(),
+          ffName: isDigitalCode ? null : ffName,
+          playerId: isDigitalCode ? "" : uid.trim(),
         });
       } else {
         const errorMessage = response?.message || "Payment failed.";
         setPaymentResult({
           status: "warning",
           message: errorMessage,
-          amount: product.price,
+          amount: displayProduct.price,
           remaining: actualBalance,
           transactionId: paymentPayload.transactionId,
-          productName: product.name,
+          productName: displayProduct.name,
           paymentMethod: "Robo Balance",
         });
       }
@@ -725,7 +901,7 @@ function Checkout({ products }: { products: Product[] }) {
     }
   };
 
-  const requiredAmount = product.price;
+  const requiredAmount = displayProduct.price;
 
   return (
     <div className="relative max-w-2xl px-4 py-6 mx-auto">
@@ -934,11 +1110,15 @@ function Checkout({ products }: { products: Product[] }) {
                 type="button"
                 onClick={() => {
                   setPaymentResult(null);
-                  navigate("/");
+                  if (isDigitalCode && digitalCodeProduct) {
+                    navigate("/orders?tab=digitalCodes");
+                  } else {
+                    navigate("/");
+                  }
                 }}
                 className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-[1.02]"
               >
-                Back to Home Page
+                {isDigitalCode && digitalCodeProduct ? "View Order History" : "Back to Home Page"}
               </button>
             </div>
           </div>
@@ -947,42 +1127,82 @@ function Checkout({ products }: { products: Product[] }) {
       
       {/* Main Content */}
       <div className="mb-6">
-        {/* Section 2: Account Info */}
+        {/* Section 2: Account Info / Product Details */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
               2
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Account Info</h2>
+            <h2 className="text-xl font-bold text-slate-800">
+              {isDigitalCode ? "Product Details" : "Account Info"}
+            </h2>
           </div>
 
           <div className="p-4 bg-white border rounded-xl border-slate-200">
-            <input
-              type="text"
-              value={uid}
-              onChange={(e) => {
-                setUid(e.target.value);
-              }}
-              placeholder="Enter your Free Fire UID"
-              className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
-            />
-            <div className="mt-2 text-xs text-slate-600">
-              {ffNameLoading && (
-                <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-400 to-violet-500 border-2 border-purple-300 text-[11px] font-semibold text-white shadow-md shadow-purple-400/40">
-                  <svg className="w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span className="font-medium">Loading player name...</span>
+            {!isDigitalCode && (
+              <>
+                <input
+                  type="text"
+                  value={uid}
+                  onChange={(e) => {
+                    setUid(e.target.value);
+                  }}
+                  placeholder="Enter your Free Fire UID"
+                  className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                />
+                <div className="mt-2 text-xs text-slate-600">
+                  {ffNameLoading && (
+                    <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-400 to-violet-500 border-2 border-purple-300 text-[11px] font-semibold text-white shadow-md shadow-purple-400/40">
+                      <svg className="w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span className="font-medium">Loading player name...</span>
+                    </div>
+                  )}
+                  {!ffNameLoading && ffName && (
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 border-2 border-purple-400 text-[11px] font-semibold text-white shadow-md shadow-purple-500/30">
+                      <span className="mr-1.5 font-normal text-purple-100">Player:</span>
+                      <span className="font-bold text-white">{ffName}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {!ffNameLoading && ffName && (
-                <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 border-2 border-purple-400 text-[11px] font-semibold text-white shadow-md shadow-purple-500/30">
-                  <span className="mr-1.5 font-normal text-purple-100">Player:</span>
-                  <span className="font-bold text-white">{ffName}</span>
-                </div>
-              )}
-            </div>
+              </>
+            )}
+            
+            {/* Digital Code Input Fields */}
+            {isDigitalCode && digitalCodeProduct && digitalCodeProduct.inputFields && digitalCodeProduct.inputFields.length > 0 && (
+              <div className="space-y-3">
+                {digitalCodeProduct.inputFields.map((field) => (
+                  <div key={field.name}>
+                    <label className="block mb-1 text-sm font-medium text-slate-700">
+                      {field.name}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                    <input
+                      type="text"
+                      value={digitalCodeInputFields[field.name] || ''}
+                      onChange={(e) => {
+                        setDigitalCodeInputFields(prev => ({
+                          ...prev,
+                          [field.name]: e.target.value
+                        }));
+                      }}
+                      placeholder={field.placeholder || `Enter ${field.name}`}
+                      required={field.required}
+                      className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {isDigitalCode && loadingDigitalCodeProduct && (
+              <div className="text-center py-4">
+                <div className="inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-2 text-sm text-slate-600">Loading product details...</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -999,12 +1219,12 @@ function Checkout({ products }: { products: Product[] }) {
             {/* Robo Pay */}
             <button
               onClick={() => {
-                const hasEnough = typeof hasEnoughBalance === "function" && product
-                  ? hasEnoughBalance(product.price)
-                  : balance >= (product?.price || 0);
+                const hasEnough = typeof hasEnoughBalance === "function" && displayProduct
+                  ? hasEnoughBalance(displayProduct.price)
+                  : balance >= (displayProduct?.price || 0);
 
                 if (!hasEnough) {
-                  alert(`Your Robo Balance is insufficient. You need ৳${product.price.toFixed(2)}.`);
+                  alert(`Your Robo Balance is insufficient. You need ৳${displayProduct.price.toFixed(2)}.`);
                   setPaymentManuallySelected(true);
                   setPayment("uddokta");
                   return;
@@ -1098,20 +1318,70 @@ function Checkout({ products }: { products: Product[] }) {
             <button
               onMouseDown={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
               onMouseUp={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
-              onMouseLeave={payment === "robo" || payment === "bkash" ? handleMouseLeave : undefined}
               onTouchStart={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
               onTouchEnd={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
               onClick={() => {
                 if (payment === "uddokta") {
-                  if (!uid.trim()) {
-                    alert("Please enter your Free Fire UID");
-                    return;
-                  }
+                  // Validation is handled in handleUddoktaPayPayment
                   handleUddoktaPayPayment();
                 }
               }}
-              disabled={processing || balanceLoading || (payment === "uddokta" && !user) || ffNameLoading || !ffName}
-              className="relative w-full px-6 py-4 overflow-hidden text-lg font-bold text-white transition-all shadow-lg bg-gradient-to-r from-purple-500 to-violet-600 rounded-xl hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-purple-500/30"
+              disabled={(() => {
+                // Base conditions
+                if (processing || balanceLoading || (payment === "uddokta" && !user)) return true;
+                
+                // For digital codes, check input field validation
+                if (isDigitalCode) {
+                  if (loadingDigitalCodeProduct) return true;
+                  const validation = validateDigitalCodeInputs();
+                  return !validation.isValid;
+                }
+                
+                // For regular products, check UID/ffName
+                return ffNameLoading || !ffName;
+              })()}
+              className="relative w-full px-6 py-4 overflow-hidden text-lg font-bold text-white transition-all shadow-lg rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`,
+                boxShadow: `0 10px 30px rgba(var(--theme-primary-rgb), 0.3)`
+              }}
+              onMouseEnter={(e) => {
+                const canHover = !processing && !balanceLoading && !(payment === "uddokta" && !user);
+                if (isDigitalCode) {
+                  const validation = validateDigitalCodeInputs();
+                  if (canHover && validation.isValid) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }
+                } else {
+                  if (canHover && !ffNameLoading && ffName) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }
+                }
+              }}
+              onMouseLeave={(e) => {
+                // Handle tap-and-hold mouse leave
+                if (payment === "robo" || payment === "bkash") {
+                  if (holdIntervalRef.current !== null) {
+                    window.clearInterval(holdIntervalRef.current);
+                    holdIntervalRef.current = null;
+                  }
+                  setIsHolding(false);
+                  setHoldProgress(0);
+                  holdStartTimeRef.current = null;
+                }
+                // Handle style reset
+                const canReset = !processing && !balanceLoading && !(payment === "uddokta" && !user);
+                if (isDigitalCode) {
+                  const validation = validateDigitalCodeInputs();
+                  if (canReset && validation.isValid) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
+                  }
+                } else {
+                  if (canReset && !ffNameLoading && ffName) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
+                  }
+                }
+              }}
             >
               {/* Progress bar */}
               {isHolding && (
@@ -1134,7 +1404,8 @@ function Checkout({ products }: { products: Product[] }) {
               <span className="relative z-10">
                 {processing ? "Processing..." : 
                  payment === "uddokta" && !user ? "Please Login" : 
-                 ffNameLoading ? "Loading Player Name..." :
+                 (!isDigitalCode && ffNameLoading) ? "Loading Player Name..." :
+                 (isDigitalCode && loadingDigitalCodeProduct) ? "Loading Product..." :
                  isHolding ? `Hold... ${Math.round(holdProgress)}%` :
                  payment === "robo" || payment === "bkash" ? "Tap & Hold to Pay" :
                  "Pay"}
@@ -1183,12 +1454,12 @@ function Checkout({ products }: { products: Product[] }) {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="mb-1 text-xs text-slate-500">সর্বমোট</p>
-                    <p className="text-lg font-bold text-slate-900">৳{product.price.toFixed(2)}</p>
-                    <p className="text-xs text-slate-600">৳{product.price.toFixed(2)} + ৳0.0</p>
+                    <p className="text-lg font-bold text-slate-900">৳{displayProduct.price.toFixed(2)}</p>
+                    <p className="text-xs text-slate-600">৳{displayProduct.price.toFixed(2)} + ৳0.0</p>
                   </div>
                   <div className="text-right">
                     <p className="mb-1 text-xs text-slate-500">নতুন ব্যালেন্স</p>
-                    <p className="text-lg font-bold text-green-600">৳{(balance - product.price).toFixed(2)}</p>
+                    <p className="text-lg font-bold text-green-600">৳{(balance - displayProduct.price).toFixed(2)}</p>
                   </div>
                 </div>
                 <div className="pt-3 mt-3 border-t border-slate-200">
