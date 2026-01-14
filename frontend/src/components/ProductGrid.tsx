@@ -132,6 +132,7 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                       <img
                         src={getCategoryImage(cat)}
                         alt={cat.name}
+                        loading="lazy"
                         className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                         onError={(e) => {
                           // Fallback to default image if custom image fails to load
@@ -195,9 +196,10 @@ function ProductGrid({ categories }: { categories: Category[] }) {
                   }}
                 >
                   <div className="w-full aspect-square overflow-hidden">
-                    <img 
-                      src={getCategoryImage(cat)} 
+                    <img
+                      src={getCategoryImage(cat)}
                       alt={cat.name}
+                      loading="lazy"
                       className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                       onError={(e) => {
                         // Fallback to default image if custom image fails to load

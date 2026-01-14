@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Notice from './components/Notice';
 import Hero from './components/Hero';
@@ -28,6 +29,8 @@ import SendMoney from './components/SendMoney';
 import DigitalCodesGrid from './components/DigitalCodesGrid';
 import DigitalCodeCategoryPage from './components/DigitalCodeCategoryPage';
 import SkeletonLoader from './components/SkeletonLoader';
+import { bannerApi } from './services/api';
+import { preloadImages } from './utils/imagePreloader';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -45,6 +48,35 @@ function App() {
   fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:35',message:'Location and route state',data:{pathname:location.pathname,isAdminRoute,isRoboGameZoneEnabled,catalogLoading:catalog.loading,shouldRenderMainRoutes:!isAdminRoute},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
   // #endregion
   
+  // Preload banner images when catalog data is ready (non-blocking)
+  useEffect(() => {
+    if (!catalog.loading && !digitalCodes.loading) {
+      const loadBanners = async () => {
+        try {
+          const response = await bannerApi.getAll();
+          if (response.success && response.data && Array.isArray(response.data)) {
+            const bannerImageUrls = response.data
+              .map((banner: { image?: string }) => banner.image)
+              .filter((url: string | undefined): url is string => Boolean(url));
+            
+            if (bannerImageUrls.length > 0) {
+              preloadImages(bannerImageUrls).catch(() => {
+                // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+              });
+            }
+          }
+        } catch (error) {
+          // Silently fail - banner preloading is not critical
+          if (import.meta.env.DEV) {
+            console.warn('Failed to preload banner images:', error);
+          }
+        }
+      };
+      
+      loadBanners();
+    }
+  }, [catalog.loading, digitalCodes.loading]);
+  
   // If toggle is ON and not on allowed routes, redirect to robo-game-zone
   const shouldRedirectToRoboGameZone = isRoboGameZoneEnabled && 
     !isAdminRoute && 
@@ -52,19 +84,18 @@ function App() {
     !isLoginSignupRoute;
   
   // some changesw
-  // Only show full page loading for catalog (products/categories)
+  // Only show full page loading for catalog (products/categories) and digital codes
   // Auth and role loading are non-blocking - they load in background
-  if (catalog.loading) {
+  // Wait for both catalog and digitalCodes to load before rendering website
+  if (catalog.loading || digitalCodes.loading) {
     return (
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
         {!isAdminRoute && <Navbar />}
         <Notice />
         <SkeletonLoader />
-        {/* Pre-load DigitalCodesGrid data immediately - it will show its own loading state */}
-        <DigitalCodesGrid />
-        {catalog.error && (
+        {(catalog.error || digitalCodes.error) && (
           <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-sm text-red-600">{catalog.error}</p>
+            <p className="text-sm text-red-600">{catalog.error || digitalCodes.error}</p>
           </div>
         )}
       </div>
@@ -128,7 +159,7 @@ function App() {
                     <Notice />
                     <Hero />
                     <ProductGrid categories={catalog.categories} />
-                    <DigitalCodesGrid />
+                    <DigitalCodesGrid categories={digitalCodes.categories} />
                     <Footer />
                   </>
                 )

@@ -1,26 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { dealApi, digitalCodeApi } from '../services/api';
+import { dealApi } from '../services/api';
 import type { Deal } from '../types';
 import type { BackendDigitalCodeCategory } from '../types';
 
-function DigitalCodesGrid() {
-  const [categories, setCategories] = useState<BackendDigitalCodeCategory[]>([]);
+function DigitalCodesGrid({ categories }: { categories: BackendDigitalCodeCategory[] }) {
   const [deals, setDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadDeals = async () => {
       try {
-        setLoading(true);
-        // Load digital code categories
-        const categoriesResponse = await digitalCodeApi.getCategories();
-        if (categoriesResponse.success && Array.isArray(categoriesResponse.data)) {
-          const activeCategories = categoriesResponse.data.filter(cat => cat.isActive);
-          setCategories(activeCategories);
-        }
-
-        // Load deals
+        // Load deals only (categories come from props)
         const dealsResponse = await dealApi.getAll();
         if (dealsResponse.success && Array.isArray(dealsResponse.data)) {
           const sortedDeals = dealsResponse.data
@@ -35,13 +25,11 @@ function DigitalCodesGrid() {
           setDeals(sortedDeals);
         }
       } catch (err) {
-        console.error('Failed to load digital codes data:', err);
-      } finally {
-        setLoading(false);
+        console.error('Failed to load deals:', err);
       }
     };
-    loadData();
-  }, []);
+    loadDeals();
+  }, [categories]); // Reload when categories change
 
   // Helper function to get category image
   const getCategoryImage = (category: BackendDigitalCodeCategory): string => {
@@ -72,30 +60,19 @@ function DigitalCodesGrid() {
 
   const navigate = useNavigate();
 
+  // Filter active categories
+  const activeCategories = categories.filter(cat => cat.isActive);
+
   // Group categories by deals
   const categoriesByDeal = deals.map(deal => ({
     deal,
-    categories: categories.filter(cat => cat.dealId === deal.id)
+    categories: activeCategories.filter(cat => cat.dealId === deal.id)
   }));
 
   // Categories without a deal
-  const categoriesWithoutDeal = categories.filter(cat => !cat.dealId || !deals.find(d => d.id === cat.dealId));
+  const categoriesWithoutDeal = activeCategories.filter(cat => !cat.dealId || !deals.find(d => d.id === cat.dealId));
 
-  if (loading) {
-    return (
-      <section className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
-        <div className="flex flex-col items-center justify-center min-h-[40vh]">
-          <div
-            className="w-12 h-12 mb-4 border-4 rounded-full border-t-transparent animate-spin"
-            style={{ borderColor: 'var(--theme-primary)' }}
-          ></div>
-          <p className="text-slate-600">Loading Digital Codes...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (categories.length === 0) {
+  if (activeCategories.length === 0) {
     return null; // Don't show section if no categories
   }
 
@@ -159,6 +136,7 @@ function DigitalCodesGrid() {
                       <img
                         src={getCategoryImage(cat)}
                         alt={cat.name}
+                        loading="lazy"
                         className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = '/diamond-top-up.png';
@@ -224,6 +202,7 @@ function DigitalCodesGrid() {
                     <img 
                       src={getCategoryImage(cat)} 
                       alt={cat.name}
+                      loading="lazy"
                       className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/diamond-top-up.png';

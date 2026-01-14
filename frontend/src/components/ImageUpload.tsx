@@ -1,0 +1,169 @@
+import { useState, useRef } from 'react';
+
+// Get API base URL (same logic as SmartAPIManager)
+const getApiBaseURL = (): string => {
+  const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+  return `${backendUrl}/api`;
+};
+
+interface ImageUploadProps {
+  value?: string; // Current image URL
+  onChange: (url: string) => void;
+  onFileSelect?: (file: File | null) => void;
+  label?: string;
+  accept?: string;
+  maxSizeMB?: number;
+  uploadEndpoint: string; // '/api/upload/category-image' or '/api/upload/banner-image'
+}
+
+function ImageUpload({
+  value,
+  onChange,
+  onFileSelect,
+  label = 'Image',
+  accept = 'image/*',
+  maxSizeMB = 5,
+  uploadEndpoint
+}: ImageUploadProps) {
+  const [preview, setPreview] = useState<string | null>(value || null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (file: File | null) => {
+    if (!file) {
+      setPreview(null);
+      onChange('');
+      onFileSelect?.(null);
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+
+    // Validate file size
+    const maxSizeBytes = maxSizeMB * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      setError(`Image size must be less than ${maxSizeMB}MB`);
+      return;
+    }
+
+    setError(null);
+    setUploading(true);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload file
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const baseURL = getApiBaseURL();
+      const fullUrl = `${baseURL}${uploadEndpoint}`;
+
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.data?.url) {
+        onChange(result.data.url);
+        onFileSelect?.(file);
+        setError(null);
+      } else {
+        throw new Error(result.message || 'Upload failed');
+      }
+    } catch (err) {
+      console.error('Image upload error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload image');
+      setPreview(null);
+      onChange('');
+      onFileSelect?.(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    handleFileSelect(file);
+  };
+
+  const handleRemove = () => {
+    setPreview(null);
+    onChange('');
+    onFileSelect?.(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold text-slate-700">{label}</label>
+      
+      {/* Preview */}
+      {preview && (
+        <div className="relative w-full max-w-xs">
+          <img
+            src={preview}
+            alt="Preview"
+            className="w-full h-32 object-cover rounded-lg border-2 border-slate-300"
+          />
+          {!uploading && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-1 right-1 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded hover:bg-red-600 transition-colors"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* File Input */}
+      <div className="flex items-center gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          onChange={handleInputChange}
+          disabled={uploading}
+          className="hidden"
+          id={`image-upload-${label.replace(/\s+/g, '-')}`}
+        />
+        <label
+          htmlFor={`image-upload-${label.replace(/\s+/g, '-')}`}
+          className={`px-4 py-2 text-sm font-semibold text-white rounded-lg cursor-pointer transition-all ${
+            uploading
+              ? 'bg-slate-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700'
+          }`}
+        >
+          {uploading ? 'Uploading...' : preview ? 'Change Image' : 'Choose Image'}
+        </label>
+        {value && !preview && (
+          <span className="text-xs text-slate-600">Current: {value}</span>
+        )}
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <p className="text-xs text-red-600">{error}</p>
+      )}
+    </div>
+  );
+}
+
+export default ImageUpload;

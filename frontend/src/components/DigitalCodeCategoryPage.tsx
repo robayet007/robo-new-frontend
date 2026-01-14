@@ -17,7 +17,11 @@ function DigitalCodeCategoryPage({
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [loadingStock, setLoadingStock] = useState(false);
   const [stockChecked, setStockChecked] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Initialize loading state based on whether props are available
+  const [loading, setLoading] = useState(() => {
+    // If props are available, we can find category instantly, so no loading needed
+    return categories.length === 0 || allProducts.length === 0;
+  });
 
   // Helper function to get category image
   const getCategoryImage = (category: BackendDigitalCodeCategory): string => {
@@ -59,13 +63,11 @@ function DigitalCodeCategoryPage({
     }
 
     const loadData = async () => {
-      setLoading(true);
-
       // Check if props are available and not empty (optimized path)
       const hasProps = categories.length > 0 && allProducts.length > 0;
       
       if (hasProps) {
-        // Use props (instant, optimized)
+        // Use props (instant, optimized) - no loading needed
         const foundCategory = categories.find(cat => cat.id === categoryId);
         if (foundCategory && foundCategory.isActive) {
           setCategory(foundCategory);
@@ -80,7 +82,8 @@ function DigitalCodeCategoryPage({
         // Category not found in props, fallback to API
       }
 
-      // Fallback: Load from API (original behavior)
+      // Fallback: Load from API (original behavior) - only set loading here
+      setLoading(true);
       try {
         // Load category
         const categoryResponse = await digitalCodeApi.getCategoryById(categoryId);
@@ -173,6 +176,7 @@ function DigitalCodeCategoryPage({
             <img 
               src={getCategoryImage(category)} 
               alt={category.name}
+              loading="eager"
               className="object-cover w-16 h-16 border-2 shadow-md sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl"
               style={{
                 borderColor: 'rgba(var(--theme-primary-rgb), 0.35)'

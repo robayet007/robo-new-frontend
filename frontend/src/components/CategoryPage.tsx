@@ -46,17 +46,23 @@ function CategoryPage({
 
   useEffect(() => {
     if (categoryId) {
-      const foundCategory = categories.find(cat => cat.id === categoryId);
-      if (foundCategory) {
-        setCategory(foundCategory);
-      } else {
-        // Category not found, redirect to home
-        navigate('/', { replace: true });
+      // Only try to find category if categories array is not empty
+      if (categories.length > 0) {
+        const foundCategory = categories.find(cat => cat.id === categoryId);
+        if (foundCategory) {
+          setCategory(foundCategory);
+        } else {
+          // Category not found, redirect to home
+          navigate('/', { replace: true });
+        }
       }
+      // If categories array is empty, wait for it to load (don't set category yet)
     }
   }, [categoryId, categories, navigate]);
 
-  if (!category) {
+  // Only show loading spinner if categories array is empty (still loading from global state)
+  // If categories exist but category not found, useEffect will redirect, so we won't reach here
+  if (!category && categories.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div
@@ -66,6 +72,12 @@ function CategoryPage({
         <p className="text-slate-600">Loading category...</p>
       </div>
     );
+  }
+
+  // If category is still null but categories array is not empty, it means category was not found
+  // useEffect should have redirected, but if not, return null to prevent rendering
+  if (!category) {
+    return null;
   }
 
   const filteredProducts = products.filter((p) => p.categoryId === categoryId);
@@ -85,6 +97,7 @@ function CategoryPage({
             <img 
               src={getCategoryImage(category)} 
               alt={category.name}
+              loading="eager"
               className="object-cover w-16 h-16 border-2 shadow-md sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-xl"
               style={{
                 borderColor: 'rgba(var(--theme-primary-rgb), 0.35)'

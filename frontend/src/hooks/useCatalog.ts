@@ -2,8 +2,40 @@ import { useEffect, useState } from 'react';
 import { productApi, categoryApi } from '../services/api';
 import type { ApiResponse, BackendCategory } from '../types';
 import type { Category, Product } from '../types';
+import { preloadImages } from '../utils/imagePreloader';
 
 const STORAGE_KEY = 'rtu_catalog_backup';
+
+// Helper function to get category image URL - matches ProductGrid.getCategoryImage logic
+const getCategoryImageUrl = (category: Category): string => {
+  // Safety check
+  if (!category || !category.name) {
+    return '/diamond-top-up.png';
+  }
+  
+  // If category has an image URL, use it
+  if (category.image) {
+    return category.image;
+  }
+  
+  // Fallback to name-based logic
+  const nameLower = category.name.toLowerCase();
+  
+  if (nameLower.includes('weekly')) {
+    return '/weekly.jpg';
+  } else if (nameLower.includes('monthly')) {
+    return '/monthly.jpg';
+  } else if (nameLower.includes('diamond') && (nameLower.includes('top') || nameLower.includes('up'))) {
+    return '/diamond-top-up.png';
+  } else if (nameLower.includes('evo') || nameLower.includes('badge')) {
+    return '/evo.png';
+  } else if (nameLower.includes('level') && nameLower.includes('up')) {
+    return '/level-up-pass.png';
+  }
+  
+  // Default fallback image
+  return '/diamond-top-up.png';
+};
 
 // ==================== ENHANCED CATALOG HOOK ====================
 function useCatalog() {
@@ -21,6 +53,11 @@ function useCatalog() {
         const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
         if (parsed.categories && parsed.categories.length > 0) {
           setCategories(parsed.categories);
+          // Preload category images from cache (non-blocking)
+          const categoryImageUrls = parsed.categories.map(cat => getCategoryImageUrl(cat));
+          preloadImages(categoryImageUrls).catch(() => {
+            // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+          });
         }
         if (parsed.products && parsed.products.length > 0) {
           setProducts(parsed.products);
@@ -119,6 +156,12 @@ function useCatalog() {
             image: c.image || undefined
           }));
         setCategories(convertedCategories);
+        
+        // Preload category images (non-blocking)
+        const categoryImageUrls = convertedCategories.map(cat => getCategoryImageUrl(cat));
+        preloadImages(categoryImageUrls).catch(() => {
+          // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+        });
       } else {
         // Extract categories from products if API failed
         const uniqueCategories = [...new Set(productsRes.data.map(p => p.categoryId))];
@@ -128,6 +171,12 @@ function useCatalog() {
           description: `Products in ${catId}`
         }));
         setCategories(extractedCategories);
+        
+        // Preload category images for extracted categories too
+        const categoryImageUrls = extractedCategories.map(cat => getCategoryImageUrl(cat));
+        preloadImages(categoryImageUrls).catch(() => {
+          // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+        });
         // console.warn('Using extracted categories from products');
       }
       
@@ -142,6 +191,11 @@ function useCatalog() {
           const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
           if (parsed.categories && parsed.categories.length > 0) {
             setCategories(parsed.categories);
+            // Preload category images from localStorage fallback (non-blocking)
+            const categoryImageUrls = parsed.categories.map(cat => getCategoryImageUrl(cat));
+            preloadImages(categoryImageUrls).catch(() => {
+              // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+            });
           }
           if (parsed.products && parsed.products.length > 0) {
             setProducts(parsed.products);
