@@ -26,6 +26,7 @@ import MyAccount from './components/MyAccount';
 import SendMoney from './components/SendMoney';
 import DigitalCodesGrid from './components/DigitalCodesGrid';
 import DigitalCodeCategoryPage from './components/DigitalCodeCategoryPage';
+import SkeletonLoader from './components/SkeletonLoader';
 
 // ==================== MAIN APP ====================
 function App() {
@@ -56,11 +57,12 @@ function App() {
       <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
         {!isAdminRoute && <Navbar />}
         <Notice />
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="w-12 h-12 mb-4 border-4 rounded-full border-sky-400 border-t-transparent animate-spin"></div>
-          <p className="text-slate-600">Loading products...</p>
-          {catalog.error && <p className="mt-2 text-sm text-red-600">{catalog.error}</p>}
-        </div>
+        <SkeletonLoader />
+        {catalog.error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{catalog.error}</p>
+          </div>
+        )}
       </div>
     );
   }

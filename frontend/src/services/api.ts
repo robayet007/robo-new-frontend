@@ -6,8 +6,8 @@ class SmartAPIManager {
   static getBaseURL(): string {
     // Local development default
     // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    // const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
-    const backendUrl = "    http://localhost:5000";
+    const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+    // const backendUrl = "    http://localhost:5000";
     return `${backendUrl}/api`;
   }
   
