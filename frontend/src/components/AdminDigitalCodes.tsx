@@ -368,9 +368,9 @@ function AdminDigitalCodes() {
 
     try {
       const response = await digitalCodeApi.createProduct({
-        id: productId.trim() || undefined,
-        categoryId: productCategoryId || undefined,
-        categoryName: category?.name || undefined,
+        id: productId.trim() || '',
+        categoryId: productCategoryId || '',
+        categoryName: category?.name || '',
         name: productName.trim(),
         description: productDesc.trim() || undefined,
         price: Number(productPrice),
@@ -404,7 +404,11 @@ function AdminDigitalCodes() {
     setProductPrice(product.price.toString());
     setProductCategoryId(product.categoryId);
     setProductTag(product.tag || '');
-    setInputFields(product.inputFields || []);
+    setInputFields((product.inputFields || []).map(field => ({
+      name: field.name,
+      placeholder: field.placeholder || '',
+      required: field.required ?? false
+    })));
   };
 
   const handleUpdateProduct = async (e: FormEvent) => {
@@ -495,10 +499,15 @@ function AdminDigitalCodes() {
 
     try {
       setLoading(true);
+      if (!codeCategoryId) {
+        setMessage({ type: 'error', text: 'Please select a category' });
+        return;
+      }
+      
       const response = await digitalCodeApi.bulkUploadCodes(
         bulkCodeText.trim(),
-        codeCategoryId || undefined,
-        codeProductId
+        codeCategoryId,
+        codeProductId || undefined
       );
 
       if (response.success) {
@@ -529,10 +538,15 @@ function AdminDigitalCodes() {
       return;
     }
 
+    if (!codeCategoryId) {
+      setMessage({ type: 'error', text: 'Please select a category' });
+      return;
+    }
+
     try {
       const response = await digitalCodeApi.addCode({
-        categoryId: codeCategoryId || undefined,
-        productId: codeProductId,
+        categoryId: codeCategoryId,
+        productId: codeProductId || undefined,
         code: singleCode.trim(),
         prefix: singleCodePrefix.trim() || undefined
       });
@@ -553,26 +567,6 @@ function AdminDigitalCodes() {
     }
   };
 
-  const handleDeleteCode = async (serialNumber: string) => {
-    if (!window.confirm('Are you sure you want to delete this code?')) {
-      return;
-    }
-
-    try {
-      const response = await digitalCodeApi.deleteCode(serialNumber);
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Code deleted successfully!' });
-        if (activeTab === 'status') {
-          await loadCodes();
-        }
-        await loadStats();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete code' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete code' });
-    }
-  };
 
   const handleCopyCode = async (code: string) => {
     try {

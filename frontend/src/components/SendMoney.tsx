@@ -3,7 +3,6 @@ import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { balanceTransferApi, balanceApi } from '../services/api';
 import { FaCheckCircle, FaWallet, FaSyncAlt } from 'react-icons/fa';
-import { useTheme } from '../contexts/ThemeContext';
 
 // Service charge per transaction
 const SERVICE_CHARGE = 5;

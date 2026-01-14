@@ -175,7 +175,7 @@ function AdminOrders() {
                       <p className="mb-1 text-xs text-slate-500">Package</p>
                       <div className="flex items-center gap-1">
                         <p className="text-sm font-medium text-slate-900">
-                          {order.diamonds ? `${order.productNamea}` : order.productName || 'Top-up'}
+                          {order.diamonds ? `${order.productName}` : order.productName || 'Top-up'}
                         </p>
                         {/* {order.diamonds && (
                           <span className="text-blue-400">💎</span>

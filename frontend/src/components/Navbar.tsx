@@ -5,7 +5,6 @@ import useUserRole from '../hooks/useUserRole';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { useRoboGameZone } from '../contexts/RoboGameZoneContext';
 import { useEffect, useState, useRef } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
 
 function Navbar() {
   const navigate = useNavigate();
