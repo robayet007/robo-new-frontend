@@ -215,11 +215,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   // Load deals
   const loadDeals = async () => {
     try {
-      console.log('Loading deals...');
+      // console.log('Loading deals...');
       const response = await dealApi.getAll();
-      console.log('Deals API response:', response);
+      // console.log('Deals API response:', response);
       if (response.success && Array.isArray(response.data)) {
-        console.log('Deals loaded:', response.data);
+        // console.log('Deals loaded:', response.data);
         setDeals(response.data);
       } else {
         console.error('Failed to load deals - API response:', response);
@@ -341,7 +341,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         setDealOrder('0');
         // Reload deals after creating
         await loadDeals();
-        console.log('Deal created, reloading deals...');
+        // console.log('Deal created, reloading deals...');
       } else {
         setMessage({ type: 'error', text: response.message || 'Failed to create deal' });
       }

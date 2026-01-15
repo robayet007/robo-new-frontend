@@ -13,14 +13,14 @@ if (typeof window !== 'undefined') {
   const handleGlobalBeforeInstallPrompt = (e: Event) => {
     e.preventDefault();
     globalDeferredPrompt = e as BeforeInstallPromptEvent;
-    console.log('🔔 [InstallButton] beforeinstallprompt event captured globally');
+    // console.log('🔔 [InstallButton] beforeinstallprompt event captured globally');
   };
 
   window.addEventListener('beforeinstallprompt', handleGlobalBeforeInstallPrompt);
   
   // Check if already installed
   if (window.matchMedia('(display-mode: standalone)').matches) {
-    console.log('📱 [InstallButton] App already installed (standalone mode)');
+    // console.log('📱 [InstallButton] App already installed (standalone mode)');
   }
 }
 
@@ -46,13 +46,13 @@ function InstallButton() {
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
-    console.log('🔧 [InstallButton] Component mounted, initializing...');
+    // console.log('🔧 [InstallButton] Component mounted, initializing...');
 
     // Check if app is already installed
     const checkInstalled = () => {
       const installed = isStandalone();
       if (installed) {
-        console.log('✅ [InstallButton] App is already installed');
+        // console.log('✅ [InstallButton] App is already installed');
         setIsInstalled(true);
         return true;
       }
@@ -68,10 +68,10 @@ function InstallButton() {
     setIsIOSDevice(ios);
     
     if (ios) {
-      console.log('🍎 [InstallButton] iOS device detected');
+      // console.log('🍎 [InstallButton] iOS device detected');
       // Check if already installed on iOS
       if ((window.navigator as any).standalone === true) {
-        console.log('✅ [InstallButton] App already installed on iOS');
+        // console.log('✅ [InstallButton] App already installed on iOS');
         setIsInstalled(true);
         return;
       }
@@ -79,7 +79,7 @@ function InstallButton() {
 
     // Get deferred prompt from global storage if available
     if (globalDeferredPrompt) {
-      console.log('📦 [InstallButton] Found deferred prompt in global storage');
+      // console.log('📦 [InstallButton] Found deferred prompt in global storage');
       setDeferredPrompt(globalDeferredPrompt);
       promptRef.current = globalDeferredPrompt;
       globalDeferredPrompt = null; // Clear global storage after use
@@ -87,7 +87,7 @@ function InstallButton() {
 
     // Listen for beforeinstallprompt event (Android/Chrome/Edge)
     const handleBeforeInstallPrompt = (e: Event) => {
-      console.log('🔔 [InstallButton] beforeinstallprompt event received');
+      // console.log('🔔 [InstallButton] beforeinstallprompt event received');
       e.preventDefault();
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
@@ -97,7 +97,7 @@ function InstallButton() {
 
     // Listen for app installed event
     const handleAppInstalled = () => {
-      console.log('✅ [InstallButton] App installed event received');
+      // console.log('✅ [InstallButton] App installed event received');
       setIsInstalled(true);
       setDeferredPrompt(null);
       promptRef.current = null;
@@ -130,19 +130,19 @@ function InstallButton() {
     }
 
     try {
-      console.log('🚀 [InstallButton] Showing install prompt...');
+      // console.log('🚀 [InstallButton] Showing install prompt...');
       // Show the native install prompt
       await prompt.prompt();
 
       // Wait for the user to respond
       const { outcome } = await prompt.userChoice;
-      console.log(`📊 [InstallButton] User choice: ${outcome}`);
+      // console.log(`📊 [InstallButton] User choice: ${outcome}`);
 
       if (outcome === 'accepted') {
         setIsInstalled(true);
-        console.log('✅ [InstallButton] Installation accepted');
+        // console.log('✅ [InstallButton] Installation accepted');
       } else {
-        console.log('❌ [InstallButton] Installation dismissed');
+        // console.log('❌ [InstallButton] Installation dismissed');
       }
 
       // Clear the prompt after use
@@ -157,7 +157,7 @@ function InstallButton() {
 
   const handleIOSInstallClick = () => {
     setShowIOSInstructions(true);
-    console.log('🍎 [InstallButton] Showing iOS install instructions');
+    // console.log('🍎 [InstallButton] Showing iOS install instructions');
   };
 
   const handleCloseIOSInstructions = () => {
@@ -237,7 +237,7 @@ function InstallButton() {
   }
 
   // Don't show button if no install method available
-  console.log('ℹ️ [InstallButton] No install method available, button hidden');
+  // console.log('ℹ️ [InstallButton] No install method available, button hidden');
   return null;
 }
 

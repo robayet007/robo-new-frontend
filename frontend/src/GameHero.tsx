@@ -50,7 +50,7 @@ export default function GameHero() {
           }))
           // Debug: Log banners with links
           if (import.meta.env.DEV) {
-            console.log('Banners loaded:', bannerSlides.map(s => ({ id: s.id, title: s.title, link: s.link })))
+            // console.log('Banners loaded:', bannerSlides.map(s => ({ id: s.id, title: s.title, link: s.link })))
           }
           setSlides(bannerSlides)
         } else {
@@ -241,13 +241,13 @@ export default function GameHero() {
             const link = currentSlide.link?.trim()
             if (!link) {
               if (import.meta.env.DEV) {
-                console.log('Banner clicked but no link set', { slide: currentSlide })
+                // console.log('Banner clicked but no link set', { slide: currentSlide })
               }
               return
             }
             
             if (import.meta.env.DEV) {
-              console.log('Banner clicked, redirecting to:', link)
+              // console.log('Banner clicked, redirecting to:', link)
             }
             
             // Handle external URLs
@@ -295,13 +295,13 @@ export default function GameHero() {
                   const link = currentSlide.link?.trim()
                   if (!link) {
                     if (import.meta.env.DEV) {
-                      console.log('Button clicked but no link set')
+                      // console.log('Button clicked but no link set')
                     }
                     return
                   }
                   
                   if (import.meta.env.DEV) {
-                    console.log('Button clicked, redirecting to:', link)
+                    // console.log('Button clicked, redirecting to:', link)
                   }
                   
                   // Handle external URLs

@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { balanceTransferApi, balanceApi } from '../services/api';
-import { FaCheckCircle, FaWallet, FaSyncAlt } from 'react-icons/fa';
+import { FaCheckCircle, FaWallet, FaSyncAlt, FaTimes } from 'react-icons/fa';
 
 // Service charge per transaction
 const SERVICE_CHARGE = 5;
@@ -15,6 +15,8 @@ function SendMoney() {
   const [transferNote, setTransferNote] = useState('');
   const [transferMessage, setTransferMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [transferLoading, setTransferLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [successDetails, setSuccessDetails] = useState<{ amount: number; receiverEmail: string; total: number } | null>(null);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
@@ -247,12 +249,25 @@ function SendMoney() {
       });
 
       if (resp.success) {
+        // Show success popup
+        setSuccessDetails({
+          amount: amountNum,
+          receiverEmail: email,
+          total: amountNum + SERVICE_CHARGE
+        });
+        setShowSuccessPopup(true);
         setTransferMessage({ type: 'success', text: `Money sent successfully. ${SERVICE_CHARGE} Tk service charge applied.` });
         setTransferAmount('');
         setTransferEmail('');
         setTransferNote('');
         setIsEmailValid(false);
         // Balance already updated optimistically, Socket.IO event will confirm/correct
+        
+        // Auto close popup after 5 seconds
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+          setSuccessDetails(null);
+        }, 5000);
       } else {
         // Transfer failed - revert optimistic update by refreshing balance
         await refreshBalance();
@@ -352,34 +367,68 @@ function SendMoney() {
                 {transferMessage.text}
               </div>
             )}
-            <form onSubmit={handleSendMoney} className="space-y-2">
+            <form onSubmit={handleSendMoney} className="space-y-3">
               <div className="relative">
-                <input
-                  ref={emailInputRef}
-                  type="email"
-                  value={transferEmail}
-                  onChange={(e) => {
-                    setTransferEmail(e.target.value);
-                    setSelectedSuggestionIndex(-1);
-                    // Reset validation when email changes
-                    if (!e.target.value.trim()) {
-                      setIsEmailValid(false);
-                    }
-                  }}
-                  onKeyDown={handleEmailKeyDown}
-                  onFocus={() => {
-                    // Don't show suggestions if email is already valid (selected from suggestions)
-                    if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
-                      setShowSuggestions(true);
-                    }
-                  }}
-                  placeholder="Receiver email"
-                  disabled={transferLoading}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    '--tw-ring-color': 'var(--theme-primary)'
-                  } as React.CSSProperties}
-                />
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  <span className="flex items-center gap-2">
+                    <span>যাকে টাকা পাঠাবেন</span>
+                    <span className="text-xs font-normal text-slate-500">(Receiver Email)</span>
+                  </span>
+                </label>
+                <div className="relative">
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    value={transferEmail}
+                    onChange={(e) => {
+                      setTransferEmail(e.target.value);
+                      setSelectedSuggestionIndex(-1);
+                      // Reset validation when email changes
+                      if (!e.target.value.trim()) {
+                        setIsEmailValid(false);
+                      }
+                    }}
+                    onKeyDown={handleEmailKeyDown}
+                    onFocus={() => {
+                      // Don't show suggestions if email is already valid (selected from suggestions)
+                      if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    placeholder="example@gmail.com"
+                    disabled={transferLoading}
+                    className="w-full px-4 py-3 rounded-xl border text-base font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-30 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md focus:shadow-lg placeholder:font-semibold placeholder:text-slate-400"
+                    style={{
+                      borderColor: 'rgba(var(--theme-primary-rgb), 0.15)',
+                      '--tw-ring-color': 'var(--theme-primary)',
+                      backgroundColor: transferEmail ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff'
+                    } as React.CSSProperties}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
+                      e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
+                      // Don't show suggestions if email is already valid (selected from suggestions)
+                      if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
+                        setShowSuggestions(true);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.15)';
+                      e.currentTarget.style.backgroundColor = transferEmail ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff';
+                    }}
+                  />
+                  {transferEmail && !isEmailValid && transferEmail.includes('@') && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-amber-600">
+                      <span className="w-1 h-1 rounded-full bg-amber-600"></span>
+                      <span>এই email address টি Robo user এর নয়</span>
+                    </div>
+                  )}
+                  {isEmailValid && (
+                    <div className="mt-2 flex items-center gap-2 text-xs text-emerald-600">
+                      <FaCheckCircle className="text-xs" />
+                      <span>Valid Robo user email</span>
+                    </div>
+                  )}
+                </div>
                 {showSuggestions && emailSuggestions.length > 0 && (
                   <div
                     ref={suggestionsRef}
@@ -422,36 +471,62 @@ function SendMoney() {
               </div>
               {isEmailValid && (
                 <>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      step="1"
-                      value={transferAmount}
-                      onChange={(e) => setTransferAmount(e.target.value)}
-                      placeholder="Amount"
-                      disabled={transferLoading}
-                      className="w-24 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <input
-                      type="text"
-                      value={transferNote}
-                      onChange={(e) => setTransferNote(e.target.value)}
-                      placeholder="Refer"
-                      disabled={transferLoading}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
+                  <div className="flex gap-3 mt-3">
+                    <div className="relative flex-1">
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Amount</label>
+                      <input
+                        type="number"
+                        min={1}
+                        step="1"
+                        value={transferAmount}
+                        onChange={(e) => setTransferAmount(e.target.value)}
+                        placeholder="Enter amount"
+                        disabled={transferLoading}
+                        className="w-full px-4 py-3 rounded-xl border text-base font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-30 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md focus:shadow-lg"
+                        style={{
+                          borderColor: 'rgba(var(--theme-primary-rgb), 0.15)',
+                          '--tw-ring-color': 'var(--theme-primary)',
+                          backgroundColor: transferAmount ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff'
+                        } as React.CSSProperties}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
+                          e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.15)';
+                          e.currentTarget.style.backgroundColor = transferAmount ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff';
+                        }}
+                      />
+                    </div>
+                    <div className="relative flex-1">
+                      <label className="block text-xs font-semibold text-slate-600 mb-1.5">Refer (Optional)</label>
+                      <input
+                        type="text"
+                        value={transferNote}
+                        onChange={(e) => setTransferNote(e.target.value)}
+                        placeholder="Add a note"
+                        disabled={transferLoading}
+                        className="w-full px-4 py-3 rounded-xl border text-base font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-30 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md focus:shadow-lg"
+                        style={{
+                          borderColor: 'rgba(var(--theme-primary-rgb), 0.15)',
+                          '--tw-ring-color': 'var(--theme-primary)',
+                          backgroundColor: transferNote ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff'
+                        } as React.CSSProperties}
+                        onFocus={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
+                          e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
+                        }}
+                        onBlur={(e) => {
+                          e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.15)';
+                          e.currentTarget.style.backgroundColor = transferNote ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff';
+                        }}
+                      />
+                    </div>
                   </div>
                   {transferAmount && Number(transferAmount) > 0 && (
-                    <div className="px-2 py-1.5 rounded-lg bg-amber-50 border border-amber-200">
-                      <p className="text-[10px] text-amber-700">
-                        <span className="font-semibold">Service Charge:</span> {SERVICE_CHARGE} Tk | <span className="font-semibold">Total:</span> {(Number(transferAmount) + SERVICE_CHARGE).toFixed(2)} Tk
+                    <div className="mt-3 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 shadow-sm">
+                      <p className="text-sm text-amber-800 font-medium">
+                        <span className="font-bold">Service Charge:</span> {SERVICE_CHARGE} Tk | <span className="font-bold">Total:</span> {(Number(transferAmount) + SERVICE_CHARGE).toFixed(2)} Tk
                       </p>
                     </div>
                   )}
@@ -461,7 +536,7 @@ function SendMoney() {
                 <button
                   type="submit"
                   disabled={transferLoading || balanceLoading || !user}
-                  className="mt-1 inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white disabled:opacity-60 disabled:cursor-not-allowed w-full"
+                  className="mt-4 inline-flex items-center justify-center px-6 py-4 rounded-xl text-base font-bold text-white disabled:opacity-60 disabled:cursor-not-allowed w-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
                   style={{
                     background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
                   }}
@@ -476,16 +551,137 @@ function SendMoney() {
                     }
                   }}
                 >
-                  {transferLoading ? 'Sending...' : 'Send Money'}
+                  {transferLoading ? (
+                    <span className="flex items-center gap-2">
+                      <FaSyncAlt className="animate-spin" />
+                      Sending...
+                    </span>
+                  ) : (
+                    'Send Money'
+                  )}
                 </button>
               )}
-              <p className="mt-1 text-[10px] text-slate-500">
-                যাকে টাকা পাঠাবেন তার email address দিন
-              </p>
+              {!transferEmail && (
+                <div className="mt-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    <span className="font-semibold">💡 টিপস:</span> যাকে টাকা পাঠাবেন তার Robo account এর email address দিন। Email টাইপ করতে থাকলে suggestions দেখাবে।
+                  </p>
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
+
+      {/* Success Popup Modal */}
+      {showSuccessPopup && successDetails && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm animate-fadeIn"
+          onClick={() => {
+            setShowSuccessPopup(false);
+            setSuccessDetails(null);
+          }}
+        >
+          <div 
+            className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 sm:p-8 transform transition-all duration-300 scale-100 animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(to bottom, #ffffff, rgba(var(--theme-primary-rgb), 0.02))',
+              boxShadow: '0 20px 25px -5px rgba(var(--theme-primary-rgb), 0.2), 0 10px 10px -5px rgba(var(--theme-primary-rgb), 0.1)'
+            }}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setShowSuccessPopup(false);
+                setSuccessDetails(null);
+              }}
+              className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-100 transition-colors"
+              aria-label="Close"
+            >
+              <FaTimes className="text-slate-400 text-lg" />
+            </button>
+
+            {/* Success Icon */}
+            <div className="flex justify-center mb-4">
+              <div 
+                className="w-20 h-20 rounded-full flex items-center justify-center"
+                style={{ 
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  animation: 'bounce 0.6s ease-in-out'
+                }}
+              >
+                <FaCheckCircle className="text-5xl" style={{ color: '#10b981' }} />
+              </div>
+            </div>
+
+            {/* Success Message */}
+            <div className="text-center mb-6">
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">টাকা পাঠানো সফল হয়েছে!</h3>
+              <p className="text-sm text-slate-600">আপনার লেনদেন সম্পন্ন হয়েছে</p>
+            </div>
+
+            {/* Transaction Details */}
+            <div className="space-y-3 mb-6">
+              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-slate-600">পাঠানো পরিমাণ</span>
+                  <span className="text-lg font-bold text-slate-900">{successDetails.amount.toFixed(2)} Tk</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-slate-600">সার্ভিস চার্জ</span>
+                  <span className="text-sm font-semibold text-slate-700">{SERVICE_CHARGE} Tk</span>
+                </div>
+                <div className="border-t border-slate-300 pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-bold text-slate-900">মোট কাটা গেছে</span>
+                    <span className="text-xl font-bold" style={{ color: 'var(--theme-primary)' }}>{successDetails.total.toFixed(2)} Tk</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-violet-50 border-2" style={{ borderColor: 'rgba(var(--theme-primary-rgb), 0.2)' }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--theme-primary)' }}></div>
+                  <span className="text-xs font-medium text-slate-600">প্রাপক</span>
+                </div>
+                <p className="text-sm font-semibold text-slate-900 mt-1">{successDetails.receiverEmail}</p>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              onClick={() => {
+                setShowSuccessPopup(false);
+                setSuccessDetails(null);
+              }}
+              className="w-full px-6 py-3 rounded-xl text-base font-bold text-white transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`
+              }}
+            >
+              ঠিক আছে
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const primary = response.data.primaryColor || DEFAULT_PRIMARY;
           const secondary = response.data.secondaryColor || DEFAULT_SECONDARY;
           
-          console.log('✅ Theme loaded from MongoDB:', { primary, secondary });
+          // console.log('✅ Theme loaded from MongoDB:', { primary, secondary });
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
           applyTheme(primary, secondary);
@@ -115,7 +115,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Update theme function
   const updateTheme = async (primary: string, secondary: string, updatedBy?: string) => {
     try {
-      console.log('🔄 Updating theme:', { primary, secondary, updatedBy });
+      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy });
       const response = await themeApi.update({
         primaryColor: primary,
         secondaryColor: secondary,
@@ -123,7 +123,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       });
 
       if (response.success && response.data) {
-        console.log('✅ Theme updated successfully:', response.data);
+        // console.log('✅ Theme updated successfully:', response.data);
         // Use the colors returned from the server to ensure consistency
         const savedPrimary = response.data.primaryColor || primary;
         const savedSecondary = response.data.secondaryColor || secondary;

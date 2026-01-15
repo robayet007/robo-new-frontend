@@ -2,12 +2,11 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 
 // ==================== API MANAGER - Smart URL Detection ====================
 class SmartAPIManager {
-  // Get API base URL - default to local backend for development
+  // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Local development default
-    // In production (Vercel), set VITE_API_URL in environment variables to point to the live backend
-    const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
-    // const backendUrl = "    http://localhost:5000";
+    // Use environment variable if available, otherwise fallback to production URL
+    const backendUrl = "https://backend-dawn-wind-7381.fly.dev"
+    // For local development, set VITE_BACKEND_URL=http://localhost:5000 in .env file
     return `${backendUrl}/api`;
   }
   

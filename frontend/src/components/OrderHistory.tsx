@@ -128,7 +128,7 @@ function OrderHistory() {
     });
 
     socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+      // console.log('Socket disconnected');
     });
 
     socketRef.current = socket;
@@ -377,7 +377,7 @@ function OrderHistory() {
                               <p className="font-mono text-sm break-all text-slate-900">{fullCode}</p>
                               <button
                                 onClick={() => handleCopyCode(fullCode)}
-                                className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                                className="px-2 py-1 text-xs text-blue-700 transition-colors bg-blue-100 rounded hover:bg-blue-200"
                                 title="Copy code"
                               >
                                 {copiedCode === fullCode ? <FaCheck /> : <FaCopy />}
@@ -428,7 +428,7 @@ function OrderHistory() {
                       {purchase.inputFieldValues && Object.keys(purchase.inputFieldValues).length > 0 && (
                         <div className="pt-3 mt-3 border-t border-slate-100">
                           <p className="mb-2 text-xs text-slate-500">Additional Information:</p>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             {Object.entries(purchase.inputFieldValues).map(([key, value]) => (
                               <div key={key}>
                                 <p className="text-xs text-slate-500">{key}:</p>

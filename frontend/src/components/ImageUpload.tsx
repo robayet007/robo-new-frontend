@@ -2,13 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 
 // Get API base URL (same logic as SmartAPIManager)
 const getApiBaseURL = (): string => {
-  const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
   return `${backendUrl}/api`;
 };
 
 // Get backend base URL (without /api)
 const getBackendBaseURL = (): string => {
-  const backendUrl = "https://backend-dawn-wind-7381.fly.dev";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
   return backendUrl;
 };
 
@@ -109,8 +109,8 @@ function ImageUpload({
         }
         
         // Debug log
-        console.log('Image uploaded successfully, URL:', uploadedUrl);
-        console.log('Calling onChange with URL:', uploadedUrl);
+        // console.log('Image uploaded successfully, URL:', uploadedUrl);
+        // console.log('Calling onChange with URL:', uploadedUrl);
         
         // Set preview to uploaded URL (not data URL)
         setPreview(uploadedUrl);
@@ -155,13 +155,13 @@ function ImageUpload({
           <img
             src={preview}
             alt="Preview"
-            className="w-full h-32 object-cover rounded-lg border-2 border-slate-300"
+            className="object-cover w-full h-32 border-2 rounded-lg border-slate-300"
           />
           {!uploading && (
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-1 right-1 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded hover:bg-red-600 transition-colors"
+              className="absolute px-2 py-1 text-xs font-semibold text-white transition-colors bg-red-500 rounded top-1 right-1 hover:bg-red-600"
             >
               Remove
             </button>

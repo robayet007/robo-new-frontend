@@ -17,7 +17,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Service Worker: Caching static files');
+        // console.log('Service Worker: Caching static files');
         return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' })));
       })
       .catch((error) => {
@@ -36,7 +36,7 @@ self.addEventListener('activate', (event) => {
         cacheNames.map((cacheName) => {
           // Delete all old caches
           if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-            console.log('Service Worker: Deleting old cache', cacheName);
+            // console.log('Service Worker: Deleting old cache', cacheName);
             return caches.delete(cacheName);
           }
         })

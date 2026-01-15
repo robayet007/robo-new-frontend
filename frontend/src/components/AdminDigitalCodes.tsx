@@ -232,7 +232,7 @@ function AdminDigitalCodes() {
     });
 
     socket.on('disconnect', () => {
-      console.log('Admin socket disconnected');
+      // console.log('Admin socket disconnected');
     });
 
     socketRef.current = socket;
