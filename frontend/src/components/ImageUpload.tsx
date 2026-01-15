@@ -2,14 +2,44 @@ import { useState, useRef, useEffect } from 'react';
 
 // Get API base URL (same logic as SmartAPIManager)
 const getApiBaseURL = (): string => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  
+  if (!backendUrl) {
+    throw new Error(
+      'VITE_BACKEND_URL environment variable is not set. ' +
+      'Please set it in your .env file or Vercel environment variables.'
+    );
+  }
+  
   return `${backendUrl}/api`;
 };
 
 // Get backend base URL (without /api)
 const getBackendBaseURL = (): string => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  
+  if (!backendUrl) {
+    throw new Error(
+      'VITE_BACKEND_URL environment variable is not set. ' +
+      'Please set it in your .env file or Vercel environment variables.'
+    );
+  }
+  
   return backendUrl;
+};
+
+// Get API key for authentication
+const getApiKey = (): string => {
+  const apiKey = import.meta.env.VITE_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error(
+      'VITE_API_KEY environment variable is not set. ' +
+      'Please set it in your .env file or Vercel environment variables.'
+    );
+  }
+  
+  return apiKey;
 };
 
 interface ImageUploadProps {
@@ -90,9 +120,13 @@ function ImageUpload({
 
       const baseURL = getApiBaseURL();
       const fullUrl = `${baseURL}${uploadEndpoint}`;
+      const apiKey = getApiKey();
 
       const response = await fetch(fullUrl, {
         method: 'POST',
+        headers: {
+          'X-API-Key': apiKey // Add API key header for authentication
+        },
         body: formData,
       });
 

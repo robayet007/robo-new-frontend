@@ -50,13 +50,24 @@ export default function useRoboBalance() {
         socketRef.current = null;
       }
       
-      // Connect to Socket.IO server (Fly.io backend)
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
+      // Connect to Socket.IO server - use environment variable
+      const socketUrl = import.meta.env.VITE_SOCKET_URL;
+      
+      if (!socketUrl) {
+        console.error('❌ VITE_SOCKET_URL environment variable is not set');
+        setIsLoading(false);
+        return;
+      }
+      
       const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
-        reconnectionAttempts: 5
+        reconnectionAttempts: 5,
+        // Add API key as query parameter or auth for Socket.IO
+        auth: {
+          apiKey: import.meta.env.VITE_API_KEY
+        }
       });
 
       socket.on('connect', () => {

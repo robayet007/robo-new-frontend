@@ -4,9 +4,16 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Use environment variable if available, otherwise fallback to production URL
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
-    // For local development, set VITE_BACKEND_URL=http://localhost:5000 in .env file
+    // Require environment variable - no hardcoded fallback for security
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
+    
+    if (!backendUrl) {
+      throw new Error(
+        'VITE_BACKEND_URL environment variable is not set. ' +
+        'Please set it in your .env file or Vercel environment variables.'
+      );
+    }
+    
     return `${backendUrl}/api`;
   }
   
@@ -15,10 +22,33 @@ class SmartAPIManager {
     return this.getBaseURL();
   }
   
-  // Simple fetch to Render backend with timeout
+  // Get API key from environment variable
+  static getApiKey(): string {
+    const apiKey = import.meta.env.VITE_API_KEY;
+    
+    if (!apiKey) {
+      throw new Error(
+        'VITE_API_KEY environment variable is not set. ' +
+        'Please set it in your .env file or Vercel environment variables.'
+      );
+    }
+    
+    return apiKey;
+  }
+  
+  // Simple fetch to backend with timeout and API key authentication
   static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
     const baseURL = this.getBaseURL();
     const url = `${baseURL}${path}`;
+    
+    // Get API key for authentication
+    let apiKey: string;
+    try {
+      apiKey = this.getApiKey();
+    } catch (error) {
+      console.error('❌ API Key Error:', error);
+      throw error;
+    }
     
     // console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
@@ -49,6 +79,7 @@ class SmartAPIManager {
         signal: signalToUse,
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Key': apiKey, // Add API key header for authentication
           ...options.headers
         }
       });
