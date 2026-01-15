@@ -476,7 +476,7 @@ function SendMoney() {
                         onChange={(e) => setTransferAmount(e.target.value)}
                         placeholder="Enter amount"
                         disabled={transferLoading}
-                        className="w-full px-4 py-3 rounded-xl border text-base font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-30 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md focus:shadow-lg"
+                        className="w-full px-4 py-3 rounded-xl border text-base sm:text-base font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-opacity-30 disabled:opacity-60 disabled:cursor-not-allowed shadow-sm hover:shadow-md focus:shadow-lg placeholder:text-slate-500 placeholder:font-medium placeholder:text-sm sm:placeholder:text-base"
                         style={{
                           borderColor: 'rgba(var(--theme-primary-rgb), 0.15)',
                           '--tw-ring-color': 'var(--theme-primary)',
