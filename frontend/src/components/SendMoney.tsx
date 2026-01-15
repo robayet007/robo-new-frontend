@@ -389,7 +389,9 @@ function SendMoney() {
                       }
                     }}
                     onKeyDown={handleEmailKeyDown}
-                    onFocus={() => {
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
+                      e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
                       // Don't show suggestions if email is already valid (selected from suggestions)
                       if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
                         setShowSuggestions(true);
@@ -403,14 +405,6 @@ function SendMoney() {
                       '--tw-ring-color': 'var(--theme-primary)',
                       backgroundColor: transferEmail ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff'
                     } as React.CSSProperties}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
-                      e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
-                      // Don't show suggestions if email is already valid (selected from suggestions)
-                      if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
-                        setShowSuggestions(true);
-                      }
-                    }}
                     onBlur={(e) => {
                       e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.15)';
                       e.currentTarget.style.backgroundColor = transferEmail ? 'rgba(var(--theme-primary-rgb), 0.02)' : '#ffffff';

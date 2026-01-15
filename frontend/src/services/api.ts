@@ -5,7 +5,7 @@ class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
     // Use environment variable if available, otherwise fallback to production URL
-    const backendUrl = "https://backend-dawn-wind-7381.fly.dev"
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://backend-dawn-wind-7381.fly.dev";
     // For local development, set VITE_BACKEND_URL=http://localhost:5000 in .env file
     return `${backendUrl}/api`;
   }
