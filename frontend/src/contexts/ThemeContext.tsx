@@ -4,8 +4,9 @@ import { themeApi } from '../services/api';
 interface ThemeContextType {
   primaryColor: string;
   secondaryColor: string;
+  livePurchaseStatementEnabled: boolean;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -17,6 +18,7 @@ const DEFAULT_SECONDARY = '#8b5cf6';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState<string>(DEFAULT_PRIMARY);
   const [secondaryColor, setSecondaryColor] = useState<string>(DEFAULT_SECONDARY);
+  const [livePurchaseStatementEnabled, setLivePurchaseStatementEnabled] = useState<boolean>(true);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element
@@ -75,10 +77,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         if (response.success && response.data) {
           const primary = response.data.primaryColor || DEFAULT_PRIMARY;
           const secondary = response.data.secondaryColor || DEFAULT_SECONDARY;
+          const livePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : true;
           
           // console.log('✅ Theme loaded from MongoDB:', { primary, secondary });
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
+          setLivePurchaseStatementEnabled(livePurchaseEnabled);
           applyTheme(primary, secondary);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
@@ -113,12 +117,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean) => {
     try {
-      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy });
+      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy, livePurchaseEnabled });
       const response = await themeApi.update({
         primaryColor: primary,
         secondaryColor: secondary,
+        livePurchaseStatementEnabled: livePurchaseEnabled,
         updatedBy: updatedBy || 'admin'
       });
 
@@ -127,10 +132,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // Use the colors returned from the server to ensure consistency
         const savedPrimary = response.data.primaryColor || primary;
         const savedSecondary = response.data.secondaryColor || secondary;
+        const savedLivePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : (livePurchaseEnabled !== undefined ? livePurchaseEnabled : true);
         
         // Update local state immediately
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
+        setLivePurchaseStatementEnabled(savedLivePurchaseEnabled);
         applyTheme(savedPrimary, savedSecondary);
       } else {
         const errorMessage = response.message || 'Failed to update theme';
@@ -151,6 +158,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       value={{
         primaryColor,
         secondaryColor,
+        livePurchaseStatementEnabled,
         isLoaded,
         updateTheme,
       }}

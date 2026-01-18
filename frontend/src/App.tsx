@@ -20,6 +20,7 @@ import useDigitalCodes from './hooks/useDigitalCodes';
 import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
 import { useRoboGameZone } from './contexts/RoboGameZoneContext';
+import { useTheme } from './contexts/ThemeContext';
 import FFIdInfo from './components/FFIdInfo';
 import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
@@ -29,6 +30,7 @@ import SendMoney from './components/SendMoney';
 import DigitalCodesGrid from './components/DigitalCodesGrid';
 import DigitalCodeCategoryPage from './components/DigitalCodeCategoryPage';
 import SkeletonLoader from './components/SkeletonLoader';
+import LivePurchaseStatement from './components/LivePurchaseStatement';
 import { bannerApi } from './services/api';
 import { preloadImages } from './utils/imagePreloader';
 
@@ -39,6 +41,7 @@ function App() {
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
   const { isRoboGameZoneEnabled } = useRoboGameZone();
+  const { livePurchaseStatementEnabled } = useTheme();
   const location = useLocation();
   const isAdminRoute = location.pathname === '/admin';
   const isRoboGameZoneRoute = location.pathname === '/robo-game-zone';
@@ -160,6 +163,7 @@ function App() {
                     <Hero />
                     <ProductGrid categories={catalog.categories} />
                     <DigitalCodesGrid categories={digitalCodes.categories} />
+                    {livePurchaseStatementEnabled && <LivePurchaseStatement />}
                     <Footer />
                   </>
                 )

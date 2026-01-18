@@ -3,10 +3,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import useAuth from '../hooks/useAuth';
 
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, isLoaded, updateTheme } = useTheme();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
   const [localSecondary, setLocalSecondary] = useState<string>('#8b5cf6');
+  const [localLivePurchaseEnabled, setLocalLivePurchaseEnabled] = useState<boolean>(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
@@ -16,8 +17,9 @@ function ThemeCustomization() {
     if (isLoaded) {
       setLocalPrimary(primaryColor);
       setLocalSecondary(secondaryColor);
+      setLocalLivePurchaseEnabled(livePurchaseStatementEnabled);
     }
-  }, [isLoaded, primaryColor, secondaryColor]);
+  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled]);
 
   // Auto-hide message after 3 seconds
   useEffect(() => {
@@ -81,7 +83,7 @@ function ThemeCustomization() {
     setIsSaving(true);
     setMessage(null); // Clear any previous messages
     try {
-      await updateTheme(localPrimary, localSecondary, user?.email || 'admin');
+      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled);
       setMessage({ 
         type: 'success', 
         text: 'Theme updated successfully! Changes are live now and saved to MongoDB.' 
@@ -319,6 +321,33 @@ function ThemeCustomization() {
                 </button>
                 <span className="text-xs text-slate-600">Button Style</span>
               </div>
+            </div>
+          </div>
+
+          {/* Live Purchase Statement Toggle */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
+                <p className="text-xs text-slate-500">
+                  Show or hide the live purchase statement section on the home page
+                </p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <input
+                  type="checkbox"
+                  checked={localLivePurchaseEnabled}
+                  onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                  localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                }`}>
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                    localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                  } mt-0.5`}></div>
+                </div>
+              </label>
             </div>
           </div>
 

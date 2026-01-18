@@ -4,17 +4,13 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Require environment variable - no hardcoded fallback for security
+    // Use environment variable if set, otherwise use localhost:5000 for development
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     
-    if (!backendUrl) {
-      throw new Error(
-        'VITE_BACKEND_URL environment variable is not set. ' +
-        'Please set it in your .env file or Vercel environment variables.'
-      );
-    }
+    // Remove trailing slash if present
+    const cleanUrl = backendUrl.replace(/\/$/, '');
     
-    return `${backendUrl}/api`;
+    return `${cleanUrl}/api`;
   }
   
   // Get API base URL (async for compatibility)
@@ -22,18 +18,10 @@ class SmartAPIManager {
     return this.getBaseURL();
   }
   
-  // Get API key from environment variable
-  static getApiKey(): string {
+  // Get API key from environment variable (optional for local development)
+  static getApiKey(): string | null {
     const apiKey = import.meta.env.VITE_API_KEY;
-    
-    if (!apiKey) {
-      throw new Error(
-        'VITE_API_KEY environment variable is not set. ' +
-        'Please set it in your .env file or Vercel environment variables.'
-      );
-    }
-    
-    return apiKey;
+    return apiKey || null;
   }
   
   // Simple fetch to backend with timeout and API key authentication
@@ -41,14 +29,8 @@ class SmartAPIManager {
     const baseURL = this.getBaseURL();
     const url = `${baseURL}${path}`;
     
-    // Get API key for authentication
-    let apiKey: string;
-    try {
-      apiKey = this.getApiKey();
-    } catch (error) {
-      console.error('❌ API Key Error:', error);
-      throw error;
-    }
+    // Get API key for authentication (optional)
+    const apiKey = this.getApiKey();
     
     // console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
@@ -73,15 +55,21 @@ class SmartAPIManager {
       }, timeout);
     }
     
+    // Build headers - only include API key if provided
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {})
+    };
+    
+    if (apiKey) {
+      headers['X-API-Key'] = apiKey;
+    }
+    
     try {
       const response = await fetch(url, {
         ...options,
         signal: signalToUse,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': apiKey, // Add API key header for authentication
-          ...options.headers
-        }
+        headers
       });
       
       if (timeoutId) clearTimeout(timeoutId);
@@ -449,6 +437,16 @@ export const paymentApi = {
     return response.json();
   },
 
+  getRecentPurchases: async (limit: number = 10): Promise<ApiResponse<BackendPurchase[]>> => {
+    const response = await SmartAPIManager.smartFetch(`/payments/recent?limit=${limit}`);
+    return response.json();
+  },
+
+  getUsernameByEmail: async (email: string): Promise<ApiResponse<{ email: string; username: string }>> => {
+    const response = await SmartAPIManager.smartFetch(`/payments/user-by-email/${encodeURIComponent(email)}`);
+    return response.json();
+  },
+
   // Uddokta Pay checkout
   uddoktaCheckout: async (checkoutData: {
     amount: number;
@@ -763,7 +761,7 @@ export const gamePackageApi = {
 
 // Theme Settings API (using MongoDB backend)
 export const themeApi = {
-  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; updatedAt?: string; updatedBy?: string }>> => {
+  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme');
       return response.json();
@@ -776,7 +774,7 @@ export const themeApi = {
     }
   },
   
-  update: async (themeData: { primaryColor: string; secondaryColor: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; updatedAt?: string; updatedBy?: string }>> => {
+  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme', {
         method: 'PUT',
