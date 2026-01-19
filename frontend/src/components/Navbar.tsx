@@ -9,7 +9,7 @@ import { useEffect, useState, useRef } from 'react';
 function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isModerator } = useUserRole();
   const { isReseller } = useReseller();
   const { backendBalance, loading, refreshBalance } = useRoboBalance(); // শুধু backendBalance ব্যবহার করুন
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -81,7 +81,7 @@ function Navbar() {
                 </span>
               </div>
             )}
-            {!isAdmin && !isReseller && (
+            {!isAdmin && !isModerator && !isReseller && (
               <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                 <span className="text-xs font-bold text-green-600 sm:text-sm">
                   {loading ? (
@@ -144,7 +144,7 @@ function Navbar() {
               {isProfileMenuOpen && (
                 <div className="absolute right-0 z-20 mt-2 overflow-hidden bg-white border shadow-lg w-52 rounded-xl border-slate-200">
                   {/* Balance info inside profile dropdown */}
-                  {!isAdmin && !isReseller && (
+                  {!isAdmin && !isModerator && !isReseller && (
                     <div className="px-3 py-2 text-xs border-b bg-slate-50">
                       <p className="text-[10px] text-slate-500">
                         {loading ? 'Balance loading...' : 'Your Balance'}

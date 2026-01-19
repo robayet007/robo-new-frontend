@@ -8,18 +8,21 @@ function useUserRole() {
   const { user } = useAuth();
   const { getUserRole } = useUsers();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [loading, setLoading] = useState(false); // Start with false - non-blocking
 
   useEffect(() => {
     const checkRole = async () => {
       if (!user?.email) {
         setIsAdmin(false);
+        setIsModerator(false);
         return;
       }
 
       // Quick check for default admin (synchronous - instant)
       if (isDefaultAdmin(user.email)) {
         setIsAdmin(true);
+        setIsModerator(false);
         return;
       }
 
@@ -37,6 +40,7 @@ function useUserRole() {
             const role = roleEntry.role;
             // Treat both admin and moderator as "can access admin panel"
             setIsAdmin(role === 'admin' || role === 'moderator');
+            setIsModerator(role === 'moderator');
             return;
           }
         } catch {
@@ -46,8 +50,10 @@ function useUserRole() {
         // 2) Fallback: Check role from Firestore (legacy path)
         const role = await getUserRole(user.email);
         setIsAdmin(role === 'admin');
+        setIsModerator(false);
       } catch {
         setIsAdmin(false);
+        setIsModerator(false);
       } finally {
         setLoading(false);
       }
@@ -56,7 +62,7 @@ function useUserRole() {
     checkRole();
   }, [user?.email, user?.uid, getUserRole]);
 
-  return { isAdmin, loading };
+  return { isAdmin, isModerator, loading };
 }
 
 export default useUserRole;
