@@ -129,7 +129,7 @@ function AdminSubscriptions() {
         name: productName.trim(),
         description: productDesc.trim() || undefined,
         price: Number(productPrice),
-        resellerPrice: productResellerPrice ? Number(productResellerPrice) : null,
+        resellerPrice: productResellerPrice ? Number(productResellerPrice) : undefined,
         image: productImage.trim() || undefined,
         tag: productTag.trim() || undefined,
         bonus: productBonus.trim() || undefined,

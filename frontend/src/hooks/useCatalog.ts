@@ -107,7 +107,6 @@ function useCatalog() {
             diamonds: p.diamonds,
             price: p.price,
             resellerPrice: p.resellerPrice,
-            originalPrice: p.originalPrice,
             bonus: p.bonus,
             tag: p.tag
           }));

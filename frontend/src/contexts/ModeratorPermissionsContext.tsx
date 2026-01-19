@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import useAuth from '../hooks/useAuth';
 import { isDefaultAdmin } from '../config/admin';
 import { adminRoleApi, type AdminUserRole, type AdminModerationPermissions } from '../services/api';

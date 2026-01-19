@@ -234,7 +234,6 @@ function UserManagement() {
   const adminCount = paymentUsers.filter(u => u.role === 'admin').length;
   const resellerCount = paymentUsers.filter(u => u.role === 'reseller').length;
   const moderatorCount = paymentUsers.filter(u => u.role === 'moderator').length;
-  const userCount = paymentUsers.filter(u => !u.role || u.role === 'user').length;
 
   const filteredPaymentUsers = paymentUsers.filter((u) => {
     if (!searchTerm) return true;

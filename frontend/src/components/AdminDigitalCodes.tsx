@@ -428,7 +428,7 @@ function AdminDigitalCodes() {
         name: productName.trim(),
         description: productDesc.trim() || undefined,
         price: Number(productPrice),
-        resellerPrice: productResellerPrice ? Number(productResellerPrice) : null,
+        resellerPrice: productResellerPrice ? Number(productResellerPrice) : undefined,
         categoryId: productCategoryId || undefined,
         categoryName: category?.name || undefined,
         inputFields: inputFields.length > 0 ? inputFields : undefined,
