@@ -51,7 +51,6 @@ if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   const originalError = console.error;
-  const originalLog = console.log;
   const isProduction = import.meta.env.PROD;
   
   // Suppress warnings
