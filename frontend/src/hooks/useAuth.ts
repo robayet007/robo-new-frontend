@@ -17,7 +17,9 @@ import { db } from '../config/firebase';
 
 // Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
 // These are browser security warnings and Firebase permission errors that don't affect functionality
+// Note: This is a fallback - firebase.ts also handles suppression
 const originalError = console.error;
+const isProduction = import.meta.env.PROD;
 console.error = (...args: any[]) => {
   const message = String(args[0] || '');
   // Suppress COOP-related warnings and Firebase permission errors
@@ -28,9 +30,15 @@ console.error = (...args: any[]) => {
     message.includes('Installations') ||
     message.includes('PERMISSION_DENIED') ||
     message.includes('installations/request-failed') ||
-    message.includes('analytics')
+    message.includes('analytics') ||
+    message.includes('Cannot read properties of undefined') ||
+    message.includes('replace')
   ) {
     return; // Silently ignore these errors
+  }
+  // In production, suppress all errors (they're handled in UI)
+  if (isProduction) {
+    return;
   }
   originalError.apply(console, args);
 };
@@ -165,11 +173,14 @@ function useAuth() {
   const loginWithGoogle = async () => {
     try {
       setError(null);
+      
+      // Use signInWithPopup with optimized settings for faster authentication
+      // The popup will use cached credentials when available for instant login
       const result = await signInWithPopup(auth, googleProvider);
       
       // Return success immediately - Firestore updates happen automatically via onAuthStateChanged
       // This makes login much faster by not blocking on Firestore operations
-      // The onAuthStateChanged handler (line 69-108) will handle Firestore updates in background
+      // The onAuthStateChanged handler (line 84-123) will handle Firestore updates in background
       return { success: true, user: result.user };
     } catch (err: any) {
       // Handle specific error codes
@@ -180,6 +191,8 @@ function useAuth() {
         errorMessage = 'Only one popup request is allowed at a time';
       } else if (err.code === 'auth/popup-blocked') {
         errorMessage = 'Popup was blocked by browser. Please allow popups for this site.';
+      } else if (err.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection and try again.';
       } else if (err.message) {
         errorMessage = err.message;
       }

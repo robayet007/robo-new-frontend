@@ -29,10 +29,6 @@ function Membership() {
   }, [message]);
 
   useEffect(() => {
-    console.log('confirmPurchase state changed:', confirmPurchase);
-  }, [confirmPurchase]);
-
-  useEffect(() => {
     // Wait for auth to finish loading before checking user
     if (authLoading) {
       return;
@@ -91,7 +87,7 @@ function Membership() {
       
     } catch (error: any) {
       // Fallback for any unexpected errors during response processing
-      console.error('Unexpected error processing membership data:', error);
+      // Error is handled in finally block - no need to log
       // Don't set error here - wait for finally block
     } finally {
       setLoading(false);
@@ -115,8 +111,6 @@ function Membership() {
   };
 
   const handlePurchaseClick = (packageId: string, price: number, packageName: string) => {
-    console.log('handlePurchaseClick called', { packageId, price, packageName });
-    
     if (!user?.uid || !user?.email) {
       setMessage({ type: 'error', text: 'Please login to purchase membership' });
       navigate('/login');
@@ -130,7 +124,6 @@ function Membership() {
     }
 
     // Show confirmation pop-up
-    console.log('Setting confirmPurchase state');
     setConfirmPurchase({ packageId, price, packageName });
   };
 
@@ -165,7 +158,6 @@ function Membership() {
         setMessage({ type: 'error', text: errorMessage });
       }
     } catch (error: any) {
-      console.error('Purchase error:', error);
       // Handle different types of errors
       let errorMessage = 'Failed to purchase membership';
       
@@ -235,11 +227,11 @@ function Membership() {
             onClick={handleCancelPurchase}
           >
             <div 
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border-2 border-purple-200 modal-content"
+              className="relative w-full max-w-md bg-white border-2 border-purple-200 shadow-2xl rounded-2xl modal-content"
               onClick={(e) => e.stopPropagation()}
             >
             {/* Modal Header */}
-            <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-b-2 border-purple-100 rounded-t-2xl">
+            <div className="p-6 border-b-2 border-purple-100 bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <FaCrown className="text-2xl text-purple-600" />
@@ -251,11 +243,11 @@ function Membership() {
             {/* Modal Body */}
             <div className="p-6 space-y-4">
               <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 mb-2">
+                <p className="mb-2 text-lg font-semibold text-slate-900">
                   Purchase membership for <span className="text-purple-600">{confirmPurchase.packageName}</span>?
                 </p>
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
-                  <p className="text-sm text-slate-600 mb-1">Total Amount</p>
+                <div className="p-4 border border-purple-100 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+                  <p className="mb-1 text-sm text-slate-600">Total Amount</p>
                   <p className="text-3xl font-extrabold text-slate-900">
                     ৳{confirmPurchase.price.toFixed(2)}
                   </p>
@@ -275,7 +267,7 @@ function Membership() {
             <div className="flex gap-3 p-6 border-t-2 border-slate-100 rounded-b-2xl">
               <button
                 onClick={handleCancelPurchase}
-                className="flex-1 px-4 py-3 font-semibold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors duration-200"
+                className="flex-1 px-4 py-3 font-semibold transition-colors duration-200 text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200"
               >
                 Cancel
               </button>
@@ -343,25 +335,25 @@ function Membership() {
         )}
 
         {/* Balance Info - Beautiful Card */}
-        <div className="relative overflow-hidden p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-200 rounded-2xl shadow-lg">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="relative p-6 overflow-hidden border-2 border-green-200 shadow-lg bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-white/80 rounded-xl shadow-sm">
+              <div className="p-3 shadow-sm bg-white/80 rounded-xl">
                 <span className="text-2xl">💰</span>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-600 mb-1">Available Balance</p>
-                <p className="text-3xl sm:text-4xl font-extrabold text-green-700">
+                <p className="mb-1 text-sm font-medium text-slate-600">Available Balance</p>
+                <p className="text-3xl font-extrabold text-green-700 sm:text-4xl">
                   ৳{(backendBalance !== null ? backendBalance : 0).toFixed(2)}
                 </p>
               </div>
             </div>
-            <div className="px-4 py-2 bg-white/80 rounded-lg border border-green-200">
-              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Robo Balance</p>
+            <div className="px-4 py-2 border border-green-200 rounded-lg bg-white/80">
+              <p className="text-xs font-semibold tracking-wide uppercase text-slate-600">Robo Balance</p>
             </div>
           </div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-green-200/20 rounded-full -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-emerald-200/20 rounded-full -ml-12 -mb-12"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 -mt-16 -mr-16 rounded-full bg-green-200/20"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 -mb-12 -ml-12 rounded-full bg-emerald-200/20"></div>
         </div>
 
         {/* Packages Section Header */}
@@ -372,10 +364,10 @@ function Membership() {
 
         {/* Packages Grid */}
         {packages.length === 0 ? (
-          <div className="py-16 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-300">
-            <FaCrown className="mx-auto text-4xl text-slate-400 mb-3" />
-            <p className="text-slate-600 font-medium">No membership packages available at the moment.</p>
-            <p className="text-sm text-slate-500 mt-1">Please check back later.</p>
+          <div className="py-16 text-center border-2 border-dashed bg-slate-50 rounded-2xl border-slate-300">
+            <FaCrown className="mx-auto mb-3 text-4xl text-slate-400" />
+            <p className="font-medium text-slate-600">No membership packages available at the moment.</p>
+            <p className="mt-1 text-sm text-slate-500">Please check back later.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -393,22 +385,22 @@ function Membership() {
                   }`}
                 >
                   {/* Card Header with Gradient */}
-                  <div className="relative p-6 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 border-b-2 border-purple-100">
+                  <div className="relative p-6 border-b-2 border-purple-100 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-white rounded-lg shadow-sm">
                           <FaCrown className="text-xl text-purple-600" />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-slate-900 mb-1">{pkg.name}</h3>
+                          <h3 className="mb-1 text-xl font-bold text-slate-900">{pkg.name}</h3>
                           {pkg.description && (
-                            <p className="text-xs text-slate-600 leading-relaxed">{pkg.description}</p>
+                            <p className="text-xs leading-relaxed text-slate-600">{pkg.description}</p>
                           )}
                         </div>
                       </div>
                     </div>
                     {!pkg.isActive && (
-                      <div className="absolute top-4 right-4 px-2 py-1 bg-slate-200 rounded-md">
+                      <div className="absolute px-2 py-1 rounded-md top-4 right-4 bg-slate-200">
                         <span className="text-xs font-semibold text-slate-600">Inactive</span>
                       </div>
                     )}
@@ -418,8 +410,8 @@ function Membership() {
                   <div className="flex flex-col flex-grow p-6">
                     {/* Package Details */}
                     <div className="flex-grow mb-6 space-y-4">
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                        <FaCheckCircle className="text-green-500 flex-shrink-0" />
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50">
+                        <FaCheckCircle className="flex-shrink-0 text-green-500" />
                         <div>
                           <p className="text-xs font-medium text-slate-500 mb-0.5">Role</p>
                           <p className="text-sm font-semibold text-slate-900">
@@ -427,8 +419,8 @@ function Membership() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                        <FaClock className="text-blue-500 flex-shrink-0" />
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50">
+                        <FaClock className="flex-shrink-0 text-blue-500" />
                         <div>
                           <p className="text-xs font-medium text-slate-500 mb-0.5">Duration</p>
                           <p className="text-sm font-semibold text-slate-900">
@@ -439,10 +431,10 @@ function Membership() {
                     </div>
 
                     {/* Price Section */}
-                    <div className="mb-6 p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                    <div className="p-4 mb-6 border border-purple-100 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
                       <div className="text-center">
-                        <p className="text-xs font-medium text-slate-600 mb-1 uppercase tracking-wide">Price</p>
-                        <p className="text-4xl font-extrabold text-slate-900 mb-1">
+                        <p className="mb-1 text-xs font-medium tracking-wide uppercase text-slate-600">Price</p>
+                        <p className="mb-1 text-4xl font-extrabold text-slate-900">
                           ৳{pkg.price.toFixed(2)}
                         </p>
                         <p className="text-xs text-slate-500">One-time payment</p>
@@ -454,7 +446,6 @@ function Membership() {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Buy Now button clicked', { packageId: pkg.id, price: pkg.price, name: pkg.name });
                         handlePurchaseClick(pkg.id, pkg.price, pkg.name);
                       }}
                       disabled={!canAfford || isPurchasing || !!purchasing || !pkg.isActive}

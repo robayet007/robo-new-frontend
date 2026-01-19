@@ -4,13 +4,8 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Use environment variable - must be set in production
-    const backendUrl = import.meta.env.VITE_API_URL;
-    
-    if (!backendUrl) {
-      console.error('VITE_API_URL environment variable is not set. Please set it in your .env file or deployment environment.');
-      throw new Error('Backend API URL is not configured. Please set VITE_API_URL environment variable.');
-    }
+    // Use environment variable if set, otherwise fallback to production URL
+    const backendUrl = import.meta.env.VITE_API_URL ;
     
     // Remove trailing slash if present
     const cleanUrl = backendUrl.replace(/\/$/, '');

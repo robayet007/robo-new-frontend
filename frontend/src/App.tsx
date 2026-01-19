@@ -48,9 +48,6 @@ function App() {
   const location = useLocation();
   const isAdminRoute = location.pathname === '/admin';
   
-  // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:35',message:'Location and route state',data:{pathname:location.pathname,isAdminRoute,catalogLoading:catalog.loading,shouldRenderMainRoutes:!isAdminRoute},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{});
-  // #endregion
   
   // Preload banner images when catalog data is ready (non-blocking)
   useEffect(() => {
@@ -100,18 +97,12 @@ function App() {
     );
   }
 
-  // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:70',message:'Rendering main routes',data:{pathname:location.pathname,isAdminRoute,willRenderMainRoutes:!isAdminRoute},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-  // #endregion
 
   return (
     <>
       {!isAdminRoute && (
         <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
           <Navbar />
-          {/* #region agent log */}
-          {(() => { fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:75',message:'Main Routes component rendering',data:{pathname:location.pathname,routeCount:'multiple',hasLoginRoute:true,hasRootRoute:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,C'})}).catch(()=>{}); return null; })()}
-          {/* #endregion */}
           <Routes>
             {/* Always accessible routes */}
             <Route path="/robo-game-zone" element={<RoboGameZone />} />
@@ -260,9 +251,6 @@ function App() {
       {isAdminRoute && (
         <ModeratorPermissionsProvider>
           <Routes>
-            {/* #region agent log */}
-            {(() => { fetch('http://127.0.0.1:7244/ingest/b45ca0c1-2c74-4e93-9f95-e1bb54c72b96',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'App.tsx:220',message:'Admin Routes component rendering',data:{pathname:location.pathname,routeCount:1,hasAdminRoute:true},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{}); return null; })()}
-            {/* #endregion */}
             <Route
               path="/admin"
               element={

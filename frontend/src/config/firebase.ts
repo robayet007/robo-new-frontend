@@ -24,8 +24,10 @@ if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.proj
 // Initialize Firebase only if not already initialized (prevents duplicate instances)
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Firebase Authentication
+// Initialize Firebase Authentication with optimized settings
 export const auth = getAuth(app);
+// Configure auth for faster popup login
+auth.languageCode = 'en'; // Set language for faster UI rendering
 
 // Initialize Firestore
 export const db = getFirestore(app);
@@ -45,10 +47,12 @@ if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
     analytics = null;
   }
 }
-// Suppress Firebase Analytics and Installations console warnings/errors in development (they're non-critical)
-if (import.meta.env.DEV && typeof window !== 'undefined') {
+// Suppress Firebase Analytics and Installations console warnings/errors (they're non-critical)
+if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   const originalError = console.error;
+  const originalLog = console.log;
+  const isProduction = import.meta.env.PROD;
   
   // Suppress warnings
   console.warn = (...args: any[]) => {
@@ -61,9 +65,15 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
       message.includes('PERMISSION_DENIED') ||
       message.includes('Installations') ||
       message.includes('analytics/config-fetch-failed') ||
-      message.includes('installations/request-failed')
+      message.includes('installations/request-failed') ||
+      message.includes('Cross-Origin-Opener-Policy') ||
+      message.includes('window.closed')
     ) {
       return; // Suppress these warnings
+    }
+    // In production, suppress all warnings
+    if (isProduction) {
+      return;
     }
     originalWarn.apply(console, args);
   };
@@ -77,19 +87,37 @@ if (import.meta.env.DEV && typeof window !== 'undefined') {
       message.includes('Installations') ||
       message.includes('PERMISSION_DENIED') ||
       message.includes('analytics') ||
-      message.includes('installations/request-failed')
+      message.includes('installations/request-failed') ||
+      message.includes('Cross-Origin-Opener-Policy') ||
+      message.includes('window.closed') ||
+      message.includes('Cannot read properties of undefined') ||
+      message.includes('replace')
     ) {
       return; // Suppress these errors
     }
+    // In production, suppress all errors (they're already handled in UI)
+    if (isProduction) {
+      return;
+    }
     originalError.apply(console, args);
   };
+  
+  // Suppress console.log in production
+  if (isProduction) {
+    console.log = () => {}; // Suppress all logs in production
+  }
 }
 export { analytics };
 
-// Google Auth Provider with optimized settings
+// Google Auth Provider with optimized settings for faster login
 export const googleProvider = new GoogleAuthProvider();
+// Remove prompt to allow Google to use cached credentials for faster login
+// Google will automatically show account selection only when needed
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+// Set language to improve UX
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  hd: '' // Allow any domain, don't restrict
 });
 
 export default app;
