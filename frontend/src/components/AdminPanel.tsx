@@ -69,8 +69,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       users: 'canManageUsers',
       orders: 'canManageOrders',
       theme: 'canAccessDashboard', // Theme is admin-only, but uses dashboard permission for check
-      digitalCodes: 'canManageProducts', // Digital codes uses products permission
-      subscriptions: 'canManageProducts', // Subscriptions uses products permission
+      digitalCodes: 'canManageDigitalCodes', // Digital codes has its own permission
+      subscriptions: 'canManageSubscriptions', // Subscriptions has its own permission
       reseller: 'canAccessDashboard', // Reseller is admin-only, but uses dashboard permission for check
       membership: 'canAccessDashboard', // Membership is admin-only, but uses dashboard permission for check
     };
@@ -1059,9 +1059,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               <AdminReseller />
             ) : activeTab === 'membership' && role === 'admin' ? (
               <AdminMembership />
-            ) : activeTab === 'digitalCodes' && hasPermission('canManageProducts') ? (
+            ) : activeTab === 'digitalCodes' && hasPermission('canManageDigitalCodes') ? (
               <AdminDigitalCodes />
-            ) : activeTab === 'subscriptions' && hasPermission('canManageProducts') ? (
+            ) : activeTab === 'subscriptions' && hasPermission('canManageSubscriptions') ? (
               <AdminSubscriptions />
             ) : activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
               <AdminDashboard />

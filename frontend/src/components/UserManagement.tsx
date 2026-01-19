@@ -43,6 +43,8 @@ function UserManagement() {
   const [modPerms, setModPerms] = useState<ModerationPermissions>({
     canAccessDashboard: false,
     canManageProducts: false,
+    canManageDigitalCodes: false,
+    canManageSubscriptions: false,
     canManageBanners: false,
     canManageNotices: false,
     canManageGamePackages: false,
@@ -505,15 +507,16 @@ function UserManagement() {
               ✕ Close
             </button>
           </div>
+          <div className="mb-3">
+            <p className="text-xs font-semibold text-purple-700 mb-2">
+              Select which sidebar sections this moderator can access:
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px] sm:text-sm">
-            {/* Column: Navigation / Overview */}
+            {/* Column 1: Matching sidebar order */}
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide mb-1">
-                Navigation &amp; overview
-              </p>
-
               {/* Dashboard */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -522,7 +525,7 @@ function UserManagement() {
                     setModPerms((prev) => ({ ...prev, canAccessDashboard: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Dashboard</p>
                   <p className="text-[11px] text-slate-500">
                     See overall stats and quick overview cards.
@@ -530,51 +533,8 @@ function UserManagement() {
                 </div>
               </label>
 
-              {/* Game Packages / Game Zone */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={!!modPerms.canManageGamePackages}
-                  onChange={(e) =>
-                    setModPerms((prev) => ({ ...prev, canManageGamePackages: e.target.checked }))
-                  }
-                />
-                <div>
-                  <p className="font-semibold text-slate-900">Game Packages / Game Zone</p>
-                  <p className="text-[11px] text-slate-500">
-                    Manage all game related packages and offers.
-                  </p>
-                </div>
-              </label>
-
-              {/* Order History */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={!!modPerms.canManageOrders}
-                  onChange={(e) =>
-                    setModPerms((prev) => ({ ...prev, canManageOrders: e.target.checked }))
-                  }
-                />
-                <div>
-                  <p className="font-semibold text-slate-900">Order History</p>
-                  <p className="text-[11px] text-slate-500">
-                    View and manage all orders placed by users.
-                  </p>
-                </div>
-              </label>
-            </div>
-
-            {/* Column: Management modules */}
-            <div className="space-y-2">
-              <p className="text-[11px] font-semibold text-purple-700 uppercase tracking-wide mb-1">
-                Management modules
-              </p>
-
               {/* Products & Categories */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -583,7 +543,7 @@ function UserManagement() {
                     setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Products &amp; Categories</p>
                   <p className="text-[11px] text-slate-500">
                     Create, edit and organise products and categories.
@@ -592,16 +552,16 @@ function UserManagement() {
               </label>
 
               {/* Digital Codes */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
-                  checked={!!modPerms.canManageProducts}
+                  checked={!!modPerms.canManageDigitalCodes}
                   onChange={(e) =>
-                    setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
+                    setModPerms((prev) => ({ ...prev, canManageDigitalCodes: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Digital Codes</p>
                   <p className="text-[11px] text-slate-500">
                     Manage digital codes and activation keys for products.
@@ -610,16 +570,16 @@ function UserManagement() {
               </label>
 
               {/* Subscriptions */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
-                  checked={!!modPerms.canManageProducts}
+                  checked={!!modPerms.canManageSubscriptions}
                   onChange={(e) =>
-                    setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
+                    setModPerms((prev) => ({ ...prev, canManageSubscriptions: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Subscriptions</p>
                   <p className="text-[11px] text-slate-500">
                     Manage subscription plans and recurring product offerings.
@@ -628,7 +588,7 @@ function UserManagement() {
               </label>
 
               {/* Banner Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -637,16 +597,19 @@ function UserManagement() {
                     setModPerms((prev) => ({ ...prev, canManageBanners: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Banner Management</p>
                   <p className="text-[11px] text-slate-500">
                     Control homepage banners, images and promo links.
                   </p>
                 </div>
               </label>
+            </div>
 
+            {/* Column 2: Continuing sidebar order */}
+            <div className="space-y-2">
               {/* Notice Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -655,7 +618,7 @@ function UserManagement() {
                     setModPerms((prev) => ({ ...prev, canManageNotices: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">Notice Management</p>
                   <p className="text-[11px] text-slate-500">
                     Publish and update important user notices.
@@ -663,8 +626,26 @@ function UserManagement() {
                 </div>
               </label>
 
+              {/* Game Packages */}
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageGamePackages}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageGamePackages: e.target.checked }))
+                  }
+                />
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Game Packages</p>
+                  <p className="text-[11px] text-slate-500">
+                    Manage all game related packages and offers.
+                  </p>
+                </div>
+              </label>
+
               {/* User Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -673,13 +654,41 @@ function UserManagement() {
                     setModPerms((prev) => ({ ...prev, canManageUsers: e.target.checked }))
                   }
                 />
-                <div>
+                <div className="flex-1">
                   <p className="font-semibold text-slate-900">User Management</p>
                   <p className="text-[11px] text-slate-500">
                     See users, balances and roles for moderation.
                   </p>
                 </div>
               </label>
+
+              {/* Order History */}
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageOrders}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageOrders: e.target.checked }))
+                  }
+                />
+                <div className="flex-1">
+                  <p className="font-semibold text-slate-900">Order History</p>
+                  <p className="text-[11px] text-slate-500">
+                    View and manage all orders placed by users.
+                  </p>
+                </div>
+              </label>
+
+              {/* Admin Only Notice */}
+              <div className="px-3 py-2 border border-slate-200 rounded-lg bg-slate-50/60">
+                <p className="text-[10px] font-semibold text-slate-600 mb-1">
+                  Admin Only Sections
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  Reseller Management, Membership Packages, and Store Customize are admin-only and cannot be granted to moderators.
+                </p>
+              </div>
             </div>
           </div>
           <button

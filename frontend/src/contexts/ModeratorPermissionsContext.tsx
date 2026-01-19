@@ -37,6 +37,8 @@ export function ModeratorPermissionsProvider({ children }: { children: ReactNode
           permissions: {
             canAccessDashboard: true,
             canManageProducts: true,
+            canManageDigitalCodes: true,
+            canManageSubscriptions: true,
             canManageBanners: true,
             canManageNotices: true,
             canManageGamePackages: true,
@@ -68,6 +70,8 @@ export function ModeratorPermissionsProvider({ children }: { children: ReactNode
               permissions: {
                 canAccessDashboard: true,
                 canManageProducts: true,
+                canManageDigitalCodes: true,
+                canManageSubscriptions: true,
                 canManageBanners: true,
                 canManageNotices: true,
                 canManageGamePackages: true,

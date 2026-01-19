@@ -16,8 +16,8 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const allMenuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard', adminOnly: false },
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts', adminOnly: false },
-    { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageProducts', adminOnly: false },
-    { id: 'subscriptions' as const, label: 'Subscriptions', icon: FaCalendarAlt, permission: 'canManageProducts', adminOnly: false },
+    { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageDigitalCodes', adminOnly: false },
+    { id: 'subscriptions' as const, label: 'Subscriptions', icon: FaCalendarAlt, permission: 'canManageSubscriptions', adminOnly: false },
     { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners', adminOnly: false },
     { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices', adminOnly: false },
     { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages', adminOnly: false },

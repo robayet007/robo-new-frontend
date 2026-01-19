@@ -33,6 +33,8 @@ function useModeratorPermissions(): ModeratorPermissionsState {
           permissions: {
             canAccessDashboard: true,
             canManageProducts: true,
+            canManageDigitalCodes: true,
+            canManageSubscriptions: true,
             canManageBanners: true,
             canManageNotices: true,
             canManageGamePackages: true,
@@ -64,6 +66,8 @@ function useModeratorPermissions(): ModeratorPermissionsState {
               permissions: {
                 canAccessDashboard: true,
                 canManageProducts: true,
+                canManageDigitalCodes: true,
+                canManageSubscriptions: true,
                 canManageBanners: true,
                 canManageNotices: true,
                 canManageGamePackages: true,
