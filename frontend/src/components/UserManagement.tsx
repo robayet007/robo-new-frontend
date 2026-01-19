@@ -377,14 +377,14 @@ function UserManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
         <p className="ml-3 text-slate-600">Loading users...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
       {message && (
         <div className={`p-4 rounded-xl ${
           message.type === 'success' 
@@ -396,49 +396,49 @@ function UserManagement() {
       )}
 
       {/* Role Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200">
+      <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4 sm:gap-4">
+        <div className="p-4 border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-blue-700 mb-1">Total Users</p>
-              <p className="text-2xl sm:text-3xl font-bold text-blue-900">{totalUsers}</p>
+              <p className="mb-1 text-xs font-medium text-blue-700 sm:text-sm">Total Users</p>
+              <p className="text-2xl font-bold text-blue-900 sm:text-3xl">{totalUsers}</p>
             </div>
             <div className="text-2xl sm:text-3xl">👥</div>
           </div>
         </div>
-        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200">
+        <div className="p-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-purple-700 mb-1">Admins</p>
-              <p className="text-2xl sm:text-3xl font-bold text-purple-900">{adminCount}</p>
+              <p className="mb-1 text-xs font-medium text-purple-700 sm:text-sm">Admins</p>
+              <p className="text-2xl font-bold text-purple-900 sm:text-3xl">{adminCount}</p>
             </div>
             <div className="text-2xl sm:text-3xl">👑</div>
           </div>
         </div>
-        <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200">
+        <div className="p-4 border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-green-700 mb-1">Resellers</p>
-              <p className="text-2xl sm:text-3xl font-bold text-green-900">{resellerCount}</p>
+              <p className="mb-1 text-xs font-medium text-green-700 sm:text-sm">Resellers</p>
+              <p className="text-2xl font-bold text-green-900 sm:text-3xl">{resellerCount}</p>
             </div>
             <div className="text-2xl sm:text-3xl">🔰</div>
           </div>
         </div>
-        <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border-2 border-orange-200">
+        <div className="p-4 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-orange-700 mb-1">Moderators</p>
-              <p className="text-2xl sm:text-3xl font-bold text-orange-900">{moderatorCount}</p>
+              <p className="mb-1 text-xs font-medium text-orange-700 sm:text-sm">Moderators</p>
+              <p className="text-2xl font-bold text-orange-900 sm:text-3xl">{moderatorCount}</p>
             </div>
             <div className="text-2xl sm:text-3xl">🛡️</div>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-          <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">User Management</h3>
-          <p className="text-slate-600 text-xs sm:text-sm">
+          <h3 className="mb-1 text-lg font-bold sm:text-xl text-slate-900">User Management</h3>
+          <p className="text-xs text-slate-600 sm:text-sm">
             <span className="font-semibold text-slate-900">Total: {users.length} Firestore users</span>
             {' '}({adminUsers.length} admins, {regularUsers.length} regular)
           </p>
@@ -446,7 +446,7 @@ function UserManagement() {
             🔄 Data fetched from Firebase Firestore (Real-time sync)
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
           {currentUser && !users.find(u => u.uid === currentUser.uid) && (
             <button
               onClick={() => {
@@ -458,7 +458,7 @@ function UserManagement() {
                   }, 300);
                 }
               }}
-              className="px-3 sm:px-4 py-2 rounded-xl bg-green-500 text-white font-semibold text-xs sm:text-sm hover:bg-green-600 transition-all"
+              className="px-3 py-2 text-xs font-semibold text-white transition-all bg-green-500 sm:px-4 rounded-xl sm:text-sm hover:bg-green-600"
             >
               ➕ Add Current User
             </button>
@@ -468,7 +468,7 @@ function UserManagement() {
               refreshUsers();
               setMessage({ type: 'success', text: 'User list refreshed' });
             }}
-            className="px-3 sm:px-4 py-2 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs sm:text-sm hover:bg-slate-50 transition-all"
+            className="px-3 py-2 text-xs font-semibold transition-all border sm:px-4 rounded-xl border-slate-300 text-slate-700 sm:text-sm hover:bg-slate-50"
           >
             🔄 Refresh
           </button>
@@ -478,7 +478,7 @@ function UserManagement() {
               placeholder="Search by email or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+              className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
           </div>
         </div>
@@ -486,11 +486,11 @@ function UserManagement() {
 
       {/* Moderator permissions editor */}
       {selectedModerator && (
-        <div className="p-4 sm:p-5 rounded-xl border border-purple-200 bg-purple-50 mb-4">
+        <div className="p-4 mb-4 border border-purple-200 sm:p-5 rounded-xl bg-purple-50">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
-              <p className="text-xs font-semibold text-purple-700 mb-1">Moderator permissions</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900">
+              <p className="mb-1 text-xs font-semibold text-purple-700">Moderator permissions</p>
+              <p className="text-sm font-bold sm:text-base text-slate-900">
                 {selectedModerator.userName || selectedModerator.userEmail}
               </p>
               <p className="text-[11px] sm:text-xs text-slate-600">
@@ -513,7 +513,7 @@ function UserManagement() {
               </p>
 
               {/* Dashboard */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -531,7 +531,7 @@ function UserManagement() {
               </label>
 
               {/* Game Packages / Game Zone */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -549,7 +549,7 @@ function UserManagement() {
               </label>
 
               {/* Order History */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -574,7 +574,7 @@ function UserManagement() {
               </p>
 
               {/* Products & Categories */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -591,8 +591,44 @@ function UserManagement() {
                 </div>
               </label>
 
+              {/* Digital Codes */}
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageProducts}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Digital Codes</p>
+                  <p className="text-[11px] text-slate-500">
+                    Manage digital codes and activation keys for products.
+                  </p>
+                </div>
+              </label>
+
+              {/* Subscriptions */}
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={!!modPerms.canManageProducts}
+                  onChange={(e) =>
+                    setModPerms((prev) => ({ ...prev, canManageProducts: e.target.checked }))
+                  }
+                />
+                <div>
+                  <p className="font-semibold text-slate-900">Subscriptions</p>
+                  <p className="text-[11px] text-slate-500">
+                    Manage subscription plans and recurring product offerings.
+                  </p>
+                </div>
+              </label>
+
               {/* Banner Management */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -610,7 +646,7 @@ function UserManagement() {
               </label>
 
               {/* Notice Management */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -628,7 +664,7 @@ function UserManagement() {
               </label>
 
               {/* User Management */}
-              <label className="flex items-start gap-2 rounded-lg bg-white/60 px-3 py-2 shadow-sm border border-purple-100">
+              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -665,7 +701,7 @@ function UserManagement() {
               );
               setMessage({ type: 'success', text: 'Moderator permissions updated' });
             }}
-            className="mt-4 px-4 py-2 rounded-xl bg-purple-600 text-white text-xs sm:text-sm font-semibold hover:bg-purple-700 transition-all"
+            className="px-4 py-2 mt-4 text-xs font-semibold text-white transition-all bg-purple-600 rounded-xl sm:text-sm hover:bg-purple-700"
           >
             Save Permissions
           </button>
@@ -674,11 +710,11 @@ function UserManagement() {
 
       {/* Balance editor for selected user */}
       {selectedUserForBalance && (
-        <div className="p-4 sm:p-5 rounded-xl border border-amber-200 bg-amber-50 mb-4">
+        <div className="p-4 mb-4 border sm:p-5 rounded-xl border-amber-200 bg-amber-50">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
-              <p className="text-xs font-semibold text-amber-700 mb-1">Balance editor</p>
-              <p className="text-sm sm:text-base font-bold text-slate-900">
+              <p className="mb-1 text-xs font-semibold text-amber-700">Balance editor</p>
+              <p className="text-sm font-bold sm:text-base text-slate-900">
                 {selectedUserForBalance.displayName || selectedUserForBalance.email || 'User'}
               </p>
               <p className="text-[11px] sm:text-xs text-slate-600">
@@ -693,7 +729,7 @@ function UserManagement() {
               ✕ Close
             </button>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+          <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
               <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
                 Current balance (৳)
@@ -710,7 +746,7 @@ function UserManagement() {
                 }}
                 disabled={balanceLoading}
                 placeholder="0.00"
-                className="w-full px-3 sm:px-4 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-300 text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-300 disabled:bg-slate-100 disabled:cursor-not-allowed"
               />
               <p className="mt-1 text-[11px] sm:text-xs text-slate-500">
                 Manually override this user&apos;s Robo balance. This will sync to the database.
@@ -731,11 +767,11 @@ function UserManagement() {
       {/* Admins Section */}
       {adminUsers.length > 0 && (
         <div>
-          <h4 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          <h4 className="flex items-center gap-2 mb-3 text-lg font-semibold text-slate-900">
+            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
             Administrators ({adminUsers.length})
           </h4>
-          <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
               <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 font-semibold text-xs sm:text-sm text-slate-700 min-w-[760px]">
               <div>User</div>
               <div className="hidden sm:block">Email</div>
@@ -747,19 +783,19 @@ function UserManagement() {
               <div key={user.uid} className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[760px]">
                 <div className="flex items-center gap-2 sm:gap-3">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full" />
+                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 rounded-full sm:w-10 sm:h-10" />
                   ) : (
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                    <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 sm:text-sm">
                       {user.displayName?.[0] || user.email?.[0] || 'U'}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="font-semibold text-xs sm:text-sm text-slate-900 truncate">{user.displayName || 'No Name'}</p>
+                    <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">{user.displayName || 'No Name'}</p>
                     <p className="text-[10px] sm:text-xs text-slate-500">UID: {user.uid.substring(0, 8)}...</p>
                     <p className="text-[10px] sm:text-xs text-slate-600 sm:hidden truncate">{user.email || '-'}</p>
                   </div>
                 </div>
-                <div className="text-xs sm:text-sm text-slate-700 hidden sm:block truncate">{user.email || '-'}</div>
+                <div className="hidden text-xs truncate sm:text-sm text-slate-700 sm:block">{user.email || '-'}</div>
                 <div>
                   <span className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg bg-green-100 text-green-700 text-[10px] sm:text-xs font-semibold">
                     Admin
@@ -800,11 +836,11 @@ function UserManagement() {
 
       {/* Regular Users Section (from payments API summaries) */}
       <div>
-        <h4 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+        <h4 className="flex items-center gap-2 mb-3 text-lg font-semibold text-slate-900">
+          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
           Regular Users ({filteredPaymentUsers.length})
         </h4>
-          <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 font-semibold text-xs sm:text-sm text-slate-700 min-w-[760px]">
             <div>User</div>
             <div className="hidden sm:block">Email</div>
@@ -816,11 +852,11 @@ function UserManagement() {
             filteredPaymentUsers.map((u) => (
               <div key={`${u.userId}-${u.userEmail}`} className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[760px]">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
+                  <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-violet-600 sm:text-sm">
                     {u.userName?.[0] || u.userEmail?.[0] || 'U'}
                   </div>
                   <div className="min-w-0">
-                    <p className="font-semibold text-xs sm:text-sm text-slate-900 truncate">
+                    <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">
                       {u.userName || 'No Name'}
                     </p>
                     <p className="text-[10px] sm:text-xs text-slate-500">
@@ -831,7 +867,7 @@ function UserManagement() {
                     </p>
                   </div>
                 </div>
-                <div className="text-xs sm:text-sm text-slate-700 hidden sm:block truncate">
+                <div className="hidden text-xs truncate sm:text-sm text-slate-700 sm:block">
                   {u.userEmail || '-'}
                 </div>
                 <div>
@@ -888,7 +924,7 @@ function UserManagement() {
                     );
                   })()}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-1">
+                <div className="flex flex-col gap-1 sm:flex-row">
                   <button
                     type="button"
                     onClick={() => openBalanceForPaymentUser(u)}
@@ -927,7 +963,7 @@ function UserManagement() {
                           setMessage({ type: 'success', text: 'Current user added to list' });
                         }
                       }}
-                      className="mt-4 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold hover:from-purple-600 hover:to-violet-700 transition-all"
+                      className="px-4 py-2 mt-4 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700"
                     >
                       Add Current User to List
                     </button>
@@ -941,17 +977,17 @@ function UserManagement() {
 
       {/* Users from Payments API (summary) */}
       <div>
-        <h4 className="text-lg font-semibold text-slate-900 mb-3 flex items-center gap-2">
+        <h4 className="flex items-center gap-2 mb-3 text-lg font-semibold text-slate-900">
           <span className="w-2 h-2 rounded-full bg-amber-500"></span>
           Users from Payments API ({paymentUsers.length})
         </h4>
         {paymentUsersLoading ? (
           <div className="flex items-center justify-center py-6 text-sm text-slate-600">
-            <div className="w-5 h-5 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mr-2" />
+            <div className="w-5 h-5 mr-2 border-4 rounded-full border-amber-400 border-t-transparent animate-spin" />
             Loading payment users...
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto">
+          <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
             <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr] gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 font-semibold text-xs sm:text-sm text-slate-700 min-w-[720px]">
               <div>User</div>
               <div>Email</div>
@@ -977,7 +1013,7 @@ function UserManagement() {
                     className="grid grid-cols-[2fr_1.4fr_1fr_1fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[720px]"
                   >
                     <div className="min-w-0">
-                      <p className="font-semibold text-xs sm:text-sm text-slate-900 truncate">
+                      <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">
                         {u.userName || u.userEmail}
                       </p>
                       <p className="text-[10px] sm:text-xs text-slate-500 truncate">
@@ -987,10 +1023,10 @@ function UserManagement() {
                         Last payment: {dateLabel}
                       </p>
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-700 truncate">
+                    <div className="text-xs truncate sm:text-sm text-slate-700">
                       {u.userEmail}
                     </div>
-                    <div className="text-xs sm:text-sm font-semibold text-emerald-700">
+                    <div className="text-xs font-semibold sm:text-sm text-emerald-700">
                       {typeof u.lastBalance === 'number'
                         ? `৳${u.lastBalance.toFixed(2)}`
                         : '—'}
@@ -1002,7 +1038,7 @@ function UserManagement() {
                 );
               })
             ) : (
-              <div className="p-8 text-center text-slate-500 text-sm">
+              <div className="p-8 text-sm text-center text-slate-500">
                 No payment data yet.
               </div>
             )}
