@@ -92,7 +92,8 @@ function Navbar() {
                 </span>
               </div>
             )}
-            {isAdmin && (
+            {/* Admin Panel Link - Show for both Admin and Moderator */}
+            {(isAdmin || isModerator) && (
               <Link
                 to="/admin"
                 className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-2.5 rounded-lg sm:rounded-xl font-semibold text-xs sm:text-sm text-slate-700 transition-all duration-200"
