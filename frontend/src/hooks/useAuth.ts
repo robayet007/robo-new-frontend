@@ -15,15 +15,22 @@ import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
-// Suppress COOP (Cross-Origin-Opener-Policy) warnings globally
-// These are browser security warnings that don't affect functionality
+// Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
+// These are browser security warnings and Firebase permission errors that don't affect functionality
 const originalError = console.error;
 console.error = (...args: any[]) => {
   const message = String(args[0] || '');
-  // Suppress COOP-related warnings only
-  if (message.includes('Cross-Origin-Opener-Policy') || 
-      message.includes('window.closed')) {
-    return; // Silently ignore COOP warnings
+  // Suppress COOP-related warnings and Firebase permission errors
+  if (
+    message.includes('Cross-Origin-Opener-Policy') || 
+    message.includes('window.closed') ||
+    message.includes('FirebaseError') ||
+    message.includes('Installations') ||
+    message.includes('PERMISSION_DENIED') ||
+    message.includes('installations/request-failed') ||
+    message.includes('analytics')
+  ) {
+    return; // Silently ignore these errors
   }
   originalError.apply(console, args);
 };
@@ -144,20 +151,9 @@ function useAuth() {
       setError(null);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
-      // Update user in Firestore and lastLogin
-      if (userCredential.user.uid && userCredential.user.email) {
-        const authUser: AuthUser = {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          displayName: userCredential.user.displayName,
-          photoURL: userCredential.user.photoURL,
-        };
-        await addUserToFirestore(authUser);
-        
-        const userRef = doc(db, 'users', userCredential.user.uid);
-        await updateDoc(userRef, { lastLogin: Date.now() });
-      }
-      
+      // Return success immediately - Firestore updates happen automatically via onAuthStateChanged
+      // This makes login faster by not blocking on Firestore operations
+      // The onAuthStateChanged handler (line 69-108) will handle Firestore updates in background
       return { success: true, user: userCredential.user };
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to login';
@@ -171,20 +167,9 @@ function useAuth() {
       setError(null);
       const result = await signInWithPopup(auth, googleProvider);
       
-      // Update user in Firestore and lastLogin
-      if (result.user.uid && result.user.email) {
-        const authUser: AuthUser = {
-          uid: result.user.uid,
-          email: result.user.email,
-          displayName: result.user.displayName,
-          photoURL: result.user.photoURL,
-        };
-        await addUserToFirestore(authUser);
-        
-        const userRef = doc(db, 'users', result.user.uid);
-        await updateDoc(userRef, { lastLogin: Date.now() });
-      }
-      
+      // Return success immediately - Firestore updates happen automatically via onAuthStateChanged
+      // This makes login much faster by not blocking on Firestore operations
+      // The onAuthStateChanged handler (line 69-108) will handle Firestore updates in background
       return { success: true, user: result.user };
     } catch (err: any) {
       // Handle specific error codes

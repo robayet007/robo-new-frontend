@@ -32,6 +32,7 @@ function AdminDigitalCodes() {
   const [productName, setProductName] = useState('');
   const [productDesc, setProductDesc] = useState('');
   const [productPrice, setProductPrice] = useState('');
+  const [productResellerPrice, setProductResellerPrice] = useState('');
   const [productCategoryId, setProductCategoryId] = useState('');
   const [productTag, setProductTag] = useState('');
   const [inputFields, setInputFields] = useState<Array<{ name: string; placeholder: string; required: boolean }>>([]);
@@ -373,6 +374,7 @@ function AdminDigitalCodes() {
         name: productName.trim(),
         description: productDesc.trim() || undefined,
         price: Number(productPrice),
+        resellerPrice: productResellerPrice ? Number(productResellerPrice) : undefined,
         inputFields: inputFields.length > 0 ? inputFields : undefined,
         tag: productTag.trim() || undefined,
         isActive: true
@@ -384,6 +386,7 @@ function AdminDigitalCodes() {
         setProductName('');
         setProductDesc('');
         setProductPrice('');
+        setProductResellerPrice('');
         setProductTag('');
         setInputFields([]);
         await loadProducts(true); // Force reload to get new product
@@ -401,6 +404,7 @@ function AdminDigitalCodes() {
     setProductName(product.name);
     setProductDesc(product.description || '');
     setProductPrice(product.price.toString());
+    setProductResellerPrice(product.resellerPrice?.toString() || '');
     setProductCategoryId(product.categoryId);
     setProductTag(product.tag || '');
     setInputFields((product.inputFields || []).map(field => ({
@@ -424,6 +428,7 @@ function AdminDigitalCodes() {
         name: productName.trim(),
         description: productDesc.trim() || undefined,
         price: Number(productPrice),
+        resellerPrice: productResellerPrice ? Number(productResellerPrice) : null,
         categoryId: productCategoryId || undefined,
         categoryName: category?.name || undefined,
         inputFields: inputFields.length > 0 ? inputFields : undefined,
@@ -437,6 +442,7 @@ function AdminDigitalCodes() {
         setProductName('');
         setProductDesc('');
         setProductPrice('');
+        setProductResellerPrice('');
         setProductTag('');
         setInputFields([]);
         await loadProducts();
@@ -925,6 +931,16 @@ function AdminDigitalCodes() {
                     onChange={(e) => setProductPrice(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Reseller Price (optional)</label>
+                  <input
+                    type="number"
+                    value={productResellerPrice}
+                    onChange={(e) => setProductResellerPrice(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     min="1"
                   />
                 </div>

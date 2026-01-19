@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { dealApi } from '../services/api';
 import type { Category, Deal } from '../types';
 
-function ProductGrid({ categories }: { categories: Category[] }) {
+function ProductGrid({ categories, badgeText, headingText }: { categories: Category[]; badgeText?: string; headingText?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
 
   useEffect(() => {
@@ -84,10 +84,10 @@ function ProductGrid({ categories }: { categories: Category[] }) {
               color: 'var(--theme-primary)',
             }}
           >
-            💎 Top-up categories
+            {badgeText || '💎 Top-up categories'}
           </p>
           <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
-            Browse Categories
+            {headingText || 'Browse Categories'}
           </h2>
           <p className="mb-2 text-xs sm:text-sm text-slate-600">
             অফার দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন

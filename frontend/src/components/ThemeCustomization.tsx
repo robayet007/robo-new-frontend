@@ -3,11 +3,20 @@ import { useTheme } from '../contexts/ThemeContext';
 import useAuth from '../hooks/useAuth';
 
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, subscriptionsEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsBadge, subscriptionsHeading, isLoaded, updateTheme } = useTheme();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
   const [localSecondary, setLocalSecondary] = useState<string>('#8b5cf6');
   const [localLivePurchaseEnabled, setLocalLivePurchaseEnabled] = useState<boolean>(true);
+  const [localTopUpCategoriesEnabled, setLocalTopUpCategoriesEnabled] = useState<boolean>(true);
+  const [localDigitalCodesEnabled, setLocalDigitalCodesEnabled] = useState<boolean>(true);
+  const [localTopUpCategoriesBadge, setLocalTopUpCategoriesBadge] = useState<string>('💎 Top-up categories');
+  const [localTopUpCategoriesHeading, setLocalTopUpCategoriesHeading] = useState<string>('Browse Categories');
+  const [localDigitalCodesBadge, setLocalDigitalCodesBadge] = useState<string>('🔑 Digital Codes');
+  const [localDigitalCodesHeading, setLocalDigitalCodesHeading] = useState<string>('Digital Codes Categories');
+  const [localSubscriptionsEnabled, setLocalSubscriptionsEnabled] = useState<boolean>(true);
+  const [localSubscriptionsBadge, setLocalSubscriptionsBadge] = useState<string>('📅 Subscriptions');
+  const [localSubscriptionsHeading, setLocalSubscriptionsHeading] = useState<string>('Subscription Plans');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
@@ -18,8 +27,17 @@ function ThemeCustomization() {
       setLocalPrimary(primaryColor);
       setLocalSecondary(secondaryColor);
       setLocalLivePurchaseEnabled(livePurchaseStatementEnabled);
+      setLocalTopUpCategoriesEnabled(topUpCategoriesEnabled);
+      setLocalDigitalCodesEnabled(digitalCodesEnabled);
+      setLocalTopUpCategoriesBadge(topUpCategoriesBadge);
+      setLocalTopUpCategoriesHeading(topUpCategoriesHeading);
+      setLocalDigitalCodesBadge(digitalCodesBadge);
+      setLocalDigitalCodesHeading(digitalCodesHeading);
+      setLocalSubscriptionsEnabled(subscriptionsEnabled);
+      setLocalSubscriptionsBadge(subscriptionsBadge);
+      setLocalSubscriptionsHeading(subscriptionsHeading);
     }
-  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled]);
+  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, subscriptionsEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsBadge, subscriptionsHeading]);
 
   // Auto-hide message after 3 seconds
   useEffect(() => {
@@ -83,7 +101,7 @@ function ThemeCustomization() {
     setIsSaving(true);
     setMessage(null); // Clear any previous messages
     try {
-      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled);
+      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled, localTopUpCategoriesEnabled, localDigitalCodesEnabled, localTopUpCategoriesBadge, localTopUpCategoriesHeading, localDigitalCodesBadge, localDigitalCodesHeading, localSubscriptionsEnabled, localSubscriptionsBadge, localSubscriptionsHeading);
       setMessage({ 
         type: 'success', 
         text: 'Theme updated successfully! Changes are live now and saved to MongoDB.' 
@@ -324,30 +342,241 @@ function ThemeCustomization() {
             </div>
           </div>
 
-          {/* Live Purchase Statement Toggle */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
-                <p className="text-xs text-slate-500">
-                  Show or hide the live purchase statement section on the home page
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer ml-4">
-                <input
-                  type="checkbox"
-                  checked={localLivePurchaseEnabled}
-                  onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                  localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                }`}>
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                    localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                  } mt-0.5`}></div>
+          {/* Section Visibility Toggles */}
+          <div className="space-y-4">
+            {/* Live Purchase Statement Toggle */}
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
+                  <p className="text-xs text-slate-500">
+                    Show or hide the live purchase statement section on the home page
+                  </p>
                 </div>
-              </label>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={localLivePurchaseEnabled}
+                    onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                  }`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    } mt-0.5`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Top-up Categories Toggle */}
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <span className="block mb-1 text-sm font-semibold text-slate-700">💎 Top-up Categories</span>
+                  <p className="text-xs text-slate-500">
+                    Show or hide the top-up categories section on the home page
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={localTopUpCategoriesEnabled}
+                    onChange={(e) => setLocalTopUpCategoriesEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    localTopUpCategoriesEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                  }`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      localTopUpCategoriesEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    } mt-0.5`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Digital Code Toggle */}
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <span className="block mb-1 text-sm font-semibold text-slate-700">Digital Code</span>
+                  <p className="text-xs text-slate-500">
+                    Show or hide the digital code section on the home page
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={localDigitalCodesEnabled}
+                    onChange={(e) => setLocalDigitalCodesEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    localDigitalCodesEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                  }`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      localDigitalCodesEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    } mt-0.5`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* Subscriptions Toggle */}
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <span className="block mb-1 text-sm font-semibold text-slate-700">📅 Subscriptions</span>
+                  <p className="text-xs text-slate-500">
+                    Show or hide the subscriptions section on the home page
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <input
+                    type="checkbox"
+                    checked={localSubscriptionsEnabled}
+                    onChange={(e) => setLocalSubscriptionsEnabled(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    localSubscriptionsEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                  }`}>
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                      localSubscriptionsEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                    } mt-0.5`}></div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Titles Customization */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
+            <p className="mb-6 text-sm text-slate-600">
+              Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
+            </p>
+            
+            <div className="space-y-6">
+              {/* Top-up Categories Titles */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Badge Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localTopUpCategoriesBadge}
+                      onChange={(e) => setLocalTopUpCategoriesBadge(e.target.value)}
+                      placeholder="💎 Top-up categories"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Heading Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localTopUpCategoriesHeading}
+                      onChange={(e) => setLocalTopUpCategoriesHeading(e.target.value)}
+                      placeholder="Browse Categories"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Digital Codes Titles */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-slate-700">Digital Codes Section</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Badge Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localDigitalCodesBadge}
+                      onChange={(e) => setLocalDigitalCodesBadge(e.target.value)}
+                      placeholder="🔑 Digital Codes"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Heading Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localDigitalCodesHeading}
+                      onChange={(e) => setLocalDigitalCodesHeading(e.target.value)}
+                      placeholder="Digital Codes Categories"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Subscriptions Titles */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Badge Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localSubscriptionsBadge}
+                      onChange={(e) => setLocalSubscriptionsBadge(e.target.value)}
+                      placeholder="📅 Subscriptions"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">
+                      Heading Text
+                    </label>
+                    <input
+                      type="text"
+                      value={localSubscriptionsHeading}
+                      onChange={(e) => setLocalSubscriptionsHeading(e.target.value)}
+                      placeholder="Subscription Plans"
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{
+                        '--tw-ring-color': 'var(--theme-primary)'
+                      } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

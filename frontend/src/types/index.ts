@@ -14,6 +14,7 @@ export interface BackendProduct {
   name: string;
   diamonds: string;
   price: number;
+  resellerPrice?: number;
   bonus?: string;
   tag?: string;
   isActive: boolean;
@@ -151,6 +152,8 @@ export type Product = {
   name: string;
   diamonds: string;
   price: number;
+  resellerPrice?: number;
+  originalPrice?: number; // For resellers, original price is kept here
   bonus?: string;
   tag?: string;
 }
@@ -175,6 +178,7 @@ export interface BackendDigitalCodeProduct {
   name: string;
   description?: string;
   price: number;
+  resellerPrice?: number;
   inputFields?: Array<{
     name: string;
     placeholder?: string;
@@ -203,6 +207,55 @@ export interface BackendDigitalCode {
   createdAt?: string;
 }
 
+export interface BackendSubscriptionCategory {
+  _id: string;
+  id: string;
+  name: string;
+  description?: string;
+  badge?: string;
+  isActive: boolean;
+  dealId?: string | null;
+  image?: string;
+  createdAt?: string;
+}
+
+export interface BackendSubscriptionProduct {
+  _id: string;
+  id: string;
+  categoryId?: string | null;
+  categoryName?: string;
+  name: string;
+  price: number;
+  resellerPrice?: number;
+  originalPrice?: number; // For resellers, original price is kept here
+  description?: string;
+  image?: string;
+  tag?: string;
+  bonus?: string;
+  inputFields?: Array<{
+    name: string;
+    placeholder?: string;
+    type?: string;
+    required?: boolean;
+  }>;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface BackendSubscriptionPurchase {
+  _id: string;
+  productId: string;
+  productName: string;
+  userId: string;
+  userEmail: string;
+  userName?: string;
+  transactionId: string;
+  amount: number;
+  inputFieldValues?: Record<string, string>;
+  status: string;
+  purchasedAt?: string;
+}
+
 export interface BackendDigitalCodePurchase {
   _id: string;
   productId: string;
@@ -219,5 +272,35 @@ export interface BackendDigitalCodePurchase {
   inputFieldValues?: Record<string, string>;
   status: 'pending' | 'completed' | 'failed';
   purchasedAt: string;
+}
+
+export interface BackendMembershipPackage {
+  _id: string;
+  id: string;
+  name: string;
+  role: 'reseller';
+  durationDays: number;
+  price: number;
+  description?: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BackendMembershipPurchase {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  packageId: string;
+  packageName: string;
+  role: 'reseller';
+  purchasedAt: string;
+  expiresAt: string;
+  status: 'active' | 'expired';
+  transactionId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  isActive?: boolean;
+  daysRemaining?: number;
 }
 

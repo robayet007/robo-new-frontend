@@ -14,7 +14,7 @@ function UserManagement() {
 
   type ModerationPermissions = AdminModerationPermissions;
 
-  type Role = 'user' | 'moderator' | 'admin';
+  type Role = 'user' | 'moderator' | 'admin' | 'reseller';
 
   type PaymentUserSummary = {
     userId: string;
@@ -229,6 +229,13 @@ function UserManagement() {
   const adminUsers = filteredUsers.filter(u => u.role === 'admin');
   const regularUsers = filteredUsers.filter(u => u.role === 'user');
 
+  // Calculate role counts from paymentUsers (more comprehensive)
+  const totalUsers = paymentUsers.length;
+  const adminCount = paymentUsers.filter(u => u.role === 'admin').length;
+  const resellerCount = paymentUsers.filter(u => u.role === 'reseller').length;
+  const moderatorCount = paymentUsers.filter(u => u.role === 'moderator').length;
+  const userCount = paymentUsers.filter(u => !u.role || u.role === 'user').length;
+
   const filteredPaymentUsers = paymentUsers.filter((u) => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
@@ -388,6 +395,46 @@ function UserManagement() {
           <p className="font-semibold">{message.text}</p>
         </div>
       )}
+
+      {/* Role Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-4">
+        <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border-2 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-blue-700 mb-1">Total Users</p>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-900">{totalUsers}</p>
+            </div>
+            <div className="text-2xl sm:text-3xl">👥</div>
+          </div>
+        </div>
+        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-purple-700 mb-1">Admins</p>
+              <p className="text-2xl sm:text-3xl font-bold text-purple-900">{adminCount}</p>
+            </div>
+            <div className="text-2xl sm:text-3xl">👑</div>
+          </div>
+        </div>
+        <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-green-700 mb-1">Resellers</p>
+              <p className="text-2xl sm:text-3xl font-bold text-green-900">{resellerCount}</p>
+            </div>
+            <div className="text-2xl sm:text-3xl">🔰</div>
+          </div>
+        </div>
+        <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl border-2 border-orange-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-orange-700 mb-1">Moderators</p>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-900">{moderatorCount}</p>
+            </div>
+            <div className="text-2xl sm:text-3xl">🛡️</div>
+          </div>
+        </div>
+      </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
@@ -814,6 +861,7 @@ function UserManagement() {
                     <option value="user">User</option>
                     <option value="moderator">Moderator</option>
                     <option value="admin">Admin</option>
+                    <option value="reseller">Reseller</option>
                   </select>
                 </div>
                 <div>

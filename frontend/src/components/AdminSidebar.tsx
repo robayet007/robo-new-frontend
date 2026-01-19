@@ -1,33 +1,36 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad, FaPalette, FaKey } from 'react-icons/fa';
-import useModeratorPermissions from '../hooks/useModeratorPermissions';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad, FaPalette, FaKey, FaCalendarAlt, FaStore, FaCrown } from 'react-icons/fa';
+import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership') => void;
   onLogout: () => void;
 };
 
 function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { role, permissions } = useModeratorPermissions();
+  const { role, permissions } = useModeratorPermissionsContext();
 
   const allMenuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard', adminOnly: false },
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts', adminOnly: false },
     { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageProducts', adminOnly: false },
+    { id: 'subscriptions' as const, label: 'Subscriptions', icon: FaCalendarAlt, permission: 'canManageProducts', adminOnly: false },
     { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners', adminOnly: false },
     { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices', adminOnly: false },
     { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages', adminOnly: false },
     { id: 'users' as const, label: 'User Management', icon: FaUsers, permission: 'canManageUsers', adminOnly: false },
     { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders', adminOnly: false },
+    { id: 'reseller' as const, label: 'Reseller Management', icon: FaStore, permission: 'canAccessDashboard', adminOnly: true },
+    { id: 'membership' as const, label: 'Membership Packages', icon: FaCrown, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'theme' as const, label: 'Store Customize', icon: FaPalette, permission: 'canAccessDashboard', adminOnly: true },
   ];
 
   // Filter menu items based on permissions
   const menuItems = allMenuItems.filter(item => {
-    // Theme customization is admin-only
+    // Theme customization and reseller management are admin-only
     if (item.adminOnly && role !== 'admin') return false;
     // Admins see everything
     if (role === 'admin') return true;

@@ -5,8 +5,8 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { paymentApi, digitalCodeApi } from "../services/api";
-import type { Product, BackendDigitalCodeProduct } from "../types";
+import { paymentApi, digitalCodeApi, subscriptionApi } from "../services/api";
+import type { Product, BackendDigitalCodeProduct, BackendSubscriptionProduct } from "../types";
 import useRoboBalance from "../hooks/useRoboBalance";
 import useAuth from "../hooks/useAuth";
 import { FaCheck, FaSyncAlt } from "react-icons/fa";
@@ -23,20 +23,36 @@ function Checkout({ products }: { products: Product[] }) {
     loading: balanceLoading,
   } = useRoboBalance();
   const [searchParams] = useSearchParams();
-  const locationState = location.state as { productId?: string; isDigitalCode?: boolean } | undefined;
+  const locationState = location.state as { productId?: string; isDigitalCode?: boolean; subscriptionProductId?: string } | undefined;
   const productId =
     locationState?.productId ??
     new URLSearchParams(location.search).get("productId") ??
     "";
+  const subscriptionProductId = locationState?.subscriptionProductId ?? searchParams.get("subscriptionProductId") ?? null;
   // Check both location.state and URL params for isDigitalCode (URL params persist through external redirects)
   const isDigitalCodeFromUrl = searchParams.get("isDigitalCode") === "true";
   const isDigitalCode = locationState?.isDigitalCode ?? isDigitalCodeFromUrl ?? false;
+  const isSubscription = !!subscriptionProductId;
+  
+  // Debug logging
+  useEffect(() => {
+    if (isSubscription) {
+      console.log('🔍 Checkout - isSubscription:', isSubscription);
+      console.log('🔍 Checkout - subscriptionProductId:', subscriptionProductId);
+      console.log('🔍 Checkout - locationState:', locationState);
+    }
+  }, [isSubscription, subscriptionProductId, locationState]);
   const product = products.find((p) => p.id === productId) ?? products[0];
   
   // Digital code product state
   const [digitalCodeProduct, setDigitalCodeProduct] = useState<BackendDigitalCodeProduct | null>(null);
   const [digitalCodeInputFields, setDigitalCodeInputFields] = useState<Record<string, string>>({});
   const [loadingDigitalCodeProduct, setLoadingDigitalCodeProduct] = useState(false);
+  
+  // Subscription product state
+  const [subscriptionProduct, setSubscriptionProduct] = useState<BackendSubscriptionProduct | null>(null);
+  const [subscriptionInputFields, setSubscriptionInputFields] = useState<Record<string, string>>({});
+  const [loadingSubscriptionProduct, setLoadingSubscriptionProduct] = useState(false);
 
   // ✅ FIX: Use refs for tracking payment state (prevents re-render issues)
   const isPaymentInProgressRef = useRef(false);
@@ -80,8 +96,8 @@ function Checkout({ products }: { products: Product[] }) {
   } | null>(null);
 
   useEffect(() => {
-    if (!products.length && !isDigitalCode) navigate("/");
-  }, [products, navigate, isDigitalCode]);
+    if (!products.length && !isDigitalCode && !isSubscription) navigate("/");
+  }, [products, navigate, isDigitalCode, isSubscription]);
 
   // Load digital code product if needed
   useEffect(() => {
@@ -116,6 +132,47 @@ function Checkout({ products }: { products: Product[] }) {
     
     loadDigitalCodeProduct();
   }, [isDigitalCode, productId, navigate]);
+
+  // Load subscription product if needed
+  useEffect(() => {
+    const loadSubscriptionProduct = async () => {
+      if (!isSubscription || !subscriptionProductId) return;
+      
+      try {
+        setLoadingSubscriptionProduct(true);
+        const response = await subscriptionApi.getProductById(subscriptionProductId);
+        console.log('📦 Subscription product API response:', response);
+        if (response.success && response.data) {
+          console.log('✅ Subscription product loaded:', response.data);
+          console.log('📝 Input fields:', response.data.inputFields);
+          setSubscriptionProduct(response.data);
+          // Initialize input fields
+          const initialFields: Record<string, string> = {};
+          if (response.data.inputFields && Array.isArray(response.data.inputFields)) {
+            response.data.inputFields.forEach(field => {
+              initialFields[field.name] = '';
+            });
+            console.log('🔧 Initialized input fields:', initialFields);
+          } else {
+            console.warn('⚠️ No inputFields found in product data');
+          }
+          setSubscriptionInputFields(initialFields);
+        } else {
+          console.error('❌ Subscription product not found:', response);
+          alert('Subscription product not found');
+          navigate('/');
+        }
+      } catch (err: any) {
+        console.error('❌ Failed to load subscription product:', err);
+        alert('Failed to load product details');
+        navigate('/');
+      } finally {
+        setLoadingSubscriptionProduct(false);
+      }
+    };
+    
+    loadSubscriptionProduct();
+  }, [isSubscription, subscriptionProductId, navigate]);
 
   // ✅ FIX: Handle URL params with strict duplicate prevention
   useEffect(() => {
@@ -194,6 +251,23 @@ function Checkout({ products }: { products: Product[] }) {
               }
             }
             
+            // If subscription product, create purchase record
+            if (isSubscription && subscriptionProduct && user && user.email) {
+              try {
+                await subscriptionApi.purchase({
+                  productId: subscriptionProduct.id,
+                  userId: user.uid,
+                  userEmail: user.email,
+                  userName: user.displayName || user.email.split('@')[0] || 'User',
+                  transactionId: transactionIdForResult,
+                  inputFieldValues: subscriptionInputFields,
+                });
+              } catch (err: any) {
+                console.error('Failed to create subscription purchase:', err);
+                // Still show success message, but log error
+              }
+            }
+            
             setPaymentResult({
               status: "success",
               message: "Payment verified! Your order is being processed.",
@@ -267,15 +341,21 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [searchParams]);
 
-  // Use digital code product if available, otherwise use regular product
+  // Use subscription product if available, then digital code product, otherwise use regular product
   // Calculate this early so it can be used in useEffect hooks
-  const displayProduct = isDigitalCode && digitalCodeProduct ? {
+  const displayProduct = isSubscription && subscriptionProduct ? {
+    id: subscriptionProduct.id,
+    name: subscriptionProduct.name,
+    price: subscriptionProduct.price,
+    diamonds: '',
+    categoryId: '',
+  } : (isDigitalCode && digitalCodeProduct ? {
     id: digitalCodeProduct.id,
     name: digitalCodeProduct.name,
     price: digitalCodeProduct.price,
     diamonds: '',
     categoryId: digitalCodeProduct.categoryId || '',
-  } : (product || null);
+  } : (product || null));
 
   // Track if user has manually selected a payment method
   const [paymentManuallySelected, setPaymentManuallySelected] = useState(false);
@@ -416,7 +496,7 @@ function Checkout({ products }: { products: Product[] }) {
     };
   }, [uid]);
 
-  if (!product && !digitalCodeProduct) {
+  if (!product && !digitalCodeProduct && !subscriptionProduct) {
     return <Navigate to="/" replace />;
   }
 
@@ -452,12 +532,35 @@ function Checkout({ products }: { products: Product[] }) {
     return { isValid: true };
   };
 
+  // Validate subscription input fields
+  const validateSubscriptionInputs = (): { isValid: boolean; errorMessage?: string } => {
+    if (!isSubscription || !subscriptionProduct || !subscriptionProduct.inputFields) {
+      return { isValid: true }; // No validation needed if no input fields
+    }
+    
+    const requiredFields = subscriptionProduct.inputFields.filter(f => f.required);
+    for (const field of requiredFields) {
+      const value = subscriptionInputFields[field.name];
+      if (!value || value.trim() === '') {
+        return { 
+          isValid: false, 
+          errorMessage: `Please fill in the required field: ${field.name}` 
+        };
+      }
+    }
+    
+    return { isValid: true };
+  };
+
   // ✅ FIX: Handle Uddokta Pay checkout with strict prevention
   // Handle tap and hold for payment
   const handleMouseDown = () => {
-    // For digital codes, validate input fields instead of ffName
+    // For digital codes and subscriptions, validate input fields instead of ffName
     if (isDigitalCode) {
       const validation = validateDigitalCodeInputs();
+      if (processing || !validation.isValid) return;
+    } else if (isSubscription) {
+      const validation = validateSubscriptionInputs();
       if (processing || !validation.isValid) return;
     } else {
       // For regular products, check ffName
@@ -555,9 +658,15 @@ function Checkout({ products }: { products: Product[] }) {
   const handleBkashPayment = async () => {
     if (isPaymentInProgressRef.current) return;
     
-    // For digital codes, validate input fields instead of UID
+    // For digital codes and subscriptions, validate input fields instead of UID
     if (isDigitalCode) {
       const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else if (isSubscription) {
+      const validation = validateSubscriptionInputs();
       if (!validation.isValid) {
         alert(validation.errorMessage || "Please fill in all required fields");
         return;
@@ -631,6 +740,23 @@ function Checkout({ products }: { products: Product[] }) {
           }
         }
         
+        // If subscription product, create purchase record
+        if (isSubscription && subscriptionProduct && user && user.email) {
+          try {
+            await subscriptionApi.purchase({
+              productId: subscriptionProduct.id,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || user.email.split('@')[0] || 'User',
+              transactionId: transactionId,
+              inputFieldValues: subscriptionInputFields,
+            });
+          } catch (err: any) {
+            console.error('Failed to create subscription purchase:', err);
+            // Still show success message, but log error
+          }
+        }
+        
         setPaymentResult({
           status: "success",
           message: "Payment successful! Your order is being processed.",
@@ -661,9 +787,15 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
     
-    // For digital codes, validate input fields instead of UID
+    // For digital codes and subscriptions, validate input fields instead of UID
     if (isDigitalCode) {
       const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else if (isSubscription) {
+      const validation = validateSubscriptionInputs();
       if (!validation.isValid) {
         alert(validation.errorMessage || "Please fill in all required fields");
         return;
@@ -687,7 +819,7 @@ function Checkout({ products }: { products: Product[] }) {
     try {
       const checkoutData = {
         amount: displayProduct.price,
-        playerId: isDigitalCode ? "" : uid.trim(), // Empty for digital codes
+        playerId: (isDigitalCode || isSubscription) ? "" : uid.trim(), // Empty for digital codes and subscriptions
         productId: displayProduct.id,
         productName: displayProduct.name || "Product",
         diamonds: displayProduct.diamonds || '',
@@ -697,8 +829,9 @@ function Checkout({ products }: { products: Product[] }) {
         userId: user.uid || "",
         fullName: user.displayName || user.email.split("@")[0] || "Customer",
         email: user.email,
-        redirectUrl: `${window.location.origin}/checkout?status=completed&payment=uddokta&isDigitalCode=${isDigitalCode}&productId=${displayProduct.id}`,
-        cancelUrl: `${window.location.origin}/checkout?status=cancelled&payment=uddokta`
+        redirectUrl: `${window.location.origin}/checkout?status=completed&payment=uddokta&isDigitalCode=${isDigitalCode}&subscriptionProductId=${isSubscription ? subscriptionProductId : ''}&productId=${displayProduct.id}`,
+        cancelUrl: `${window.location.origin}/checkout?status=cancelled&payment=uddokta`,
+        inputFieldValues: isSubscription ? subscriptionInputFields : (isDigitalCode ? digitalCodeInputFields : undefined)
       };
 
       // console.log("🔄 Creating Uddokta Pay checkout...");
@@ -714,7 +847,7 @@ function Checkout({ products }: { products: Product[] }) {
         }
         
         // Clear UID input and localStorage before redirect (only for regular products)
-        if (!isDigitalCode) {
+        if (!isDigitalCode && !isSubscription) {
           setUid('');
           localStorage.removeItem("checkout_uid");
         }
@@ -742,9 +875,15 @@ function Checkout({ products }: { products: Product[] }) {
       return;
     }
     
-    // For digital codes, validate input fields instead of UID
+    // For digital codes and subscriptions, validate input fields instead of UID
     if (isDigitalCode) {
       const validation = validateDigitalCodeInputs();
+      if (!validation.isValid) {
+        alert(validation.errorMessage || "Please fill in all required fields");
+        return;
+      }
+    } else if (isSubscription) {
+      const validation = validateSubscriptionInputs();
       if (!validation.isValid) {
         alert(validation.errorMessage || "Please fill in all required fields");
         return;
@@ -797,7 +936,7 @@ function Checkout({ products }: { products: Product[] }) {
       const paymentPayload = {
         transactionId: transactionId,
         amount: displayProduct.price,
-        playerId: isDigitalCode ? "" : uid.trim(), // Empty for digital codes
+        playerId: (isDigitalCode || isSubscription) ? "" : uid.trim(), // Empty for digital codes and subscriptions
         productId: displayProduct.id,
         productName: displayProduct.name || "Product",
         diamonds: displayProduct.diamonds || '',
@@ -808,6 +947,7 @@ function Checkout({ products }: { products: Product[] }) {
         userName: user?.displayName || user?.email?.split("@")[0] || "User",
         userId: user?.uid || "",
         timestamp: new Date().toISOString(),
+        inputFieldValues: isSubscription ? subscriptionInputFields : (isDigitalCode ? digitalCodeInputFields : undefined)
       };
 
       // console.log(`🔍 Sending Robo Balance payment:`, paymentPayload.transactionId);
@@ -860,6 +1000,23 @@ function Checkout({ products }: { products: Product[] }) {
             });
           } catch (err: any) {
             console.error('Failed to assign digital code:', err);
+            // Still show success message, but log error
+          }
+        }
+        
+        // If subscription product, create purchase record
+        if (isSubscription && subscriptionProduct && user && user.email) {
+          try {
+            await subscriptionApi.purchase({
+              productId: subscriptionProduct.id,
+              userId: user.uid,
+              userEmail: user.email,
+              userName: user.displayName || user.email.split('@')[0] || 'User',
+              transactionId: paymentPayload.transactionId,
+              inputFieldValues: subscriptionInputFields,
+            });
+          } catch (err: any) {
+            console.error('Failed to create subscription purchase:', err);
             // Still show success message, but log error
           }
         }
@@ -1128,18 +1285,19 @@ function Checkout({ products }: { products: Product[] }) {
       {/* Main Content */}
       <div className="mb-6">
         {/* Section 2: Account Info / Product Details */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
-              2
+        {!isSubscription && (
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
+                2
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">
+                {isDigitalCode ? "Product Details" : "Account Info"}
+              </h2>
             </div>
-            <h2 className="text-xl font-bold text-slate-800">
-              {isDigitalCode ? "Product Details" : "Account Info"}
-            </h2>
-          </div>
 
-          <div className="p-4 bg-white border rounded-xl border-slate-200">
-            {!isDigitalCode && (
+            <div className="p-4 bg-white border rounded-xl border-slate-200">
+              {!isDigitalCode && (
               <>
                 <input
                   type="text"
@@ -1196,15 +1354,81 @@ function Checkout({ products }: { products: Product[] }) {
                 ))}
               </div>
             )}
-            
+
             {isDigitalCode && loadingDigitalCodeProduct && (
               <div className="text-center py-4">
                 <div className="inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                 <p className="mt-2 text-sm text-slate-600">Loading product details...</p>
               </div>
             )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Section 2: User Details (for Subscription Products) */}
+        {isSubscription && (
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
+                2
+              </div>
+              <h2 className="text-xl font-bold text-slate-800">User Details</h2>
+            </div>
+
+            <div className="p-4 bg-white border rounded-xl border-slate-200">
+              {loadingSubscriptionProduct ? (
+                <div className="text-center py-4">
+                  <div className="inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="mt-2 text-sm text-slate-600">Loading product details...</p>
+                </div>
+              ) : subscriptionProduct && subscriptionProduct.inputFields && Array.isArray(subscriptionProduct.inputFields) && subscriptionProduct.inputFields.length > 0 ? (
+                <div className="space-y-3">
+                  {subscriptionProduct.inputFields.map((field) => (
+                    <div key={field.name}>
+                      <label className="block mb-1 text-sm font-medium text-slate-700">
+                        {field.name}
+                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      {field.type === 'textarea' ? (
+                        <textarea
+                          value={subscriptionInputFields[field.name] || ''}
+                          onChange={(e) => {
+                            setSubscriptionInputFields(prev => ({
+                              ...prev,
+                              [field.name]: e.target.value
+                            }));
+                          }}
+                          placeholder={field.placeholder || `Enter ${field.name}`}
+                          required={field.required}
+                          rows={4}
+                          className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                        />
+                      ) : (
+                        <input
+                          type={field.type === 'email' ? 'email' : field.type === 'number' ? 'number' : field.type === 'phone' ? 'tel' : 'text'}
+                          value={subscriptionInputFields[field.name] || ''}
+                          onChange={(e) => {
+                            setSubscriptionInputFields(prev => ({
+                              ...prev,
+                              [field.name]: e.target.value
+                            }));
+                          }}
+                          placeholder={field.placeholder || `Enter ${field.name}`}
+                          required={field.required}
+                          className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : subscriptionProduct ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-slate-500">No input fields configured for this product.</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        )}
 
         {/* Section 3: Select Payment Method */}
         <div className="mb-6">
@@ -1337,6 +1561,13 @@ function Checkout({ products }: { products: Product[] }) {
                   return !validation.isValid;
                 }
                 
+                // For subscriptions, check input field validation
+                if (isSubscription) {
+                  if (loadingSubscriptionProduct) return true;
+                  const validation = validateSubscriptionInputs();
+                  return !validation.isValid;
+                }
+                
                 // For regular products, check UID/ffName
                 return ffNameLoading || !ffName;
               })()}
@@ -1349,6 +1580,11 @@ function Checkout({ products }: { products: Product[] }) {
                 const canHover = !processing && !balanceLoading && !(payment === "uddokta" && !user);
                 if (isDigitalCode) {
                   const validation = validateDigitalCodeInputs();
+                  if (canHover && validation.isValid) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }
+                } else if (isSubscription) {
+                  const validation = validateSubscriptionInputs();
                   if (canHover && validation.isValid) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
                   }
@@ -1373,6 +1609,11 @@ function Checkout({ products }: { products: Product[] }) {
                 const canReset = !processing && !balanceLoading && !(payment === "uddokta" && !user);
                 if (isDigitalCode) {
                   const validation = validateDigitalCodeInputs();
+                  if (canReset && validation.isValid) {
+                    e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
+                  }
+                } else if (isSubscription) {
+                  const validation = validateSubscriptionInputs();
                   if (canReset && validation.isValid) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
                   }

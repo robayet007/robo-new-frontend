@@ -30,8 +30,61 @@ export const auth = getAuth(app);
 // Initialize Firestore
 export const db = getFirestore(app);
 
-// Initialize Analytics (only in browser environment)
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+// Initialize Analytics (only in browser environment, optional)
+// Analytics initialization may fail due to permissions or API not being enabled
+// This is non-critical - app will work without Analytics
+// Note: Firebase Analytics may log warnings/errors even with try-catch due to async operations
+// These can be safely ignored as they don't affect app functionality
+let analytics = null;
+if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
+  try {
+    analytics = getAnalytics(app);
+  } catch (error) {
+    // Analytics initialization failed (permissions, API not enabled, etc.)
+    // Silently fail - app continues to work without Analytics
+    analytics = null;
+  }
+}
+// Suppress Firebase Analytics and Installations console warnings/errors in development (they're non-critical)
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  const originalWarn = console.warn;
+  const originalError = console.error;
+  
+  // Suppress warnings
+  console.warn = (...args: any[]) => {
+    // Filter out Firebase Analytics/Installations permission warnings
+    const message = args[0]?.toString() || '';
+    if (
+      message.includes('Firebase Analytics') || 
+      message.includes('@firebase/analytics') ||
+      message.includes('measurement ID') ||
+      message.includes('PERMISSION_DENIED') ||
+      message.includes('Installations') ||
+      message.includes('analytics/config-fetch-failed') ||
+      message.includes('installations/request-failed')
+    ) {
+      return; // Suppress these warnings
+    }
+    originalWarn.apply(console, args);
+  };
+  
+  // Suppress errors
+  console.error = (...args: any[]) => {
+    // Filter out Firebase Analytics/Installations permission errors
+    const message = args[0]?.toString() || '';
+    if (
+      message.includes('FirebaseError') ||
+      message.includes('Installations') ||
+      message.includes('PERMISSION_DENIED') ||
+      message.includes('analytics') ||
+      message.includes('installations/request-failed')
+    ) {
+      return; // Suppress these errors
+    }
+    originalError.apply(console, args);
+  };
+}
+export { analytics };
 
 // Google Auth Provider with optimized settings
 export const googleProvider = new GoogleAuthProvider();

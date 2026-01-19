@@ -5,8 +5,17 @@ interface ThemeContextType {
   primaryColor: string;
   secondaryColor: string;
   livePurchaseStatementEnabled: boolean;
+  topUpCategoriesEnabled: boolean;
+  digitalCodesEnabled: boolean;
+  topUpCategoriesBadge: string;
+  topUpCategoriesHeading: string;
+  digitalCodesBadge: string;
+  digitalCodesHeading: string;
+  subscriptionsEnabled: boolean;
+  subscriptionsBadge: string;
+  subscriptionsHeading: string;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, digitalCodesBadge?: string, digitalCodesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -14,11 +23,26 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 // Default colors (purple theme)
 const DEFAULT_PRIMARY = '#a855f7';
 const DEFAULT_SECONDARY = '#8b5cf6';
+const DEFAULT_TOP_UP_BADGE = '💎 Top-up categories';
+const DEFAULT_TOP_UP_HEADING = 'Browse Categories';
+const DEFAULT_DIGITAL_CODES_BADGE = '🔑 Digital Codes';
+const DEFAULT_DIGITAL_CODES_HEADING = 'Digital Codes Categories';
+const DEFAULT_SUBSCRIPTIONS_BADGE = '📅 Subscriptions';
+const DEFAULT_SUBSCRIPTIONS_HEADING = 'Subscription Plans';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState<string>(DEFAULT_PRIMARY);
   const [secondaryColor, setSecondaryColor] = useState<string>(DEFAULT_SECONDARY);
   const [livePurchaseStatementEnabled, setLivePurchaseStatementEnabled] = useState<boolean>(true);
+  const [topUpCategoriesEnabled, setTopUpCategoriesEnabled] = useState<boolean>(true);
+  const [digitalCodesEnabled, setDigitalCodesEnabled] = useState<boolean>(true);
+  const [topUpCategoriesBadge, setTopUpCategoriesBadge] = useState<string>(DEFAULT_TOP_UP_BADGE);
+  const [topUpCategoriesHeading, setTopUpCategoriesHeading] = useState<string>(DEFAULT_TOP_UP_HEADING);
+  const [digitalCodesBadge, setDigitalCodesBadge] = useState<string>(DEFAULT_DIGITAL_CODES_BADGE);
+  const [digitalCodesHeading, setDigitalCodesHeading] = useState<string>(DEFAULT_DIGITAL_CODES_HEADING);
+  const [subscriptionsEnabled, setSubscriptionsEnabled] = useState<boolean>(true);
+  const [subscriptionsBadge, setSubscriptionsBadge] = useState<string>(DEFAULT_SUBSCRIPTIONS_BADGE);
+  const [subscriptionsHeading, setSubscriptionsHeading] = useState<string>(DEFAULT_SUBSCRIPTIONS_HEADING);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element
@@ -78,11 +102,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const primary = response.data.primaryColor || DEFAULT_PRIMARY;
           const secondary = response.data.secondaryColor || DEFAULT_SECONDARY;
           const livePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : true;
+          const topUpCategoriesEnabled = response.data.topUpCategoriesEnabled !== undefined ? response.data.topUpCategoriesEnabled : true;
+          const digitalCodesEnabled = response.data.digitalCodesEnabled !== undefined ? response.data.digitalCodesEnabled : true;
+          const topUpBadge = response.data.topUpCategoriesBadge || DEFAULT_TOP_UP_BADGE;
+          const topUpHeading = response.data.topUpCategoriesHeading || DEFAULT_TOP_UP_HEADING;
+          const digitalCodesBadgeValue = response.data.digitalCodesBadge || DEFAULT_DIGITAL_CODES_BADGE;
+          const digitalCodesHeadingValue = response.data.digitalCodesHeading || DEFAULT_DIGITAL_CODES_HEADING;
+          const subscriptionsEnabledValue = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : true;
+          const subscriptionsBadgeValue = response.data.subscriptionsBadge || DEFAULT_SUBSCRIPTIONS_BADGE;
+          const subscriptionsHeadingValue = response.data.subscriptionsHeading || DEFAULT_SUBSCRIPTIONS_HEADING;
           
           // console.log('✅ Theme loaded from MongoDB:', { primary, secondary });
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
           setLivePurchaseStatementEnabled(livePurchaseEnabled);
+          setTopUpCategoriesEnabled(topUpCategoriesEnabled);
+          setDigitalCodesEnabled(digitalCodesEnabled);
+          setTopUpCategoriesBadge(topUpBadge);
+          setTopUpCategoriesHeading(topUpHeading);
+          setDigitalCodesBadge(digitalCodesBadgeValue);
+          setDigitalCodesHeading(digitalCodesHeadingValue);
+          setSubscriptionsEnabled(subscriptionsEnabledValue);
+          setSubscriptionsBadge(subscriptionsBadgeValue);
+          setSubscriptionsHeading(subscriptionsHeadingValue);
           applyTheme(primary, secondary);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
@@ -117,13 +159,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, digitalCodesBadgeValue?: string, digitalCodesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string) => {
     try {
-      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy, livePurchaseEnabled });
+      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy, livePurchaseEnabled, topUpCategoriesEnabled, digitalCodesEnabled, topUpCategoriesBadgeValue, topUpCategoriesHeadingValue, digitalCodesBadgeValue, digitalCodesHeadingValue, subscriptionsEnabledValue, subscriptionsBadgeValue, subscriptionsHeadingValue });
       const response = await themeApi.update({
         primaryColor: primary,
         secondaryColor: secondary,
         livePurchaseStatementEnabled: livePurchaseEnabled,
+        topUpCategoriesEnabled: topUpCategoriesEnabled,
+        digitalCodesEnabled: digitalCodesEnabled,
+        topUpCategoriesBadge: topUpCategoriesBadgeValue,
+        topUpCategoriesHeading: topUpCategoriesHeadingValue,
+        digitalCodesBadge: digitalCodesBadgeValue,
+        digitalCodesHeading: digitalCodesHeadingValue,
+        subscriptionsEnabled: subscriptionsEnabledValue,
+        subscriptionsBadge: subscriptionsBadgeValue,
+        subscriptionsHeading: subscriptionsHeadingValue,
         updatedBy: updatedBy || 'admin'
       });
 
@@ -133,11 +184,29 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedPrimary = response.data.primaryColor || primary;
         const savedSecondary = response.data.secondaryColor || secondary;
         const savedLivePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : (livePurchaseEnabled !== undefined ? livePurchaseEnabled : true);
+        const savedTopUpCategoriesEnabled = response.data.topUpCategoriesEnabled !== undefined ? response.data.topUpCategoriesEnabled : (topUpCategoriesEnabled !== undefined ? topUpCategoriesEnabled : true);
+        const savedDigitalCodesEnabled = response.data.digitalCodesEnabled !== undefined ? response.data.digitalCodesEnabled : (digitalCodesEnabled !== undefined ? digitalCodesEnabled : true);
+        const savedTopUpBadge = response.data.topUpCategoriesBadge || topUpCategoriesBadgeValue || DEFAULT_TOP_UP_BADGE;
+        const savedTopUpHeading = response.data.topUpCategoriesHeading || topUpCategoriesHeadingValue || DEFAULT_TOP_UP_HEADING;
+        const savedDigitalCodesBadge = response.data.digitalCodesBadge || digitalCodesBadgeValue || DEFAULT_DIGITAL_CODES_BADGE;
+        const savedDigitalCodesHeading = response.data.digitalCodesHeading || digitalCodesHeadingValue || DEFAULT_DIGITAL_CODES_HEADING;
+        const savedSubscriptionsEnabled = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : (subscriptionsEnabledValue !== undefined ? subscriptionsEnabledValue : true);
+        const savedSubscriptionsBadge = response.data.subscriptionsBadge || subscriptionsBadgeValue || DEFAULT_SUBSCRIPTIONS_BADGE;
+        const savedSubscriptionsHeading = response.data.subscriptionsHeading || subscriptionsHeadingValue || DEFAULT_SUBSCRIPTIONS_HEADING;
         
         // Update local state immediately
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
         setLivePurchaseStatementEnabled(savedLivePurchaseEnabled);
+        setTopUpCategoriesEnabled(savedTopUpCategoriesEnabled);
+        setDigitalCodesEnabled(savedDigitalCodesEnabled);
+        setTopUpCategoriesBadge(savedTopUpBadge);
+        setTopUpCategoriesHeading(savedTopUpHeading);
+        setDigitalCodesBadge(savedDigitalCodesBadge);
+        setDigitalCodesHeading(savedDigitalCodesHeading);
+        setSubscriptionsEnabled(savedSubscriptionsEnabled);
+        setSubscriptionsBadge(savedSubscriptionsBadge);
+        setSubscriptionsHeading(savedSubscriptionsHeading);
         applyTheme(savedPrimary, savedSecondary);
       } else {
         const errorMessage = response.message || 'Failed to update theme';
@@ -159,6 +228,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         primaryColor,
         secondaryColor,
         livePurchaseStatementEnabled,
+        topUpCategoriesEnabled,
+        digitalCodesEnabled,
+        topUpCategoriesBadge,
+        topUpCategoriesHeading,
+        digitalCodesBadge,
+        digitalCodesHeading,
+        subscriptionsEnabled,
+        subscriptionsBadge,
+        subscriptionsHeading,
         isLoaded,
         updateTheme,
       }}

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { productApi, categoryApi } from '../services/api';
 import type { ApiResponse, BackendCategory } from '../types';
 import type { Category, Product } from '../types';
 import { preloadImages } from '../utils/imagePreloader';
+import useAuth from './useAuth';
+import useReseller from './useReseller';
 
 const STORAGE_KEY = 'rtu_catalog_backup';
 
@@ -39,40 +41,15 @@ const getCategoryImageUrl = (category: Category): string => {
 
 // ==================== ENHANCED CATALOG HOOK ====================
 function useCatalog() {
+  const { user } = useAuth();
+  const { isReseller } = useReseller();
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  useEffect(() => {
-    // Try to load from localStorage first for instant display
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
-        if (parsed.categories && parsed.categories.length > 0) {
-          setCategories(parsed.categories);
-          // Preload category images from cache (non-blocking)
-          const categoryImageUrls = parsed.categories.map(cat => getCategoryImageUrl(cat));
-          preloadImages(categoryImageUrls).catch(() => {
-            // Errors are handled in preloadImages, just catch to prevent unhandled rejection
-          });
-        }
-        if (parsed.products && parsed.products.length > 0) {
-          setProducts(parsed.products);
-          setLoading(false); // Show cached data immediately
-        }
-      } catch (parseErr) {
-        // console.error('Failed to parse localStorage data:', parseErr);
-      }
-    }
-    
-    // Then load fresh data from backend
-    loadFromBackend();
-  }, [retryCount]);
-
-  const loadFromBackend = async () => {
+  const loadFromBackend = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -115,12 +92,13 @@ function useCatalog() {
         }
       }
       
-      // Load products
-      const productsRes = await productApi.getAll();
+      // Load products (pass userId and userEmail for reseller pricing)
+      let convertedProducts: Product[] | null = null;
+      const productsRes = await productApi.getAll(user?.uid, user?.email || undefined);
       
       if (productsRes.success && productsRes.data) {
         const backendProducts = productsRes.data;
-        const convertedProducts: Product[] = backendProducts
+        convertedProducts = backendProducts
           .filter(p => p.isActive)
           .map(p => ({
             id: p.id,
@@ -128,16 +106,12 @@ function useCatalog() {
             name: p.name,
             diamonds: p.diamonds,
             price: p.price,
+            resellerPrice: p.resellerPrice,
+            originalPrice: p.originalPrice,
             bonus: p.bonus,
             tag: p.tag
           }));
         setProducts(convertedProducts);
-        
-        // Save to localStorage
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          categories,
-          products: convertedProducts
-        }));
       } else {
         throw new Error(productsRes.message || 'Failed to load products');
       }
@@ -157,6 +131,14 @@ function useCatalog() {
           }));
         setCategories(convertedCategories);
         
+        // Update localStorage with new categories (only if products were loaded successfully)
+        if (convertedProducts) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            categories: convertedCategories,
+            products: convertedProducts
+          }));
+        }
+        
         // Preload category images (non-blocking)
         const categoryImageUrls = convertedCategories.map(cat => getCategoryImageUrl(cat));
         preloadImages(categoryImageUrls).catch(() => {
@@ -164,20 +146,28 @@ function useCatalog() {
         });
       } else {
         // Extract categories from products if API failed
-        const uniqueCategories = [...new Set(productsRes.data.map(p => p.categoryId))];
-        const extractedCategories: Category[] = uniqueCategories.map((catId, index) => ({
-          id: catId,
-          name: `Category ${index + 1}`,
-          description: `Products in ${catId}`
-        }));
-        setCategories(extractedCategories);
-        
-        // Preload category images for extracted categories too
-        const categoryImageUrls = extractedCategories.map(cat => getCategoryImageUrl(cat));
-        preloadImages(categoryImageUrls).catch(() => {
-          // Errors are handled in preloadImages, just catch to prevent unhandled rejection
-        });
-        // console.warn('Using extracted categories from products');
+        if (productsRes.success && productsRes.data && convertedProducts) {
+          const uniqueCategories = [...new Set(productsRes.data.map(p => p.categoryId))];
+          const extractedCategories: Category[] = uniqueCategories.map((catId, index) => ({
+            id: catId,
+            name: `Category ${index + 1}`,
+            description: `Products in ${catId}`
+          }));
+          setCategories(extractedCategories);
+          
+          // Update localStorage with extracted categories
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            categories: extractedCategories,
+            products: convertedProducts
+          }));
+          
+          // Preload category images for extracted categories too
+          const categoryImageUrls = extractedCategories.map(cat => getCategoryImageUrl(cat));
+          preloadImages(categoryImageUrls).catch(() => {
+            // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+          });
+          // console.warn('Using extracted categories from products');
+        }
       }
       
     } catch (err) {
@@ -216,7 +206,34 @@ function useCatalog() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.uid, user?.email, isReseller]);
+
+  useEffect(() => {
+    // Try to load from localStorage first for instant display
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { categories: Category[], products: Product[] };
+        if (parsed.categories && parsed.categories.length > 0) {
+          setCategories(parsed.categories);
+          // Preload category images from cache (non-blocking)
+          const categoryImageUrls = parsed.categories.map(cat => getCategoryImageUrl(cat));
+          preloadImages(categoryImageUrls).catch(() => {
+            // Errors are handled in preloadImages, just catch to prevent unhandled rejection
+          });
+        }
+        if (parsed.products && parsed.products.length > 0) {
+          setProducts(parsed.products);
+          setLoading(false); // Show cached data immediately
+        }
+      } catch (parseErr) {
+        // console.error('Failed to parse localStorage data:', parseErr);
+      }
+    }
+    
+    // Then load fresh data from backend
+    loadFromBackend();
+  }, [retryCount, loadFromBackend]);
 
   const addCategoryToBackend = async (category: Omit<Category, 'id'>) => {
     try {

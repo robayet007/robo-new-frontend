@@ -9,7 +9,10 @@ import AdminSidebar from './AdminSidebar';
 import AdminDashboard from './AdminDashboard';
 import ThemeCustomization from './ThemeCustomization';
 import AdminDigitalCodes from './AdminDigitalCodes';
-import useModeratorPermissions from '../hooks/useModeratorPermissions';
+import AdminSubscriptions from './AdminSubscriptions';
+import AdminReseller from './AdminReseller';
+import AdminMembership from './AdminMembership';
+import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
 function utcToBDTimeForInput(utcDateString: string): string {
@@ -26,7 +29,7 @@ function utcToBDTimeForInput(utcDateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -43,7 +46,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     retry 
   } = useCatalog();
 
-  const { role, permissions } = useModeratorPermissions();
+  const { role, permissions, loading: permissionsLoading } = useModeratorPermissionsContext();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   // Permission check helper
@@ -55,7 +58,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   // Redirect to first available tab if current tab is not accessible
   useEffect(() => {
-    if (loading || role === 'user') return;
+    if (loading || permissionsLoading || role === 'user') return;
 
     const tabPermissions: Record<TabType, keyof typeof permissions> = {
       dashboard: 'canAccessDashboard',
@@ -67,12 +70,15 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       orders: 'canManageOrders',
       theme: 'canAccessDashboard', // Theme is admin-only, but uses dashboard permission for check
       digitalCodes: 'canManageProducts', // Digital codes uses products permission
+      subscriptions: 'canManageProducts', // Subscriptions uses products permission
+      reseller: 'canAccessDashboard', // Reseller is admin-only, but uses dashboard permission for check
+      membership: 'canAccessDashboard', // Membership is admin-only, but uses dashboard permission for check
     };
 
-    // Theme tab is admin-only
-    if (activeTab === 'theme' && role !== 'admin') {
+    // Theme and reseller tabs are admin-only
+    if ((activeTab === 'theme' || activeTab === 'reseller' || activeTab === 'membership') && role !== 'admin') {
       const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
-        tab => tab !== 'theme' && hasPermission(tabPermissions[tab])
+        tab => tab !== 'theme' && tab !== 'reseller' && tab !== 'membership' && hasPermission(tabPermissions[tab])
       );
       if (availableTab) {
         setActiveTab(availableTab);
@@ -89,7 +95,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         setActiveTab(availableTab);
       }
     }
-  }, [role, permissions, activeTab, loading]);
+  }, [role, permissions, activeTab, loading, permissionsLoading]);
   const [catName, setCatName] = useState('');
   const [catDesc, setCatDesc] = useState('');
   const [catBadge, setCatBadge] = useState('');
@@ -98,6 +104,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [name, setName] = useState('');
   const [diamonds, setDiamonds] = useState('');
   const [price, setPrice] = useState('');
+  const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
   const [tag, setTag] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
@@ -884,6 +891,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       categoryId,
       diamonds: diamonds.trim() || '',
       price: Number(price),
+      resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
     });
@@ -893,6 +901,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setName('');
       setDiamonds('');
       setPrice('');
+      setResellerPrice('');
       setBonus('');
       setTag('');
     } else {
@@ -905,6 +914,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setName(product.name);
     setDiamonds(product.diamonds);
     setPrice(product.price.toString());
+    setResellerPrice(product.resellerPrice?.toString() || '');
     setBonus(product.bonus || '');
     setTag(product.tag || '');
     setCategoryId(product.categoryId);
@@ -919,6 +929,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setName('');
     setDiamonds('');
     setPrice('');
+    setResellerPrice('');
     setBonus('');
     setTag('');
     setCategoryId(categories[0]?.id ?? '');
@@ -936,6 +947,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       categoryId,
       diamonds: diamonds.trim() || '',
       price: Number(price),
+      resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
     });
@@ -964,7 +976,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -997,6 +1009,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
               {activeTab === 'digitalCodes' && 'Digital Codes'}
+              {activeTab === 'subscriptions' && 'Subscriptions'}
+              {activeTab === 'reseller' && 'Reseller Management'}
+              {activeTab === 'membership' && 'Membership Packages'}
               {activeTab === 'theme' && 'Store Customize'}
             </h1>
             <p className="text-sm text-slate-600">
@@ -1008,6 +1023,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
               {activeTab === 'digitalCodes' && 'Manage digital codes, categories, products, and deals'}
+              {activeTab === 'subscriptions' && 'Manage subscription categories and products'}
+              {activeTab === 'reseller' && 'Manage reseller prices for all products'}
+              {activeTab === 'membership' && 'Create and manage membership packages for users'}
               {activeTab === 'theme' && 'Customize your store theme colors and branding'}
             </p>
             {error && (
@@ -1037,8 +1055,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <div className="px-0">
             {activeTab === 'theme' && role === 'admin' ? (
               <ThemeCustomization />
+            ) : activeTab === 'reseller' && role === 'admin' ? (
+              <AdminReseller />
+            ) : activeTab === 'membership' && role === 'admin' ? (
+              <AdminMembership />
             ) : activeTab === 'digitalCodes' && hasPermission('canManageProducts') ? (
               <AdminDigitalCodes />
+            ) : activeTab === 'subscriptions' && hasPermission('canManageProducts') ? (
+              <AdminSubscriptions />
             ) : activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
               <AdminDashboard />
             ) : activeTab === 'users' && hasPermission('canManageUsers') ? (
@@ -2114,6 +2138,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="45"
+                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
+                />
+              </label>
+              <label className="block">
+                <span className="block mb-2 text-sm font-semibold text-slate-700">Reseller Price (৳) (optional)</span>
+                <input
+                  type="number"
+                  min="1"
+                  value={resellerPrice}
+                  onChange={(e) => setResellerPrice(e.target.value)}
+                  placeholder="40"
                   className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-400"
                 />
               </label>

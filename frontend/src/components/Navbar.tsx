@@ -2,16 +2,16 @@
 import { Link, useNavigate } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import useUserRole from '../hooks/useUserRole';
+import useReseller from '../hooks/useReseller';
 import useRoboBalance from '../hooks/useRoboBalance';
-import { useRoboGameZone } from '../contexts/RoboGameZoneContext';
 import { useEffect, useState, useRef } from 'react';
 
 function Navbar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isAdmin } = useUserRole();
+  const { isReseller } = useReseller();
   const { backendBalance, loading, refreshBalance } = useRoboBalance(); // শুধু backendBalance ব্যবহার করুন
-  const { isRoboGameZoneEnabled, setIsRoboGameZoneEnabled } = useRoboGameZone();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -45,15 +45,15 @@ function Navbar() {
 
   return (
     <header className="sticky top-0 z-10 flex items-center justify-between px-3 py-3 mb-3 transition-all duration-300 border shadow-lg sm:px-4 md:px-5 sm:py-4 sm:mb-4 md:mb-5 border-slate-200/40 rounded-xl sm:rounded-2xl backdrop-blur-2xl bg-white/70 shadow-slate-900/10">
-      <Link 
-        to="/" 
+      <Link
+        to="/"
         className="flex items-center gap-2 transition-transform duration-200 sm:gap-3 group hover:scale-[1.02]"
       >
         <div className="flex flex-col">
           <p
             className="m-0 text-lg font-extrabold tracking-tight text-transparent sm:text-2xl bg-clip-text drop-shadow-sm theme-gradient-text"
-            style={{ 
-              fontFamily: "'Poppins', 'Inter', system-ui", 
+            style={{
+              fontFamily: "'Poppins', 'Inter', system-ui",
               letterSpacing: '0.5px',
               backgroundImage: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-primary))`
             }}
@@ -61,7 +61,7 @@ function Navbar() {
             Robo Top Up Zone
           </p>
           <div className="mt-0.5 flex items-center gap-1">
-            <span 
+            <span
               className="inline-block h-[3px] w-10 rounded-full"
               style={{ background: `linear-gradient(to right, var(--theme-primary), #0ea5e9, #10b981)` }}
             />
@@ -74,7 +74,14 @@ function Navbar() {
       <nav className="flex items-center gap-1 sm:gap-2">
         {user ? (
           <>
-            {!isAdmin && (
+            {isReseller && (
+              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200">
+                <span className="text-xs font-bold text-purple-600 sm:text-sm">
+                  🔰 Reseller
+                </span>
+              </div>
+            )}
+            {!isAdmin && !isReseller && (
               <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
                 <span className="text-xs font-bold text-green-600 sm:text-sm">
                   {loading ? (
@@ -114,13 +121,13 @@ function Navbar() {
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
               >
                 {user.photoURL ? (
-                  <img 
-                    src={user.photoURL} 
-                    alt={user.displayName || 'User'} 
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
                     className="w-5 h-5 rounded-full sm:w-6 sm:h-6"
                   />
                 ) : (
-                  <div 
+                  <div
                     className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-white text-[10px] sm:text-xs font-bold"
                     style={{
                       background: `linear-gradient(to bottom right, var(--theme-primary), var(--theme-secondary))`
@@ -137,7 +144,7 @@ function Navbar() {
               {isProfileMenuOpen && (
                 <div className="absolute right-0 z-20 mt-2 overflow-hidden bg-white border shadow-lg w-52 rounded-xl border-slate-200">
                   {/* Balance info inside profile dropdown */}
-                  {!isAdmin && (
+                  {!isAdmin && !isReseller && (
                     <div className="px-3 py-2 text-xs border-b bg-slate-50">
                       <p className="text-[10px] text-slate-500">
                         {loading ? 'Balance loading...' : 'Your Balance'}
@@ -168,6 +175,16 @@ function Navbar() {
                     }}
                   >
                     👤 My Account
+                  </button>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left text-slate-700 hover:bg-slate-50"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate('/membership');
+                    }}
+                  >
+                    🔰 Membership
                   </button>
                   <button
                     type="button"
@@ -229,33 +246,16 @@ function Navbar() {
                   >
                     📚 Terms & Tutorials
                   </button>
-                  <div className="block w-full px-3 py-2 text-xs font-semibold text-left border-t text-slate-700 hover:bg-slate-50 border-slate-200">
-                    <div className="flex items-center justify-between">
-                      <span>🎮 Robo Game Zone</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={isRoboGameZoneEnabled}
-                          onChange={(e) => {
-                            setIsRoboGameZoneEnabled(e.target.checked);
-                            setIsProfileMenuOpen(false);
-                            if (e.target.checked) {
-                              navigate('/robo-game-zone');
-                            } else {
-                              navigate('/');
-                            }
-                          }}
-                          className="sr-only peer"
-                        />
-                        <div 
-                          className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
-                          style={{
-                            '--tw-ring-color': 'var(--theme-primary)'
-                          } as React.CSSProperties}
-                        ></div>
-                      </label>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    className="block w-full px-3 py-2 text-xs font-semibold text-left border-t text-slate-700 hover:bg-slate-50 border-slate-200"
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      navigate('/robo-game-zone');
+                    }}
+                  >
+                    🎮 Robo Game Zone
+                  </button>
                   <button
                     type="button"
                     className="block w-full px-3 py-2 text-xs font-semibold text-left text-red-600 border-t hover:bg-red-50 border-slate-200"

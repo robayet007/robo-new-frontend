@@ -4,7 +4,7 @@ import { dealApi } from '../services/api';
 import type { Deal } from '../types';
 import type { BackendDigitalCodeCategory } from '../types';
 
-function DigitalCodesGrid({ categories }: { categories: BackendDigitalCodeCategory[] }) {
+function DigitalCodesGrid({ categories, badgeText, headingText }: { categories: BackendDigitalCodeCategory[]; badgeText?: string; headingText?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
 
   useEffect(() => {
@@ -88,10 +88,10 @@ function DigitalCodesGrid({ categories }: { categories: BackendDigitalCodeCatego
               color: 'var(--theme-primary)',
             }}
           >
-            🔑 Digital Codes
+            {badgeText || '🔑 Digital Codes'}
           </p>
           <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
-            Digital Codes Categories
+            {headingText || 'Digital Codes Categories'}
           </h2>
           <p className="mb-2 text-xs sm:text-sm text-slate-600">
             ডিজিটাল কোড দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন
