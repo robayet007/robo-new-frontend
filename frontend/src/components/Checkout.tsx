@@ -62,9 +62,8 @@ function Checkout({ products }: { products: Product[] }) {
   // Initialize UID (no localStorage persistence)
   const [uid, setUid] = useState("");
 
-  const [ffName, setFfName] = useState<string | null>(null);
-  const [ffNameLoading, setFfNameLoading] = useState(false);
-  const [, setFfNameError] = useState<string | null>(null);
+  // Player name state (kept for payment result display, but loading removed - always null)
+  const ffName: string | null = null;
   const [payment, setPayment] = useState<"robo" | "bkash" | "uddokta">("robo");
   const [processing, setProcessing] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
@@ -224,6 +223,17 @@ function Checkout({ products }: { products: Product[] }) {
           // console.log(`✅ Verification response:`, response);
           
           if (response.success) {
+            // ✅ Check if userId exists in response - required for payment processing
+            const responseUserId = response.data?.payment?.userId;
+            if (!responseUserId) {
+              setVerifyingPayment({
+                invoiceId: invoiceId,
+                status: "failed",
+                message: "Payment verification failed: User ID not found. Please contact support."
+              });
+              return;
+            }
+
             // Payment verified
             setVerifyingPayment({
               invoiceId: invoiceId,
@@ -391,110 +401,7 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [displayProduct, balance, hasEnoughBalance, payment]);
 
-  // Auto-fetch FF name when UID changes (optimized with caching)
-  useEffect(() => {
-    const trimmed = uid.trim();
-    setFfName(null);
-    setFfNameError(null);
-
-    if (!trimmed || trimmed.length < 3) {
-      return;
-    }
-
-    // Check cache first (cache expires after 5 minutes)
-    const cacheKey = `ff_name_${trimmed}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const { name, timestamp } = JSON.parse(cached);
-        const cacheAge = Date.now() - timestamp;
-        const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
-        
-        if (cacheAge < CACHE_EXPIRY) {
-          setFfName(name);
-          setFfNameLoading(false);
-          return; // Use cached data
-        } else {
-          localStorage.removeItem(cacheKey); // Remove expired cache
-        }
-      } catch (e) {
-        // Invalid cache, continue to fetch
-      }
-    }
-
-    const maxRetries = 2; // Reduced retries for faster failure
-    let isCancelled = false;
-    let abortController: AbortController | null = null;
-
-    const fetchFFName = async (attempt: number = 0): Promise<void> => {
-      if (isCancelled) return;
-
-      try {
-        setFfNameLoading(true);
-        
-        // Create new AbortController for timeout
-        abortController = new AbortController();
-        const timeoutId = setTimeout(() => abortController?.abort(), 8000); // 8 second timeout
-
-        const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(trimmed)}&region=BD`;
-        const resp = await fetch(url, {
-          signal: abortController.signal,
-          cache: 'no-cache',
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!resp.ok) throw new Error("UID info not found");
-
-        const json = await resp.json();
-        const nickname = json?.basicInfo?.nickname;
-
-        if (!nickname) throw new Error("Name not found for this UID");
-
-        // Cache the result
-        localStorage.setItem(cacheKey, JSON.stringify({
-          name: nickname,
-          timestamp: Date.now()
-        }));
-
-        if (!isCancelled) {
-          setFfName(nickname);
-          setFfNameError(null);
-          setFfNameLoading(false);
-        }
-      } catch (err: any) {
-        if (isCancelled) return;
-
-        // Don't retry on abort (timeout)
-        if (err.name === 'AbortError') {
-          setFfName(null);
-          setFfNameError("Request timeout. Please try again.");
-          setFfNameLoading(false);
-          return;
-        }
-
-        if (attempt < maxRetries - 1) {
-          const delay = Math.min(500 * (attempt + 1), 1500); // Faster retry delays
-          setTimeout(() => fetchFFName(attempt + 1), delay);
-        } else {
-          setFfName(null);
-          setFfNameError("Name not found. Please check your UID or try again.");
-          setFfNameLoading(false);
-        }
-      }
-    };
-
-    // Reduced debounce time from 500ms to 200ms for faster response
-    const timeoutId = setTimeout(() => {
-      fetchFFName(0);
-    }, 200);
-
-    return () => {
-      isCancelled = true;
-      clearTimeout(timeoutId);
-      abortController?.abort();
-    };
-  }, [uid]);
+  // Player name loading removed - users can pay without waiting for name to load
 
   if (!product && !digitalCodeProduct && !subscriptionProduct) {
     return <Navigate to="/" replace />;
@@ -555,7 +462,7 @@ function Checkout({ products }: { products: Product[] }) {
   // ✅ FIX: Handle Uddokta Pay checkout with strict prevention
   // Handle tap and hold for payment
   const handleMouseDown = () => {
-    // For digital codes and subscriptions, validate input fields instead of ffName
+    // For digital codes and subscriptions, validate input fields
     if (isDigitalCode) {
       const validation = validateDigitalCodeInputs();
       if (processing || !validation.isValid) return;
@@ -563,8 +470,8 @@ function Checkout({ products }: { products: Product[] }) {
       const validation = validateSubscriptionInputs();
       if (processing || !validation.isValid) return;
     } else {
-      // For regular products, check ffName
-      if (processing || ffNameLoading || !ffName) return;
+      // For regular products, only check if processing
+      if (processing) return;
     }
     
     // For Robo Pay, show modal instead of direct payment
@@ -672,13 +579,9 @@ function Checkout({ products }: { products: Product[] }) {
         return;
       }
     } else {
-      // For regular products, validate UID
+      // For regular products, validate UID only
       if (!uid.trim()) {
         alert("Please enter your Free Fire UID");
-        return;
-      }
-      if (!ffName) {
-        alert("Please wait for player name to load");
         return;
       }
     }
@@ -1308,23 +1211,6 @@ function Checkout({ products }: { products: Product[] }) {
                   placeholder="Enter your Free Fire UID"
                   className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
                 />
-                <div className="mt-2 text-xs text-slate-600">
-                  {ffNameLoading && (
-                    <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-400 to-violet-500 border-2 border-purple-300 text-[11px] font-semibold text-white shadow-md shadow-purple-400/40">
-                      <svg className="w-4 h-4 text-white animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      <span className="font-medium">Loading player name...</span>
-                    </div>
-                  )}
-                  {!ffNameLoading && ffName && (
-                    <div className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500 to-violet-600 border-2 border-purple-400 text-[11px] font-semibold text-white shadow-md shadow-purple-500/30">
-                      <span className="mr-1.5 font-normal text-purple-100">Player:</span>
-                      <span className="font-bold text-white">{ffName}</span>
-                    </div>
-                  )}
-                </div>
               </>
             )}
             
@@ -1554,6 +1440,9 @@ function Checkout({ products }: { products: Product[] }) {
                 // Base conditions
                 if (processing || balanceLoading || (payment === "uddokta" && !user)) return true;
                 
+                // ✅ Check if user is logged in (userId required for payment)
+                if (!user || !user.uid) return true;
+                
                 // For digital codes, check input field validation
                 if (isDigitalCode) {
                   if (loadingDigitalCodeProduct) return true;
@@ -1568,8 +1457,8 @@ function Checkout({ products }: { products: Product[] }) {
                   return !validation.isValid;
                 }
                 
-                // For regular products, check UID/ffName
-                return ffNameLoading || !ffName;
+                // For regular products, check UID only (no name loading required)
+                return false;
               })()}
               className="relative w-full px-6 py-4 overflow-hidden text-lg font-bold text-white transition-all shadow-lg rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
@@ -1589,7 +1478,7 @@ function Checkout({ products }: { products: Product[] }) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
                   }
                 } else {
-                  if (canHover && !ffNameLoading && ffName) {
+                  if (canHover) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary-hover), var(--theme-secondary-dark))`;
                   }
                 }
@@ -1618,7 +1507,7 @@ function Checkout({ products }: { products: Product[] }) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
                   }
                 } else {
-                  if (canReset && !ffNameLoading && ffName) {
+                  if (canReset) {
                     e.currentTarget.style.background = `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`;
                   }
                 }
@@ -1645,7 +1534,6 @@ function Checkout({ products }: { products: Product[] }) {
               <span className="relative z-10">
                 {processing ? "Processing..." : 
                  payment === "uddokta" && !user ? "Please Login" : 
-                 (!isDigitalCode && ffNameLoading) ? "Loading Player Name..." :
                  (isDigitalCode && loadingDigitalCodeProduct) ? "Loading Product..." :
                  isHolding ? `Hold... ${Math.round(holdProgress)}%` :
                  payment === "robo" || payment === "bkash" ? "Tap & Hold to Pay" :

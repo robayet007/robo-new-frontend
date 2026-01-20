@@ -50,11 +50,11 @@ export default function useRoboBalance() {
         socketRef.current = null;
       }
       
-      // Connect to Socket.IO server - use environment variable with fallback
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
+      // Connect to Socket.IO server - use environment variable with fallback to production
+      const socketUrl = import.meta.env.VITE_SOCKET_URL ;
       
       if (!socketUrl) {
-        console.warn('⚠️ VITE_SOCKET_URL environment variable is not set, using fallback');
+        console.warn('⚠️ VITE_SOCKET_URL or VITE_API_URL environment variable is not set, using fallback');
       }
       
       const socket = io(socketUrl, {

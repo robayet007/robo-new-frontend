@@ -158,7 +158,7 @@ function AdminDigitalCodes() {
   const socketRef = useRef<Socket | null>(null);
   
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
+    const socketUrl = import.meta.env.VITE_SOCKET_URL ;
     const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
@@ -730,66 +730,66 @@ function AdminDigitalCodes() {
       {/* Categories Tab */}
       {activeTab === 'categories' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="text-lg font-semibold mb-4">
+          <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+            <h3 className="mb-4 text-lg font-semibold">
               {editingCategory ? 'Edit Category' : 'Add New Category'}
             </h3>
             <form onSubmit={editingCategory ? handleUpdateCategory : handleAddCategory} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category ID *</label>
+                  <label className="block mb-1 text-sm font-medium">Category ID *</label>
                   <input
                     type="text"
                     value={catId}
                     onChange={(e) => setCatId(e.target.value)}
                     disabled={!!editingCategory}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category Name *</label>
+                  <label className="block mb-1 text-sm font-medium">Category Name *</label>
                   <input
                     type="text"
                     value={catName}
                     onChange={(e) => setCatName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <label className="block mb-1 text-sm font-medium">Description</label>
                   <input
                     type="text"
                     value={catDesc}
                     onChange={(e) => setCatDesc(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Badge</label>
+                  <label className="block mb-1 text-sm font-medium">Badge</label>
                   <input
                     type="text"
                     value={catBadge}
                     onChange={(e) => setCatBadge(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Image URL</label>
+                  <label className="block mb-1 text-sm font-medium">Image URL</label>
                   <input
                     type="text"
                     value={catImage}
                     onChange={(e) => setCatImage(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Deal</label>
+                  <label className="block mb-1 text-sm font-medium">Deal</label>
                   <select
                     value={catDealId}
                     onChange={(e) => setCatDealId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">None</option>
                     {deals.map(deal => (
@@ -801,7 +801,7 @@ function AdminDigitalCodes() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
                 >
                   {editingCategory ? 'Update Category' : 'Add Category'}
                 </button>
@@ -817,7 +817,7 @@ function AdminDigitalCodes() {
                       setCatImage('');
                       setCatDealId('');
                     }}
-                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                    className="px-4 py-2 transition-colors rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300"
                   >
                     Cancel
                   </button>
@@ -826,18 +826,18 @@ function AdminDigitalCodes() {
             </form>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-slate-200">
             <div className="p-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold">Categories</h3>
             </div>
             <div className="divide-y divide-slate-200">
               {categories.map(category => (
-                <div key={category.id} className="p-4 flex items-center justify-between">
+                <div key={category.id} className="flex items-center justify-between p-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold">{category.name}</span>
                       {category.badge && (
-                        <span className="px-2 py-1 text-xs bg-purple-100 text-purple-700 rounded">{category.badge}</span>
+                        <span className="px-2 py-1 text-xs text-purple-700 bg-purple-100 rounded">{category.badge}</span>
                       )}
                       <span className={`px-2 py-1 text-xs rounded ${
                         category.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -846,7 +846,7 @@ function AdminDigitalCodes() {
                       </span>
                     </div>
                     {category.description && (
-                      <p className="text-sm text-slate-600 mt-1">{category.description}</p>
+                      <p className="mt-1 text-sm text-slate-600">{category.description}</p>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -862,13 +862,13 @@ function AdminDigitalCodes() {
                     </button>
                     <button
                       onClick={() => handleEditCategory(category)}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      className="px-3 py-1 text-sm text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                     >
                       <FaEdit />
                     </button>
                     <button
                       onClick={() => handleDeleteCategory(category.id)}
-                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded hover:bg-red-200"
                     >
                       <FaTrash />
                     </button>
@@ -883,39 +883,39 @@ function AdminDigitalCodes() {
       {/* Products Tab */}
       {activeTab === 'products' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="text-lg font-semibold mb-4">
+          <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+            <h3 className="mb-4 text-lg font-semibold">
               {editingProduct ? 'Edit Product' : 'Add New Product'}
             </h3>
             <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product ID (Optional - Auto-generated if not provided)</label>
+                  <label className="block mb-1 text-sm font-medium">Product ID (Optional - Auto-generated if not provided)</label>
                   <input
                     type="text"
                     value={productId}
                     onChange={(e) => setProductId(e.target.value)}
                     disabled={!!editingProduct}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="Leave empty for auto-generation"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product Name *</label>
+                  <label className="block mb-1 text-sm font-medium">Product Name *</label>
                   <input
                     type="text"
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category (Optional)</label>
+                  <label className="block mb-1 text-sm font-medium">Category (Optional)</label>
                   <select
                     value={productCategoryId}
                     onChange={(e) => setProductCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">None</option>
                     {categories.filter(c => c.isActive).map(cat => (
@@ -924,58 +924,58 @@ function AdminDigitalCodes() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price *</label>
+                  <label className="block mb-1 text-sm font-medium">Price *</label>
                   <input
                     type="number"
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                     min="1"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Reseller Price (optional)</label>
+                  <label className="block mb-1 text-sm font-medium">Reseller Price (optional)</label>
                   <input
                     type="number"
                     value={productResellerPrice}
                     onChange={(e) => setProductResellerPrice(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     min="1"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <label className="block mb-1 text-sm font-medium">Description</label>
                   <textarea
                     value={productDesc}
                     onChange={(e) => setProductDesc(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     rows={3}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Tag</label>
+                  <label className="block mb-1 text-sm font-medium">Tag</label>
                   <input
                     type="text"
                     value={productTag}
                     onChange={(e) => setProductTag(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Input Fields Configuration */}
-              <div className="border-t border-slate-200 pt-4">
-                <h4 className="text-sm font-semibold mb-2">Optional Input Fields (for users to fill when purchasing)</h4>
-                <div className="space-y-2 mb-4">
+              <div className="pt-4 border-t border-slate-200">
+                <h4 className="mb-2 text-sm font-semibold">Optional Input Fields (for users to fill when purchasing)</h4>
+                <div className="mb-4 space-y-2">
                   {inputFields.map((field, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-slate-50 rounded">
+                    <div key={index} className="flex items-center gap-2 p-2 rounded bg-slate-50">
                       <span className="flex-1 font-medium">{field.name}</span>
                       {field.placeholder && <span className="text-sm text-slate-600">({field.placeholder})</span>}
                       <button
                         type="button"
                         onClick={() => handleRemoveInputField(index)}
-                        className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
                       >
                         Remove
                       </button>
@@ -988,19 +988,19 @@ function AdminDigitalCodes() {
                     value={newInputFieldName}
                     onChange={(e) => setNewInputFieldName(e.target.value)}
                     placeholder="Field name (e.g., Player ID)"
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <input
                     type="text"
                     value={newInputFieldPlaceholder}
                     onChange={(e) => setNewInputFieldPlaceholder(e.target.value)}
                     placeholder="Placeholder text"
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                   <button
                     type="button"
                     onClick={handleAddInputField}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    className="px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
                   >
                     Add Field
                   </button>
@@ -1010,7 +1010,7 @@ function AdminDigitalCodes() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
                 >
                   {editingProduct ? 'Update Product' : 'Add Product'}
                 </button>
@@ -1026,7 +1026,7 @@ function AdminDigitalCodes() {
                       setProductTag('');
                       setInputFields([]);
                     }}
-                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                    className="px-4 py-2 transition-colors rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300"
                   >
                     Cancel
                   </button>
@@ -1035,7 +1035,7 @@ function AdminDigitalCodes() {
             </form>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-slate-200">
             <div className="p-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold">Products</h3>
             </div>
@@ -1047,7 +1047,7 @@ function AdminDigitalCodes() {
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{product.name}</span>
                         {product.tag && (
-                          <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">{product.tag}</span>
+                          <span className="px-2 py-1 text-xs text-blue-700 bg-blue-100 rounded">{product.tag}</span>
                         )}
                         <span className={`px-2 py-1 text-xs rounded ${
                           product.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -1055,14 +1055,14 @@ function AdminDigitalCodes() {
                           {product.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-600 mt-1">Category: {product.categoryName}</p>
-                      <p className="text-sm font-medium text-purple-600 mt-1">Price: ৳{product.price}</p>
+                      <p className="mt-1 text-sm text-slate-600">Category: {product.categoryName}</p>
+                      <p className="mt-1 text-sm font-medium text-purple-600">Price: ৳{product.price}</p>
                       {product.inputFields && product.inputFields.length > 0 && (
                         <div className="mt-2">
                           <p className="text-xs text-slate-500">Input Fields:</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {product.inputFields.map((field, idx) => (
-                              <span key={idx} className="px-2 py-1 text-xs bg-slate-100 text-slate-700 rounded">
+                              <span key={idx} className="px-2 py-1 text-xs rounded bg-slate-100 text-slate-700">
                                 {field.name}
                               </span>
                             ))}
@@ -1073,13 +1073,13 @@ function AdminDigitalCodes() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditProduct(product)}
-                        className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                        className="px-3 py-1 text-sm text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                       >
                         <FaEdit />
                       </button>
                       <button
                         onClick={() => handleDeleteProduct(product.id)}
-                        className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                        className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded hover:bg-red-200"
                       >
                         <FaTrash />
                       </button>
@@ -1095,17 +1095,17 @@ function AdminDigitalCodes() {
       {/* Codes Tab */}
       {activeTab === 'codes' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {/* Bulk Upload */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <h3 className="text-lg font-semibold mb-4">Bulk Upload Codes</h3>
+            <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+              <h3 className="mb-4 text-lg font-semibold">Bulk Upload Codes</h3>
               <form onSubmit={handleBulkUploadCodes} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category (Optional)</label>
+                  <label className="block mb-1 text-sm font-medium">Category (Optional)</label>
                   <select
                     value={codeCategoryId}
                     onChange={(e) => setCodeCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">None</option>
                     {categories.map(cat => (
@@ -1114,16 +1114,16 @@ function AdminDigitalCodes() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product *</label>
+                  <label className="block mb-1 text-sm font-medium">Product *</label>
                   {productsLoading ? (
-                    <div className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 text-sm">
+                    <div className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 bg-slate-50 text-slate-500">
                       Loading products...
                     </div>
                   ) : (
                     <select
                       value={codeProductId}
                       onChange={(e) => setCodeProductId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     >
                       <option value="">Select Product</option>
@@ -1134,21 +1134,21 @@ function AdminDigitalCodes() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Paste Codes *</label>
+                  <label className="block mb-1 text-sm font-medium">Paste Codes *</label>
                   <textarea
                     value={bulkCodeText}
                     onChange={(e) => setBulkCodeText(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono text-sm"
+                    className="w-full px-3 py-2 font-mono text-sm border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     rows={10}
                     placeholder="UPBD-N-S-10954119 6919-7623-5673-3296&#10;UPBD-N-S-10954119 7935-8068-7589-6390&#10;&#10;BDMB-T-S-01458610&#10;1146-2271-5996-512&#10;5678-9012-3456-7890"
                     required
                   />
-                  <p className="text-xs text-slate-500 mt-1">Codes will be automatically parsed. Each line can be a full code or just the code part if prefix is on previous line.</p>
+                  <p className="mt-1 text-xs text-slate-500">Codes will be automatically parsed. Each line can be a full code or just the code part if prefix is on previous line.</p>
                 </div>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                  className="w-full px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700 disabled:opacity-50"
                 >
                   {loading ? 'Uploading...' : 'Upload Codes'}
                 </button>
@@ -1156,15 +1156,15 @@ function AdminDigitalCodes() {
             </div>
 
             {/* Single Code Add */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-              <h3 className="text-lg font-semibold mb-4">Add Single Code</h3>
+            <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+              <h3 className="mb-4 text-lg font-semibold">Add Single Code</h3>
               <form onSubmit={handleAddSingleCode} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category (Optional)</label>
+                  <label className="block mb-1 text-sm font-medium">Category (Optional)</label>
                   <select
                     value={codeCategoryId}
                     onChange={(e) => setCodeCategoryId(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   >
                     <option value="">None</option>
                     {categories.map(cat => (
@@ -1173,16 +1173,16 @@ function AdminDigitalCodes() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Product *</label>
+                  <label className="block mb-1 text-sm font-medium">Product *</label>
                   {productsLoading ? (
-                    <div className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 text-sm">
+                    <div className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 bg-slate-50 text-slate-500">
                       Loading products...
                     </div>
                   ) : (
                     <select
                       value={codeProductId}
                       onChange={(e) => setCodeProductId(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       required
                     >
                       <option value="">Select Product</option>
@@ -1193,29 +1193,29 @@ function AdminDigitalCodes() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Prefix (Optional)</label>
+                  <label className="block mb-1 text-sm font-medium">Prefix (Optional)</label>
                   <input
                     type="text"
                     value={singleCodePrefix}
                     onChange={(e) => setSingleCodePrefix(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="e.g., UPBD-N-S-10954119"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Code *</label>
+                  <label className="block mb-1 text-sm font-medium">Code *</label>
                   <input
                     type="text"
                     value={singleCode}
                     onChange={(e) => setSingleCode(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-mono"
+                    className="w-full px-3 py-2 font-mono border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     placeholder="e.g., 6919-7623-5673-3296"
                     required
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="w-full px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
                 >
                   Add Code
                 </button>
@@ -1229,37 +1229,37 @@ function AdminDigitalCodes() {
       {/* Deals Tab */}
       {activeTab === 'deals' && (
         <div className="space-y-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <h3 className="text-lg font-semibold mb-4">
+          <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+            <h3 className="mb-4 text-lg font-semibold">
               {editingDeal ? 'Edit Deal' : 'Add New Deal'}
             </h3>
             <form onSubmit={editingDeal ? handleUpdateDeal : handleAddDeal} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Deal Name *</label>
+                  <label className="block mb-1 text-sm font-medium">Deal Name *</label>
                   <input
                     type="text"
                     value={dealName}
                     onChange={(e) => setDealName(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Display Order</label>
+                  <label className="block mb-1 text-sm font-medium">Display Order</label>
                   <input
                     type="number"
                     value={dealOrder}
                     onChange={(e) => setDealOrder(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Description</label>
+                  <label className="block mb-1 text-sm font-medium">Description</label>
                   <textarea
                     value={dealDesc}
                     onChange={(e) => setDealDesc(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     rows={3}
                   />
                 </div>
@@ -1267,7 +1267,7 @@ function AdminDigitalCodes() {
               <div className="flex gap-2">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  className="px-4 py-2 text-white transition-colors bg-purple-600 rounded-lg hover:bg-purple-700"
                 >
                   {editingDeal ? 'Update Deal' : 'Add Deal'}
                 </button>
@@ -1280,7 +1280,7 @@ function AdminDigitalCodes() {
                       setDealDesc('');
                       setDealOrder('0');
                     }}
-                    className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors"
+                    className="px-4 py-2 transition-colors rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300"
                   >
                     Cancel
                   </button>
@@ -1289,29 +1289,29 @@ function AdminDigitalCodes() {
             </form>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-slate-200">
             <div className="p-4 border-b border-slate-200">
               <h3 className="text-lg font-semibold">Deals</h3>
             </div>
             <div className="divide-y divide-slate-200">
               {deals.map(deal => (
-                <div key={deal.id} className="p-4 flex items-center justify-between">
+                <div key={deal.id} className="flex items-center justify-between p-4">
                   <div>
                     <span className="font-semibold">{deal.name}</span>
                     {deal.description && (
-                      <p className="text-sm text-slate-600 mt-1">{deal.description}</p>
+                      <p className="mt-1 text-sm text-slate-600">{deal.description}</p>
                     )}
                   </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditDeal(deal)}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                      className="px-3 py-1 text-sm text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                     >
                       <FaEdit />
                     </button>
                     <button
                       onClick={() => handleDeleteDeal(deal.id)}
-                      className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
+                      className="px-3 py-1 text-sm text-red-700 bg-red-100 rounded hover:bg-red-200"
                     >
                       <FaTrash />
                     </button>
@@ -1326,31 +1326,31 @@ function AdminDigitalCodes() {
       {/* Status Tab */}
       {activeTab === 'status' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Total Codes</p>
-                  <p className="text-2xl font-bold text-slate-900 mt-1">{stats.total}</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-900">{stats.total}</p>
                 </div>
                 <FaChartBar className="text-3xl text-purple-500" />
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Active Codes</p>
-                  <p className="text-2xl font-bold text-green-600 mt-1">{stats.active}</p>
-                  <p className="text-xs text-slate-500 mt-1">Currently available codes</p>
+                  <p className="mt-1 text-2xl font-bold text-green-600">{stats.active}</p>
+                  <p className="mt-1 text-xs text-slate-500">Currently available codes</p>
                 </div>
                 <FaChartBar className="text-3xl text-green-500" />
               </div>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+            <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-slate-600">Used Codes</p>
-                  <p className="text-2xl font-bold text-red-600 mt-1">{stats.used}</p>
+                  <p className="mt-1 text-2xl font-bold text-red-600">{stats.used}</p>
                 </div>
                 <FaChartBar className="text-3xl text-red-500" />
               </div>
@@ -1358,17 +1358,17 @@ function AdminDigitalCodes() {
           </div>
 
           {/* Product Selection */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-            <label className="block text-sm font-medium mb-2">Select Product</label>
+          <div className="p-6 bg-white border rounded-lg shadow-sm border-slate-200">
+            <label className="block mb-2 text-sm font-medium">Select Product</label>
             {productsLoading ? (
-              <div className="px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 text-sm">
+              <div className="px-3 py-2 text-sm border rounded-lg border-slate-300 bg-slate-50 text-slate-500">
                 Loading products...
               </div>
             ) : (
               <select
                 value={selectedProductForStatus}
                 onChange={(e) => setSelectedProductForStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               >
                 <option value="">Select a product</option>
                 {products.map(prod => (
@@ -1380,7 +1380,7 @@ function AdminDigitalCodes() {
 
           {/* Codes Display in 2 Columns */}
           {selectedProductForStatus && (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+            <div className="overflow-hidden bg-white border rounded-lg shadow-sm border-slate-200">
               <div className="p-4 border-b border-slate-200 bg-slate-50">
                 <div className="flex items-center justify-between">
                   <div>
@@ -1407,13 +1407,13 @@ function AdminDigitalCodes() {
               </div>
               
               {/* Two Column Layout */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+              <div className="grid grid-cols-1 gap-0 md:grid-cols-2">
                 {/* Active Codes Column */}
                 <div className="border-r border-slate-200">
-                  <div className="p-4 bg-green-50 border-b border-slate-200">
+                  <div className="p-4 border-b bg-green-50 border-slate-200">
                     <h4 className="font-semibold text-green-700">Active Codes ({selectedProductCodes.active.length})</h4>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
+                  <div className="overflow-y-auto max-h-96">
                     {selectedProductCodes.active.length === 0 ? (
                       <div className="p-8 text-center text-slate-500">No active codes</div>
                     ) : (
@@ -1422,7 +1422,7 @@ function AdminDigitalCodes() {
                           <div key={code.serialNumber} className="p-4 hover:bg-slate-50">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="font-mono text-xs text-slate-500">{code.serialNumber}</span>
-                              <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-700">Active</span>
+                              <span className="px-2 py-1 text-xs text-green-700 bg-green-100 rounded">Active</span>
                             </div>
                             <div className="flex items-center gap-2">
                               {code.prefix && (
@@ -1431,7 +1431,7 @@ function AdminDigitalCodes() {
                               <span className="font-mono text-sm font-semibold">{code.code}</span>
                               <button
                                 onClick={() => handleCopyCode(code.code)}
-                                className="ml-auto px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                className="px-2 py-1 ml-auto text-xs text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                                 title="Copy code"
                               >
                                 {copiedCode === code.code ? <FaCheck /> : <FaCopy />}
@@ -1446,10 +1446,10 @@ function AdminDigitalCodes() {
 
                 {/* Used Codes Column */}
                 <div>
-                  <div className="p-4 bg-red-50 border-b border-slate-200">
+                  <div className="p-4 border-b bg-red-50 border-slate-200">
                     <h4 className="font-semibold text-red-700">Used Codes ({selectedProductCodes.used.length})</h4>
                   </div>
-                  <div className="max-h-96 overflow-y-auto">
+                  <div className="overflow-y-auto max-h-96">
                     {selectedProductCodes.used.length === 0 ? (
                       <div className="p-8 text-center text-slate-500">No used code here</div>
                     ) : (
@@ -1458,7 +1458,7 @@ function AdminDigitalCodes() {
                           <div key={code.serialNumber} className="p-4 hover:bg-slate-50">
                             <div className="flex items-center gap-2 mb-2">
                               <span className="font-mono text-xs text-slate-500">{code.serialNumber}</span>
-                              <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-700">Used</span>
+                              <span className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded">Used</span>
                             </div>
                             <div className="flex items-center gap-2">
                               {code.prefix && (
@@ -1467,14 +1467,14 @@ function AdminDigitalCodes() {
                               <span className="font-mono text-sm font-semibold">{code.code}</span>
                               <button
                                 onClick={() => handleCopyCode(code.code)}
-                                className="ml-auto px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                className="px-2 py-1 ml-auto text-xs text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                                 title="Copy code"
                               >
                                 {copiedCode === code.code ? <FaCheck /> : <FaCopy />}
                               </button>
                             </div>
                             {code.purchasedBy && (
-                              <p className="text-xs text-slate-500 mt-1">Purchased by: {code.purchasedBy.userEmail}</p>
+                              <p className="mt-1 text-xs text-slate-500">Purchased by: {code.purchasedBy.userEmail}</p>
                             )}
                           </div>
                         ))}
@@ -1487,7 +1487,7 @@ function AdminDigitalCodes() {
           )}
 
           {!selectedProductForStatus && (
-            <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 text-center">
+            <div className="p-8 text-center bg-white border rounded-lg shadow-sm border-slate-200">
               <p className="text-slate-500">Please select a product to view codes</p>
             </div>
           )}

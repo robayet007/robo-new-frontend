@@ -4,11 +4,15 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Use environment variable if set, otherwise fallback to production URL
-    const backendUrl = import.meta.env.VITE_API_URL || 'https://backend-dawn-wind-7381.fly.dev';
+    // Use environment variable (required)
+    const backendUrl = import.meta.env.VITE_API_URL;
+    
+    if (!backendUrl) {
+      throw new Error('VITE_API_URL environment variable is not set');
+    }
     
     // Remove trailing slash if present
-    const cleanUrl = backendUrl ? backendUrl.replace(/\/$/, '') : 'https://backend-dawn-wind-7381.fly.dev';
+    const cleanUrl = backendUrl.replace(/\/$/, '');
     
     return `${cleanUrl}/api`;
   }

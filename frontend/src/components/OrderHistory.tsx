@@ -87,7 +87,7 @@ function OrderHistory() {
   useEffect(() => {
     if (!user?.uid) return;
 
-    const socketUrl = import.meta.env.VITE_SOCKET_URL || 'https://backend-dawn-wind-7381.fly.dev';
+    const socketUrl = import.meta.env.VITE_SOCKET_URL ;
     const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
