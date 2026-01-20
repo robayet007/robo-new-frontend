@@ -104,6 +104,7 @@ function SignUp() {
           <input
             type="password"
             required
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Enter your password (min 6 characters)"
@@ -118,6 +119,7 @@ function SignUp() {
           <input
             type="password"
             required
+            autoComplete="new-password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm your password"

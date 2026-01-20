@@ -13,6 +13,7 @@ function Navbar() {
   const { isReseller } = useReseller();
   const { backendBalance, loading, refreshBalance } = useRoboBalance(); // শুধু backendBalance ব্যবহার করুন
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
@@ -25,6 +26,11 @@ function Navbar() {
       refreshBalance();
     }
   }, [user?.email, refreshBalance]);
+
+  // Reset image error when user changes
+  useEffect(() => {
+    setImageError(false);
+  }, [user?.uid]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -121,11 +127,12 @@ function Navbar() {
                 onClick={() => setIsProfileMenuOpen((open) => !open)}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg sm:rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
               >
-                {user.photoURL ? (
+                {user.photoURL && !imageError ? (
                   <img
                     src={user.photoURL}
                     alt={user.displayName || 'User'}
                     className="w-5 h-5 rounded-full sm:w-6 sm:h-6"
+                    onError={() => setImageError(true)}
                   />
                 ) : (
                   <div

@@ -26,6 +26,7 @@ function UserManagement() {
   const [selectedUserForBalance, setSelectedUserForBalance] = useState<AppUser | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceValue, setBalanceValue] = useState<string>('');
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   type ModerationPermissions = AdminModerationPermissions;
 
@@ -648,8 +649,13 @@ function UserManagement() {
             {adminUsers.map((user) => (
               <div key={user.uid} className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[760px]">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || 'User'} className="w-8 h-8 rounded-full sm:w-10 sm:h-10" />
+                  {user.photoURL && !imageErrors.has(user.uid) ? (
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || 'User'} 
+                      className="w-8 h-8 rounded-full sm:w-10 sm:h-10"
+                      onError={() => setImageErrors(prev => new Set(prev).add(user.uid))}
+                    />
                   ) : (
                     <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-emerald-600 sm:text-sm">
                       {user.displayName?.[0] || user.email?.[0] || 'U'}

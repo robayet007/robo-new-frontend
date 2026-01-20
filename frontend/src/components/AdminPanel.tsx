@@ -1372,6 +1372,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                         <input
                           required
                           type="password"
+                          autoComplete="password"
                           value={packageRoomPassword}
                           onChange={(e) => setPackageRoomPassword(e.target.value)}
                           placeholder="password123"

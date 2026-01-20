@@ -35,7 +35,8 @@ export function preloadImage(url: string): Promise<void> {
 }
 
 /**
- * Preloads multiple images in parallel
+ * Preloads multiple images in parallel with performance optimization
+ * Uses requestIdleCallback when available to defer heavy operations
  * @param urls - Array of image URLs to preload
  * @returns Promise that resolves when all images are loaded (or failed gracefully)
  */
@@ -51,6 +52,49 @@ export function preloadImages(urls: string[]): Promise<void[]> {
     return Promise.resolve([]);
   }
 
-  // Preload all images in parallel
+  // Use requestIdleCallback if available to defer heavy operations
+  // This prevents setTimeout handler violations by running during idle time
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    return new Promise((resolve) => {
+      const preloadBatch = () => {
+        // Preload images in smaller batches to avoid blocking
+        const batchSize = 5;
+        const batches: string[][] = [];
+        for (let i = 0; i < uniqueUrls.length; i += batchSize) {
+          batches.push(uniqueUrls.slice(i, i + batchSize));
+        }
+        
+        // Process batches sequentially to avoid overwhelming the browser
+        const processBatches = async (index: number): Promise<void> => {
+          if (index >= batches.length) {
+            resolve([]);
+            return;
+          }
+          
+          await Promise.all(batches[index].map(url => preloadImage(url)));
+          
+          // Use requestIdleCallback for next batch if available
+          if (index + 1 < batches.length) {
+            if ('requestIdleCallback' in window) {
+              window.requestIdleCallback(() => {
+                processBatches(index + 1);
+              }, { timeout: 1000 });
+            } else {
+              // Fallback to setTimeout with small delay
+              setTimeout(() => processBatches(index + 1), 0);
+            }
+          } else {
+            resolve([]);
+          }
+        };
+        
+        processBatches(0);
+      };
+      
+      window.requestIdleCallback(preloadBatch, { timeout: 2000 });
+    });
+  }
+
+  // Fallback: Preload all images in parallel (original behavior)
   return Promise.all(uniqueUrls.map(url => preloadImage(url)));
 }

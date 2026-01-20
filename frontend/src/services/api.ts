@@ -28,6 +28,43 @@ class SmartAPIManager {
     return apiKey || null;
   }
   
+  // Detect if device is mobile
+  static isMobile(): boolean {
+    if (typeof window === 'undefined') return false;
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+  
+  // Retry fetch with exponential backoff (for mobile networks)
+  static async retryFetch(
+    url: string, 
+    options: RequestInit, 
+    retries: number = 2,
+    baseDelay: number = 1000
+  ): Promise<Response> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const response = await fetch(url, options);
+        // Only retry on network errors or 5xx errors, not on 4xx errors
+        if (response.ok || response.status < 500) {
+          return response;
+        }
+        // If it's the last attempt, return the response anyway
+        if (attempt === retries) {
+          return response;
+        }
+      } catch (error: any) {
+        // If it's the last attempt, throw the error
+        if (attempt === retries) {
+          throw error;
+        }
+        // Wait before retrying with exponential backoff
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+    throw new Error('Failed to fetch after retries');
+  }
+  
   // Simple fetch to backend with timeout and API key authentication
   static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
     const baseURL = this.getBaseURL();
@@ -35,6 +72,9 @@ class SmartAPIManager {
     
     // Get API key for authentication (optional)
     const apiKey = this.getApiKey();
+    
+    // Detect mobile device for adaptive timeout
+    const isMobileDevice = this.isMobile();
     
     // console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
     
@@ -47,14 +87,14 @@ class SmartAPIManager {
       // Use provided signal (already has timeout from caller)
       signalToUse = options.signal;
     } else {
-      // Create new controller with default timeout
+      // Create new controller with adaptive timeout (shorter for mobile)
       controller = new AbortController();
       signalToUse = controller.signal;
-      const timeout = 20000; // 20 seconds default
+      const timeout = isMobileDevice ? 15000 : 20000; // 15s for mobile, 20s for desktop
       timeoutId = setTimeout(() => {
         if (controller) {
           controller.abort();
-          // console.warn('⏱️ Request timeout after 20 seconds');
+          // console.warn(`⏱️ Request timeout after ${timeout / 1000} seconds`);
         }
       }, timeout);
     }
@@ -69,19 +109,36 @@ class SmartAPIManager {
       headers['X-API-Key'] = apiKey;
     }
     
+    // Prepare fetch options
+    const fetchOptions: RequestInit = {
+      ...options,
+      signal: signalToUse,
+      headers
+    };
+    
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: signalToUse,
-        headers
-      });
+      // Use retry logic for mobile devices
+      let response: Response;
+      if (isMobileDevice && options.method !== 'POST' && options.method !== 'PUT' && options.method !== 'DELETE') {
+        // Only retry GET requests on mobile to avoid duplicate operations
+        response = await this.retryFetch(url, fetchOptions, 2, 1000);
+      } else {
+        response = await fetch(url, fetchOptions);
+      }
       
       if (timeoutId) clearTimeout(timeoutId);
       return response;
     } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout. Please check your connection.');
+        const timeoutMsg = isMobileDevice 
+          ? 'Request timeout. Mobile network may be slow. Please check your connection and try again.'
+          : 'Request timeout. Please check your connection.';
+        throw new Error(timeoutMsg);
+      }
+      // Provide better error messages for mobile network issues
+      if (isMobileDevice && (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError'))) {
+        throw new Error('Network error. Please check your mobile data connection and try again.');
       }
       throw error;
     }
