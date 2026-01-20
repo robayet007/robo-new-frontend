@@ -50,11 +50,13 @@ export default function useRoboBalance() {
         socketRef.current = null;
       }
       
-      // Connect to Socket.IO server - use environment variable with fallback to production
-      const socketUrl = import.meta.env.VITE_SOCKET_URL ;
+      // Connect to Socket.IO server - use environment variable with fallback
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL;
       
       if (!socketUrl) {
-        console.warn('⚠️ VITE_SOCKET_URL or VITE_API_URL environment variable is not set, using fallback');
+        console.warn('⚠️ VITE_SOCKET_URL and VITE_API_URL environment variables are not set. Socket.IO connection disabled.');
+        // Don't try to connect if no URL is available
+        return;
       }
       
       const socket = io(socketUrl, {
@@ -62,10 +64,26 @@ export default function useRoboBalance() {
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
+        reconnectionDelayMax: 5000,
+        timeout: 10000,
         // Add API key as query parameter or auth for Socket.IO
         auth: {
           apiKey: import.meta.env.VITE_API_KEY
         }
+      });
+      
+      // Add error handling for connection failures
+      socket.on('connect_error', (error) => {
+        console.warn('⚠️ Socket.IO connection error:', error.message);
+        // Don't show error to user - polling will handle updates
+      });
+      
+      socket.on('reconnect_attempt', () => {
+        console.log('🔄 Attempting to reconnect Socket.IO...');
+      });
+      
+      socket.on('reconnect_failed', () => {
+        console.warn('⚠️ Socket.IO reconnection failed. Using polling fallback.');
       });
 
       socket.on('connect', () => {

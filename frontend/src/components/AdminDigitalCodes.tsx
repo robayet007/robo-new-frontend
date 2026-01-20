@@ -158,12 +158,33 @@ function AdminDigitalCodes() {
   const socketRef = useRef<Socket | null>(null);
   
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_SOCKET_URL ;
+    const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL;
+    
+    if (!socketUrl) {
+      console.warn('⚠️ VITE_SOCKET_URL and VITE_API_URL environment variables are not set. Socket.IO connection disabled.');
+      return;
+    }
+    
     const socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5
+      reconnectionAttempts: 5,
+      reconnectionDelayMax: 5000,
+      timeout: 10000
+    });
+    
+    // Add error handling for connection failures
+    socket.on('connect_error', (error) => {
+      console.warn('⚠️ Socket.IO connection error:', error.message);
+    });
+    
+    socket.on('reconnect_attempt', () => {
+      console.log('🔄 Attempting to reconnect Socket.IO...');
+    });
+    
+    socket.on('reconnect_failed', () => {
+      console.warn('⚠️ Socket.IO reconnection failed.');
     });
 
     socket.on('connect', () => {
