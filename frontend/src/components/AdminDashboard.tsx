@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { useOrdersQuery, type AdminOrder } from '../hooks/useOrdersQuery';
+import { useOrdersQuery } from '../hooks/useOrdersQuery';
 import {
   LineChart,
   Line,

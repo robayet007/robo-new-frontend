@@ -137,7 +137,6 @@ if (typeof window !== 'undefined') {
   // Suppress console.log messages (Vite hot updates, etc.)
   const originalLog = console.log;
   console.log = (...args: any[]) => {
-    const message = args[0]?.toString() || '';
     const fullMessage = args.map(a => String(a)).join(' ');
     if (
       fullMessage.includes('[vite]') ||
@@ -160,7 +159,6 @@ if (typeof window !== 'undefined') {
   
   // Suppress console.info messages (PWA banner, etc.)
   console.info = (...args: any[]) => {
-    const message = args[0]?.toString() || '';
     const fullMessage = args.map(a => String(a)).join(' ');
     if (
       fullMessage.includes('Banner not shown') ||
