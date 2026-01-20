@@ -51,12 +51,14 @@ if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
   const originalError = console.error;
+  const originalInfo = console.info;
   const isProduction = import.meta.env.PROD;
   
   // Suppress warnings
   console.warn = (...args: any[]) => {
     // Filter out Firebase Analytics/Installations permission warnings
     const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
     if (
       message.includes('Firebase Analytics') || 
       message.includes('@firebase/analytics') ||
@@ -66,7 +68,22 @@ if (typeof window !== 'undefined') {
       message.includes('analytics/config-fetch-failed') ||
       message.includes('installations/request-failed') ||
       message.includes('Cross-Origin-Opener-Policy') ||
-      message.includes('window.closed')
+      message.includes('window.closed') ||
+      fullMessage.includes('Cannot read properties of undefined') ||
+      fullMessage.includes('reading \'replace\'') ||
+      fullMessage.includes('Theme API returned unsuccessful response') ||
+      fullMessage.includes('Failed to preload') ||
+      fullMessage.includes('React DevTools') ||
+      fullMessage.includes('Download the React DevTools') ||
+      fullMessage.includes('Banner not shown') ||
+      fullMessage.includes('beforeinstallpromptevent') ||
+      fullMessage.includes('beforeinstallpromptevent.preventDefault') ||
+      fullMessage.includes('must call beforeinstallpromptevent.prompt') ||
+      fullMessage.includes('[vite]') ||
+      fullMessage.includes('hot updated') ||
+      fullMessage.includes('invalidate') ||
+      fullMessage.includes('Fast Refresh') ||
+      fullMessage.includes('Violation')
     ) {
       return; // Suppress these warnings
     }
@@ -81,6 +98,7 @@ if (typeof window !== 'undefined') {
   console.error = (...args: any[]) => {
     // Filter out Firebase Analytics/Installations permission errors
     const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
     if (
       message.includes('FirebaseError') ||
       message.includes('Installations') ||
@@ -89,8 +107,23 @@ if (typeof window !== 'undefined') {
       message.includes('installations/request-failed') ||
       message.includes('Cross-Origin-Opener-Policy') ||
       message.includes('window.closed') ||
-      message.includes('Cannot read properties of undefined') ||
-      message.includes('replace')
+      fullMessage.includes('Cannot read properties of undefined') ||
+      fullMessage.includes('reading \'replace\'') ||
+      fullMessage.includes('Failed to load') ||
+      fullMessage.includes('React DevTools') ||
+      fullMessage.includes('Download the React DevTools') ||
+      fullMessage.includes('firebaseinstallations.googleapis.com') ||
+      fullMessage.includes('firebase.googleapis.com') ||
+      fullMessage.includes('403 (Forbidden)') ||
+      fullMessage.includes('429 (Too Many Requests)') ||
+      fullMessage.includes('googleusercontent.com') ||
+      fullMessage.includes('WebSocket') ||
+      fullMessage.includes('socket.io') ||
+      fullMessage.includes('connection') ||
+      fullMessage.includes('closed before') ||
+      fullMessage.includes('[vite]') ||
+      fullMessage.includes('hot updated') ||
+      fullMessage.includes('Violation')
     ) {
       return; // Suppress these errors
     }
@@ -101,10 +134,50 @@ if (typeof window !== 'undefined') {
     originalError.apply(console, args);
   };
   
-  // Suppress console.log in production
-  if (isProduction) {
-    console.log = () => {}; // Suppress all logs in production
-  }
+  // Suppress console.log messages (Vite hot updates, etc.)
+  const originalLog = console.log;
+  console.log = (...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
+    if (
+      fullMessage.includes('[vite]') ||
+      fullMessage.includes('hot updated') ||
+      fullMessage.includes('invalidate') ||
+      fullMessage.includes('Fast Refresh') ||
+      fullMessage.includes('React DevTools') ||
+      fullMessage.includes('Download the React DevTools') ||
+      fullMessage.includes('Banner not shown') ||
+      fullMessage.includes('beforeinstallpromptevent')
+    ) {
+      return; // Suppress these logs
+    }
+    // In production, suppress all logs
+    if (isProduction) {
+      return;
+    }
+    originalLog.apply(console, args);
+  };
+  
+  // Suppress console.info messages (PWA banner, etc.)
+  console.info = (...args: any[]) => {
+    const message = args[0]?.toString() || '';
+    const fullMessage = args.map(a => String(a)).join(' ');
+    if (
+      fullMessage.includes('Banner not shown') ||
+      fullMessage.includes('beforeinstallpromptevent') ||
+      fullMessage.includes('beforeinstallpromptevent.preventDefault') ||
+      fullMessage.includes('must call beforeinstallpromptevent.prompt') ||
+      fullMessage.includes('[vite]') ||
+      fullMessage.includes('React DevTools')
+    ) {
+      return; // Suppress these info messages
+    }
+    // In production, suppress all info
+    if (isProduction) {
+      return;
+    }
+    originalInfo.apply(console, args);
+  };
 }
 export { analytics };
 

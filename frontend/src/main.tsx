@@ -6,6 +6,7 @@ import UpdateNotification from './components/UpdateNotification'
 import SplashScreen from './components/SplashScreen'
 import { RoboGameZoneProvider } from './contexts/RoboGameZoneContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { QueryClientProvider } from './contexts/QueryClientProvider'
 import './style.css'
 
 // Update notification wrapper component
@@ -105,11 +106,13 @@ ReactDOM.createRoot(document.getElementById('app') as HTMLElement).render(
         v7_relativeSplatPath: true,
       }}
     >
-      <ThemeProvider>
-        <RoboGameZoneProvider>
-          <AppWithUpdates />
-        </RoboGameZoneProvider>
-      </ThemeProvider>
+      <QueryClientProvider>
+        <ThemeProvider>
+          <RoboGameZoneProvider>
+            <AppWithUpdates />
+          </RoboGameZoneProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

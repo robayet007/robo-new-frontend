@@ -1,62 +1,22 @@
-import { useEffect, useState } from 'react';
-import { paymentApi } from '../services/api';
-
-type AdminOrder = {
-  _id?: string;
-  transactionId: string;
-  amount: number;
-  playerId: string;
-  userEmail?: string;
-  userName?: string;
-  userId?: string;
-  paymentMethod?: 'bkash' | 'robo' | 'uddokta' | string;
-  updatedBalance?: number | null;
-  productId?: string;
-  productName?: string;
-  diamonds?: string;
-  price?: number;
-  status?: string;
-  bkashNumber?: string;
-  telegramNotification?: boolean;
-  telegramMessageId?: string;
-  verifiedAt?: string;
-  createdAt?: string;
-};
+import { useState, useMemo } from 'react';
+import { useOrdersQuery } from '../hooks/useOrdersQuery';
 
 function AdminOrders() {
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // Use cached orders hook - data is cached and shared with AdminDashboard component
+  const { data: ordersData = [], isLoading: loading, error: queryError } = useOrdersQuery(200);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const resp = await paymentApi.getAll(200);
-        if (resp.success && Array.isArray(resp.data)) {
-          const list = resp.data as AdminOrder[];
-          // sort latest first
-          list.sort((a, b) => {
-            const aTime = new Date(a.verifiedAt || a.createdAt || 0).getTime();
-            const bTime = new Date(b.verifiedAt || b.createdAt || 0).getTime();
-            return bTime - aTime;
-          });
-          setOrders(list);
-        } else {
-          setOrders([]);
-          setError(resp.message || 'Failed to load orders');
-        }
-      } catch (err: any) {
-        setError(err?.message || 'Failed to load orders');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Sort orders latest first (memoized for performance)
+  const orders = useMemo(() => {
+    const sorted = [...ordersData].sort((a, b) => {
+      const aTime = new Date(a.verifiedAt || a.createdAt || 0).getTime();
+      const bTime = new Date(b.verifiedAt || b.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+    return sorted;
+  }, [ordersData]);
 
-    fetchOrders();
-  }, []);
+  const error = queryError ? (queryError instanceof Error ? queryError.message : 'Failed to load orders') : null;
 
   const filtered = orders.filter((o) => {
     if (!search) return true;

@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import useUsers, { type UserRole, type AppUser } from '../hooks/useUsers';
 import useAuth from '../hooks/useAuth';
-import { balanceApi, paymentApi, adminRoleApi, type AdminModerationPermissions } from '../services/api';
+import { balanceApi, adminRoleApi, type AdminModerationPermissions } from '../services/api';
+import { useUsersQuery, usersQueryKeys } from '../hooks/useUsersQuery';
+import { usePaymentUsersQuery, paymentUsersQueryKeys, type PaymentUserSummary } from '../hooks/usePaymentUsersQuery';
+import { useBalancesQuery, balancesQueryKeys } from '../hooks/useBalancesQuery';
+import { useQueryClient } from '@tanstack/react-query';
 
 function UserManagement() {
-  const { users, loading, updateUserRole, refreshUsers, addUser, syncCurrentUser } = useUsers();
+  const { users: firestoreUsers, loading: firestoreLoading, updateUserRole, refreshUsers, addUser, syncCurrentUser } = useUsers();
   const { user: currentUser } = useAuth();
+  const queryClient = useQueryClient();
+  
+  // Use cached hooks for data fetching
+  const { data: cachedUsers = [], isLoading: usersLoading } = useUsersQuery();
+  const { data: paymentUsers = [], isLoading: paymentUsersLoading } = usePaymentUsersQuery();
+  const { data: balanceRecords = [], isLoading: balanceRecordsLoading } = useBalancesQuery();
+  
+  // Use Firestore users (for real-time updates) but fallback to cached if available
+  const users = firestoreUsers.length > 0 ? firestoreUsers : cachedUsers;
+  const loading = firestoreLoading || usersLoading;
+  
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserForBalance, setSelectedUserForBalance] = useState<AppUser | null>(null);
@@ -15,29 +30,6 @@ function UserManagement() {
   type ModerationPermissions = AdminModerationPermissions;
 
   type Role = 'user' | 'moderator' | 'admin' | 'reseller';
-
-  type PaymentUserSummary = {
-    userId: string;
-    userEmail: string;
-    userName: string;
-    lastBalance: number | null;
-    lastPaymentAt: string | null;
-    totalOrders: number;
-    role?: Role;
-    moderationPermissions?: ModerationPermissions;
-  };
-
-  const [paymentUsers, setPaymentUsers] = useState<PaymentUserSummary[]>([]);
-  const [paymentUsersLoading, setPaymentUsersLoading] = useState(false);
-
-  type BalanceRecord = {
-    userId: string;
-    userEmail: string;
-    balance: number;
-  };
-
-  const [balanceRecords, setBalanceRecords] = useState<BalanceRecord[]>([]);
-  const [balanceRecordsLoading, setBalanceRecordsLoading] = useState(false);
 
   const [selectedModerator, setSelectedModerator] = useState<PaymentUserSummary | null>(null);
   const [modPerms, setModPerms] = useState<ModerationPermissions>({
@@ -64,10 +56,6 @@ function UserManagement() {
   }, [currentUser, users, loading, addUser, refreshUsers]);
 
   useEffect(() => {
-    refreshUsers();
-  }, []);
-
-  useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 3000);
       return () => clearTimeout(timer);
@@ -81,125 +69,6 @@ function UserManagement() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.uid, loading]);
-
-  // Load per-user summary from /api/payments
-  useEffect(() => {
-    const loadPaymentUsers = async () => {
-      try {
-        setPaymentUsersLoading(true);
-        const resp = await paymentApi.getAll(500);
-        if (!resp.success || !Array.isArray(resp.data)) {
-          setPaymentUsers([]);
-          return;
-        }
-
-        // Load roles from backend
-        let roleMap = new Map<string, { role: Role; moderationPermissions?: ModerationPermissions }>();
-        try {
-          const rolesResp = await adminRoleApi.getAll();
-          if (rolesResp.success && Array.isArray(rolesResp.data)) {
-            roleMap = new Map(
-              (rolesResp.data as any[]).map((r) => {
-                const key = (r.userId || r.userEmail || '').toString();
-                return [
-                  key,
-                  {
-                    role: (r.role as Role) || 'user',
-                    moderationPermissions: r.moderationPermissions || {},
-                  },
-                ];
-              })
-            );
-          }
-        } catch {
-          // ignore role fetch errors; we'll just default to user
-        }
-
-        const byKey = new Map<string, PaymentUserSummary>();
-
-        (resp.data as any[]).forEach((p) => {
-          const email: string | undefined = p.userEmail;
-          const uid: string | undefined = p.userId;
-          if (!email && !uid) return;
-
-          const key = uid || email!;
-          const createdTs = new Date(p.verifiedAt || p.createdAt || Date.now()).toISOString();
-
-          const existing = byKey.get(key);
-          if (!existing) {
-            const roleInfo = roleMap.get(key) || { role: 'user' as Role, moderationPermissions: {} };
-            byKey.set(key, {
-              userId: uid || email || 'unknown',
-              userEmail: email || 'unknown',
-              userName: p.userName || '',
-              lastBalance:
-                typeof p.updatedBalance === 'number' ? Number(p.updatedBalance) : null,
-              lastPaymentAt: createdTs,
-              totalOrders: 1,
-              role: roleInfo.role,
-              moderationPermissions: roleInfo.moderationPermissions || {},
-            });
-          } else {
-            existing.totalOrders += 1;
-
-            // update last payment time if newer
-            if (
-              existing.lastPaymentAt &&
-              new Date(createdTs).getTime() > new Date(existing.lastPaymentAt).getTime()
-            ) {
-              existing.lastPaymentAt = createdTs;
-              if (typeof p.updatedBalance === 'number') {
-                existing.lastBalance = Number(p.updatedBalance);
-              }
-            }
-          }
-        });
-
-        const list = Array.from(byKey.values()).sort((a, b) => {
-          const at = a.lastPaymentAt ? new Date(a.lastPaymentAt).getTime() : 0;
-          const bt = b.lastPaymentAt ? new Date(b.lastPaymentAt).getTime() : 0;
-          return bt - at;
-        });
-
-        setPaymentUsers(list);
-      } catch (err) {
-        // console.error('Error loading payment users:', err);
-      } finally {
-        setPaymentUsersLoading(false);
-      }
-    };
-
-    loadPaymentUsers();
-  }, []);
-
-  // Load current balances from /api/balance (source of truth)
-  useEffect(() => {
-    const loadBalances = async () => {
-      try {
-        setBalanceRecordsLoading(true);
-        const resp = await balanceApi.getAllBalances();
-        if (!resp.success || !Array.isArray(resp.data)) {
-          setBalanceRecords([]);
-          return;
-        }
-
-        const list: BalanceRecord[] = (resp.data as any[]).map((b) => ({
-          userId: b.userId,
-          userEmail: b.userEmail,
-          balance: typeof b.balance === 'number' ? Number(b.balance) : 0,
-        }));
-
-        setBalanceRecords(list);
-      } catch (err) {
-        // console.error('Error loading balances:', err);
-        setBalanceRecords([]);
-      } finally {
-        setBalanceRecordsLoading(false);
-      }
-    };
-
-    loadBalances();
-  }, []);
 
   const handleRoleChange = async (userEmail: string, newRole: UserRole) => {
     if (!userEmail) return;
@@ -215,6 +84,11 @@ function UserManagement() {
       type: 'success', 
       text: `User role updated to ${newRole}` 
     });
+    
+    // Invalidate cache to refresh data
+    queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
+    queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
+    
     setTimeout(() => refreshUsers(), 300);
   };
 
@@ -336,22 +210,9 @@ function UserManagement() {
           text: `Balance updated to ৳${amount.toFixed(2)} for ${selectedUserForBalance.email || 'user'}`,
         });
 
-        // Update local balance records & payment user summaries so UI matches immediately
-        setBalanceRecords((prev) =>
-          prev.map((b) =>
-            b.userId === selectedUserForBalance.uid || b.userEmail === selectedUserForBalance.email
-              ? { ...b, balance: amount }
-              : b
-          )
-        );
-
-        setPaymentUsers((prev) =>
-          prev.map((u) =>
-            u.userId === selectedUserForBalance.uid || u.userEmail === selectedUserForBalance.email
-              ? { ...u, lastBalance: amount }
-              : u
-          )
-        );
+        // Invalidate cache to refresh data
+        queryClient.invalidateQueries({ queryKey: balancesQueryKeys.list() });
+        queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
       } else {
         setMessage({
           type: 'error',
@@ -701,13 +562,9 @@ function UserManagement() {
                 role: 'moderator',
                 moderationPermissions: modPerms,
               });
-              setPaymentUsers((prev) =>
-                prev.map((p) =>
-                  p.userId === selectedModerator.userId && p.userEmail === selectedModerator.userEmail
-                    ? { ...p, moderationPermissions: modPerms, role: 'moderator' }
-                    : p
-                )
-              );
+              
+              // Invalidate cache to refresh data
+              queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
               setMessage({ type: 'success', text: 'Moderator permissions updated' });
             }}
             className="px-4 py-2 mt-4 text-xs font-semibold text-white transition-all bg-purple-600 rounded-xl sm:text-sm hover:bg-purple-700"
@@ -892,13 +749,9 @@ function UserManagement() {
                         moderationPermissions: u.moderationPermissions || {},
                       });
                       setMessage({ type: 'success', text: `Role updated to ${newRole}` });
-                      setPaymentUsers((prev) =>
-                        prev.map((p) =>
-                          p.userId === u.userId && p.userEmail === u.userEmail
-                            ? { ...p, role: newRole }
-                            : p
-                        )
-                      );
+                      
+                      // Invalidate cache to refresh data
+                      queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
                     }}
                     className="px-2 py-1 rounded-lg border border-slate-300 text-[10px] sm:text-xs bg-white text-slate-700"
                   >

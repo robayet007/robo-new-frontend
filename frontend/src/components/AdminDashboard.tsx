@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from 'react';
-import { paymentApi } from '../services/api';
+import { useMemo } from 'react';
 import useCatalog from '../hooks/useCatalog';
+import { useOrdersQuery, type AdminOrder } from '../hooks/useOrdersQuery';
 import {
   LineChart,
   Line,
@@ -18,48 +18,10 @@ import {
 } from 'recharts';
 import { FaDollarSign, FaShoppingCart, FaCheckCircle, FaClock, FaTimesCircle, FaBox } from 'react-icons/fa';
 
-type AdminOrder = {
-  _id?: string;
-  transactionId: string;
-  amount: number;
-  playerId: string;
-  userEmail?: string;
-  userName?: string;
-  userId?: string;
-  paymentMethod?: 'bkash' | 'robo' | 'uddokta' | string;
-  updatedBalance?: number | null;
-  productId?: string;
-  productName?: string;
-  categoryId?: string;
-  diamonds?: string;
-  price?: number;
-  status?: string;
-  verifiedAt?: string;
-  createdAt?: string;
-};
-
-
 function AdminDashboard() {
   const { categories, products } = useCatalog();
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        const resp = await paymentApi.getAll(1000);
-        if (resp.success && Array.isArray(resp.data)) {
-          setOrders(resp.data as AdminOrder[]);
-        }
-      } catch (err) {
-        console.error('Error loading orders:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchOrders();
-  }, []);
+  // Use cached orders hook - data is cached and shared with AdminOrders component
+  const { data: orders = [], isLoading: loading } = useOrdersQuery(1000);
 
   // Calculate statistics
   const stats = useMemo(() => {

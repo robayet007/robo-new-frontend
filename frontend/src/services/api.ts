@@ -5,10 +5,10 @@ class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
     // Use environment variable if set, otherwise fallback to production URL
-    const backendUrl = import.meta.env.VITE_API_URL;
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://backend-dawn-wind-7381.fly.dev';
     
     // Remove trailing slash if present
-    const cleanUrl = backendUrl.replace(/\/$/, '');
+    const cleanUrl = backendUrl ? backendUrl.replace(/\/$/, '') : 'https://backend-dawn-wind-7381.fly.dev';
     
     return `${cleanUrl}/api`;
   }
