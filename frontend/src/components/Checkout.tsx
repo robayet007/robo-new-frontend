@@ -1283,9 +1283,9 @@ function Checkout({ products }: { products: Product[] }) {
                     </p>
                   )}
 
-                  {/* {error && (
-                    <p className="mt-2 text-sm text-red-500">{error}</p>
-                  )} */}
+                  {error && (
+                    console.log(error)
+                  )}
                 </>
               )}
 
