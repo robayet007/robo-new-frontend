@@ -43,6 +43,50 @@ function Checkout({ products }: { products: Product[] }) {
     }
   }, [isSubscription, subscriptionProductId, locationState]);
   const product = products.find((p) => p.id === productId) ?? products[0];
+
+  // uid name setup
+
+  const [playerName, setPlayerName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [uid, setUid] = useState("");
+
+  useEffect(() => {
+  if (!uid) {
+    setPlayerName('');
+    return;
+  }
+
+  const trimmedUid = uid.trim();
+
+  const fetchName = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
+        trimmedUid
+      )}&region=BD`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // 🔥 এখানেই nickname
+      if (data?.basicInfo?.nickname) {
+        setPlayerName(data.basicInfo.nickname);
+      } else {
+        setError("Player not found");
+      }
+    } catch (err) {
+      setError("Failed to fetch player");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchName();
+}, [uid]);
+
   
   // Digital code product state
   const [digitalCodeProduct, setDigitalCodeProduct] = useState<BackendDigitalCodeProduct | null>(null);
@@ -60,7 +104,6 @@ function Checkout({ products }: { products: Product[] }) {
   const verificationInProgressRef = useRef(false);
 
   // Initialize UID (no localStorage persistence)
-  const [uid, setUid] = useState("");
 
   // Player name state (kept for payment result display, but loading removed - always null)
   const ffName: string | null = null;
@@ -1039,7 +1082,9 @@ function Checkout({ products }: { products: Product[] }) {
                   <button
                     onClick={async () => {
                       try {
-                        await navigator.clipboard.writeText(verifyingPayment.invoiceId);
+                        await navigator.clipboard.writeText(
+                          verifyingPayment.invoiceId,
+                        );
                         alert("Invoice ID copied!");
                       } catch (err) {
                         // console.error("Failed to copy:", err);
@@ -1084,7 +1129,10 @@ function Checkout({ products }: { products: Product[] }) {
 
               {paymentResult.ffName && (
                 <p className="mb-1 text-sm text-slate-600">
-                  Player: <span className="inline-block px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-500 to-violet-600 text-white font-bold text-sm shadow-sm">{paymentResult.ffName}</span>
+                  Player:{" "}
+                  <span className="inline-block px-2 py-0.5 rounded-md bg-gradient-to-r from-purple-500 to-violet-600 text-white font-bold text-sm shadow-sm">
+                    {paymentResult.ffName}
+                  </span>
                 </p>
               )}
 
@@ -1098,7 +1146,9 @@ function Checkout({ products }: { products: Product[] }) {
                     <button
                       onClick={async () => {
                         try {
-                          await navigator.clipboard.writeText(paymentResult.transactionId || "");
+                          await navigator.clipboard.writeText(
+                            paymentResult.transactionId || "",
+                          );
                           alert("Transaction ID copied!");
                         } catch (err) {
                           // console.error("Failed to copy:", err);
@@ -1138,12 +1188,16 @@ function Checkout({ products }: { products: Product[] }) {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600">Game</span>
-                  <span className="text-sm font-semibold text-slate-800">Free Fire</span>
+                  <span className="text-sm font-semibold text-slate-800">
+                    Free Fire
+                  </span>
                 </div>
 
                 {paymentResult.paymentMethod && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">Payment Method</span>
+                    <span className="text-sm text-slate-600">
+                      Payment Method
+                    </span>
                     <span className="text-sm font-semibold text-slate-800">
                       {paymentResult.paymentMethod}
                     </span>
@@ -1153,13 +1207,17 @@ function Checkout({ products }: { products: Product[] }) {
 
               <div className="pt-4 mt-4 border-t border-slate-200">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-slate-700">Paid</span>
+                  <span className="text-sm font-semibold text-slate-700">
+                    Paid
+                  </span>
                   <span className="text-base font-bold text-slate-900">
                     ৳{paymentResult.amount.toFixed(2)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-600">Remaining balance</span>
+                  <span className="text-xs text-slate-600">
+                    Remaining balance
+                  </span>
                   <span className="text-sm font-semibold text-slate-700">
                     ৳{paymentResult.remaining.toFixed(2)}
                   </span>
@@ -1178,13 +1236,15 @@ function Checkout({ products }: { products: Product[] }) {
                 }}
                 className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold rounded-xl shadow-lg hover:from-purple-600 hover:to-violet-700 transition-all transform hover:scale-[1.02]"
               >
-                {isDigitalCode && digitalCodeProduct ? "View Order History" : "Back to Home Page"}
+                {isDigitalCode && digitalCodeProduct
+                  ? "View Order History"
+                  : "Back to Home Page"}
               </button>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Main Content */}
       <div className="mb-6">
         {/* Section 2: Account Info / Product Details */}
@@ -1201,52 +1261,76 @@ function Checkout({ products }: { products: Product[] }) {
 
             <div className="p-4 bg-white border rounded-xl border-slate-200">
               {!isDigitalCode && (
-              <>
-                <input
-                  type="text"
-                  value={uid}
-                  onChange={(e) => {
-                    setUid(e.target.value);
-                  }}
-                  placeholder="Enter your Free Fire UID"
-                  className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
-                />
-              </>
-            )}
-            
-            {/* Digital Code Input Fields */}
-            {isDigitalCode && digitalCodeProduct && digitalCodeProduct.inputFields && digitalCodeProduct.inputFields.length > 0 && (
-              <div className="space-y-3">
-                {digitalCodeProduct.inputFields.map((field) => (
-                  <div key={field.name}>
-                    <label className="block mb-1 text-sm font-medium text-slate-700">
-                      {field.name}
-                      {field.required && <span className="text-red-500 ml-1">*</span>}
-                    </label>
-                    <input
-                      type="text"
-                      value={digitalCodeInputFields[field.name] || ''}
-                      onChange={(e) => {
-                        setDigitalCodeInputFields(prev => ({
-                          ...prev,
-                          [field.name]: e.target.value
-                        }));
-                      }}
-                      placeholder={field.placeholder || `Enter ${field.name}`}
-                      required={field.required}
-                      className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
+                <>
+                  <input
+                    type="text"
+                    value={uid}
+                    onChange={(e) => {
+                      setUid(e.target.value);
+                    }}
+                    placeholder="Enter your Free Fire UID"
+                    className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                  />
+                  {loading && (
+                    <p className="mt-2 text-sm text-slate-500">
+                      Checking player...
+                    </p>
+                  )}
 
-            {isDigitalCode && loadingDigitalCodeProduct && (
-              <div className="text-center py-4">
-                <div className="inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="mt-2 text-sm text-slate-600">Loading product details...</p>
-              </div>
-            )}
+                  {playerName && (
+                    <p className="mt-2 font-semibold text-purple-600">
+                      Player Name: {playerName}
+                    </p>
+                  )}
+
+                  {/* {error && (
+                    <p className="mt-2 text-sm text-red-500">{error}</p>
+                  )} */}
+                </>
+              )}
+
+              {/* Digital Code Input Fields */}
+              {isDigitalCode &&
+                digitalCodeProduct &&
+                digitalCodeProduct.inputFields &&
+                digitalCodeProduct.inputFields.length > 0 && (
+                  <div className="space-y-3">
+                    {digitalCodeProduct.inputFields.map((field) => (
+                      <div key={field.name}>
+                        <label className="block mb-1 text-sm font-medium text-slate-700">
+                          {field.name}
+                          {field.required && (
+                            <span className="ml-1 text-red-500">*</span>
+                          )}
+                        </label>
+                        <input
+                          type="text"
+                          value={digitalCodeInputFields[field.name] || ""}
+                          onChange={(e) => {
+                            setDigitalCodeInputFields((prev) => ({
+                              ...prev,
+                              [field.name]: e.target.value,
+                            }));
+                          }}
+                          placeholder={
+                            field.placeholder || `Enter ${field.name}`
+                          }
+                          required={field.required}
+                          className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+              {isDigitalCode && loadingDigitalCodeProduct && (
+                <div className="py-4 text-center">
+                  <div className="inline-block w-6 h-6 border-2 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Loading product details...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1263,43 +1347,62 @@ function Checkout({ products }: { products: Product[] }) {
 
             <div className="p-4 bg-white border rounded-xl border-slate-200">
               {loadingSubscriptionProduct ? (
-                <div className="text-center py-4">
-                  <div className="inline-block w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  <p className="mt-2 text-sm text-slate-600">Loading product details...</p>
+                <div className="py-4 text-center">
+                  <div className="inline-block w-6 h-6 border-2 border-purple-500 rounded-full border-t-transparent animate-spin"></div>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Loading product details...
+                  </p>
                 </div>
-              ) : subscriptionProduct && subscriptionProduct.inputFields && Array.isArray(subscriptionProduct.inputFields) && subscriptionProduct.inputFields.length > 0 ? (
+              ) : subscriptionProduct &&
+                subscriptionProduct.inputFields &&
+                Array.isArray(subscriptionProduct.inputFields) &&
+                subscriptionProduct.inputFields.length > 0 ? (
                 <div className="space-y-3">
                   {subscriptionProduct.inputFields.map((field) => (
                     <div key={field.name}>
                       <label className="block mb-1 text-sm font-medium text-slate-700">
                         {field.name}
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                        {field.required && (
+                          <span className="ml-1 text-red-500">*</span>
+                        )}
                       </label>
-                      {field.type === 'textarea' ? (
+                      {field.type === "textarea" ? (
                         <textarea
-                          value={subscriptionInputFields[field.name] || ''}
+                          value={subscriptionInputFields[field.name] || ""}
                           onChange={(e) => {
-                            setSubscriptionInputFields(prev => ({
+                            setSubscriptionInputFields((prev) => ({
                               ...prev,
-                              [field.name]: e.target.value
+                              [field.name]: e.target.value,
                             }));
                           }}
-                          placeholder={field.placeholder || `Enter ${field.name}`}
+                          placeholder={
+                            field.placeholder || `Enter ${field.name}`
+                          }
                           required={field.required}
                           rows={4}
                           className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
                         />
                       ) : (
                         <input
-                          type={field.type === 'email' ? 'email' : field.type === 'number' ? 'number' : field.type === 'phone' ? 'tel' : 'text'}
-                          value={subscriptionInputFields[field.name] || ''}
+                          type={
+                            field.type === "email"
+                              ? "email"
+                              : field.type === "number"
+                                ? "number"
+                                : field.type === "phone"
+                                  ? "tel"
+                                  : "text"
+                          }
+                          value={subscriptionInputFields[field.name] || ""}
                           onChange={(e) => {
-                            setSubscriptionInputFields(prev => ({
+                            setSubscriptionInputFields((prev) => ({
                               ...prev,
-                              [field.name]: e.target.value
+                              [field.name]: e.target.value,
                             }));
                           }}
-                          placeholder={field.placeholder || `Enter ${field.name}`}
+                          placeholder={
+                            field.placeholder || `Enter ${field.name}`
+                          }
                           required={field.required}
                           className="w-full px-4 py-3 border rounded-lg border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-slate-700"
                         />
@@ -1308,8 +1411,10 @@ function Checkout({ products }: { products: Product[] }) {
                   ))}
                 </div>
               ) : subscriptionProduct ? (
-                <div className="text-center py-4">
-                  <p className="text-sm text-slate-500">No input fields configured for this product.</p>
+                <div className="py-4 text-center">
+                  <p className="text-sm text-slate-500">
+                    No input fields configured for this product.
+                  </p>
                 </div>
               ) : null}
             </div>
@@ -1322,19 +1427,24 @@ function Checkout({ products }: { products: Product[] }) {
             <div className="flex items-center justify-center w-8 h-8 text-sm font-bold text-white rounded-full bg-gradient-to-br from-purple-500 to-violet-600">
               3
             </div>
-            <h2 className="text-xl font-bold text-slate-800">Select Payment Method</h2>
+            <h2 className="text-xl font-bold text-slate-800">
+              Select Payment Method
+            </h2>
           </div>
 
           <div className="grid grid-cols-2 gap-3 mb-4">
             {/* Robo Pay */}
             <button
               onClick={() => {
-                const hasEnough = typeof hasEnoughBalance === "function" && displayProduct
-                  ? hasEnoughBalance(displayProduct.price)
-                  : balance >= (displayProduct?.price || 0);
+                const hasEnough =
+                  typeof hasEnoughBalance === "function" && displayProduct
+                    ? hasEnoughBalance(displayProduct.price)
+                    : balance >= (displayProduct?.price || 0);
 
                 if (!hasEnough) {
-                  alert(`Your Robo Balance is insufficient. You need ৳${displayProduct.price.toFixed(2)}.`);
+                  alert(
+                    `Your Robo Balance is insufficient. You need ৳${displayProduct.price.toFixed(2)}.`,
+                  );
                   setPaymentManuallySelected(true);
                   setPayment("uddokta");
                   return;
@@ -1358,11 +1468,15 @@ function Checkout({ products }: { products: Product[] }) {
                   R
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-bold text-purple-600">Robo Balance</p>
+                  <p className="text-sm font-bold text-purple-600">
+                    Robo Balance
+                  </p>
                   <p className="text-xs text-slate-500">Wallet Payment</p>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-slate-600">Use your wallet balance</p>
+              <p className="mt-2 text-xs text-slate-600">
+                Use your wallet balance
+              </p>
             </button>
 
             {/* Uddokta Pay */}
@@ -1391,7 +1505,9 @@ function Checkout({ products }: { products: Product[] }) {
                   <p className="text-xs text-slate-500">Online Payment</p>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-slate-600">Credit/Debit Card, bKash, Nagad</p>
+              <p className="mt-2 text-xs text-slate-600">
+                Credit/Debit Card, bKash, Nagad
+              </p>
             </button>
           </div>
 
@@ -1408,7 +1524,9 @@ function Checkout({ products }: { products: Product[] }) {
                   disabled={refreshingBalance}
                   className="text-purple-600 transition-colors hover:text-purple-700"
                 >
-                  <FaSyncAlt className={`text-sm ${refreshingBalance ? "animate-spin" : ""}`} />
+                  <FaSyncAlt
+                    className={`text-sm ${refreshingBalance ? "animate-spin" : ""}`}
+                  />
                 </button>
               </div>
               <p className="mb-3 text-2xl font-bold text-green-600">
@@ -1426,10 +1544,26 @@ function Checkout({ products }: { products: Product[] }) {
           {/* Pay Button with Tap and Hold */}
           <div className="relative">
             <button
-              onMouseDown={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
-              onMouseUp={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
-              onTouchStart={payment === "robo" || payment === "bkash" ? handleMouseDown : undefined}
-              onTouchEnd={payment === "robo" || payment === "bkash" ? handleMouseUp : undefined}
+              onMouseDown={
+                payment === "robo" || payment === "bkash"
+                  ? handleMouseDown
+                  : undefined
+              }
+              onMouseUp={
+                payment === "robo" || payment === "bkash"
+                  ? handleMouseUp
+                  : undefined
+              }
+              onTouchStart={
+                payment === "robo" || payment === "bkash"
+                  ? handleMouseDown
+                  : undefined
+              }
+              onTouchEnd={
+                payment === "robo" || payment === "bkash"
+                  ? handleMouseUp
+                  : undefined
+              }
               onClick={() => {
                 if (payment === "uddokta") {
                   // Validation is handled in handleUddoktaPayPayment
@@ -1438,35 +1572,43 @@ function Checkout({ products }: { products: Product[] }) {
               }}
               disabled={(() => {
                 // Base conditions
-                if (processing || balanceLoading || (payment === "uddokta" && !user)) return true;
-                
+                if (
+                  processing ||
+                  balanceLoading ||
+                  (payment === "uddokta" && !user)
+                )
+                  return true;
+
                 // ✅ Check if user is logged in (userId required for payment)
                 if (!user || !user.uid) return true;
-                
+
                 // For digital codes, check input field validation
                 if (isDigitalCode) {
                   if (loadingDigitalCodeProduct) return true;
                   const validation = validateDigitalCodeInputs();
                   return !validation.isValid;
                 }
-                
+
                 // For subscriptions, check input field validation
                 if (isSubscription) {
                   if (loadingSubscriptionProduct) return true;
                   const validation = validateSubscriptionInputs();
                   return !validation.isValid;
                 }
-                
+
                 // For regular products, check UID only (no name loading required)
                 return false;
               })()}
               className="relative w-full px-6 py-4 overflow-hidden text-lg font-bold text-white transition-all shadow-lg rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`,
-                boxShadow: `0 10px 30px rgba(var(--theme-primary-rgb), 0.3)`
+                boxShadow: `0 10px 30px rgba(var(--theme-primary-rgb), 0.3)`,
               }}
               onMouseEnter={(e) => {
-                const canHover = !processing && !balanceLoading && !(payment === "uddokta" && !user);
+                const canHover =
+                  !processing &&
+                  !balanceLoading &&
+                  !(payment === "uddokta" && !user);
                 if (isDigitalCode) {
                   const validation = validateDigitalCodeInputs();
                   if (canHover && validation.isValid) {
@@ -1495,7 +1637,10 @@ function Checkout({ products }: { products: Product[] }) {
                   holdStartTimeRef.current = null;
                 }
                 // Handle style reset
-                const canReset = !processing && !balanceLoading && !(payment === "uddokta" && !user);
+                const canReset =
+                  !processing &&
+                  !balanceLoading &&
+                  !(payment === "uddokta" && !user);
                 if (isDigitalCode) {
                   const validation = validateDigitalCodeInputs();
                   if (canReset && validation.isValid) {
@@ -1515,29 +1660,37 @@ function Checkout({ products }: { products: Product[] }) {
             >
               {/* Progress bar */}
               {isHolding && (
-                <div 
+                <div
                   className="absolute inset-0 transition-all duration-75 bg-gradient-to-r from-green-500 to-emerald-600"
                   style={{ width: `${holdProgress}%` }}
                 />
               )}
-              
+
               {/* Bird flying animation */}
               {isHolding && (
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="text-4xl animate-bounce" style={{ animationDuration: '0.5s' }}>
+                  <div
+                    className="text-4xl animate-bounce"
+                    style={{ animationDuration: "0.5s" }}
+                  >
                     🐦
                   </div>
                 </div>
               )}
-              
+
               {/* Button text */}
               <span className="relative z-10">
-                {processing ? "Processing..." : 
-                 payment === "uddokta" && !user ? "Please Login" : 
-                 (isDigitalCode && loadingDigitalCodeProduct) ? "Loading Product..." :
-                 isHolding ? `Hold... ${Math.round(holdProgress)}%` :
-                 payment === "robo" || payment === "bkash" ? "Tap & Hold to Pay" :
-                 "Pay"}
+                {processing
+                  ? "Processing..."
+                  : payment === "uddokta" && !user
+                    ? "Please Login"
+                    : isDigitalCode && loadingDigitalCodeProduct
+                      ? "Loading Product..."
+                      : isHolding
+                        ? `Hold... ${Math.round(holdProgress)}%`
+                        : payment === "robo" || payment === "bkash"
+                          ? "Tap & Hold to Pay"
+                          : "Pay"}
               </span>
             </button>
           </div>
@@ -1550,7 +1703,9 @@ function Checkout({ products }: { products: Product[] }) {
           <div className="w-full max-w-md mx-4 overflow-hidden bg-white shadow-2xl rounded-2xl">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
-              <h2 className="text-lg font-bold text-slate-900">মার্চেন্ট পেমেন্ট নিশ্চিত করুন</h2>
+              <h2 className="text-lg font-bold text-slate-900">
+                মার্চেন্ট পেমেন্ট নিশ্চিত করুন
+              </h2>
               <button
                 onClick={() => {
                   setShowRoboPaymentModal(false);
@@ -1558,8 +1713,18 @@ function Checkout({ products }: { products: Product[] }) {
                 }}
                 className="p-2 transition-colors text-slate-600 hover:text-slate-900"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -1568,13 +1733,25 @@ function Checkout({ products }: { products: Product[] }) {
             <div className="p-4">
               <div className="flex items-center gap-3 p-3 bg-slate-100 rounded-xl">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-300">
-                  <svg className="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    className="w-6 h-6 text-slate-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Merchant</p>
-                  <p className="text-sm font-semibold text-slate-900">Robo Top Up Zone</p>
+                  <p className="text-sm font-semibold text-slate-900">
+                    Robo Top Up Zone
+                  </p>
                 </div>
               </div>
 
@@ -1583,17 +1760,27 @@ function Checkout({ products }: { products: Product[] }) {
                 <div className="flex items-start justify-between mb-3">
                   <div>
                     <p className="mb-1 text-xs text-slate-500">সর্বমোট</p>
-                    <p className="text-lg font-bold text-slate-900">৳{displayProduct.price.toFixed(2)}</p>
-                    <p className="text-xs text-slate-600">৳{displayProduct.price.toFixed(2)} + ৳0.0</p>
+                    <p className="text-lg font-bold text-slate-900">
+                      ৳{displayProduct.price.toFixed(2)}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      ৳{displayProduct.price.toFixed(2)} + ৳0.0
+                    </p>
                   </div>
                   <div className="text-right">
-                    <p className="mb-1 text-xs text-slate-500">নতুন ব্যালেন্স</p>
-                    <p className="text-lg font-bold text-green-600">৳{(balance - displayProduct.price).toFixed(2)}</p>
+                    <p className="mb-1 text-xs text-slate-500">
+                      নতুন ব্যালেন্স
+                    </p>
+                    <p className="text-lg font-bold text-green-600">
+                      ৳{(balance - displayProduct.price).toFixed(2)}
+                    </p>
                   </div>
                 </div>
                 <div className="pt-3 mt-3 border-t border-slate-200">
                   <p className="mb-1 text-xs text-slate-500">রেফারেন্স</p>
-                  <p className="font-mono text-sm text-slate-700">{uid.trim() || 'N/A'}</p>
+                  <p className="font-mono text-sm text-slate-700">
+                    {uid.trim() || "N/A"}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1611,16 +1798,18 @@ function Checkout({ products }: { products: Product[] }) {
               >
                 {/* Progress bar */}
                 {modalHolding && (
-                  <div 
+                  <div
                     className="absolute inset-0 transition-all duration-75 bg-gradient-to-r from-green-500 to-emerald-600"
                     style={{ width: `${modalHoldProgress}%` }}
                   />
                 )}
-                
+
                 {/* Bird icon */}
                 <div className="relative z-10 flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    {modalHolding ? `Hold... ${Math.round(modalHoldProgress)}%` : 'মার্চেন্ট পেমেন্ট করতে ট্যাপ করে ধরে রাখুন'}
+                    {modalHolding
+                      ? `Hold... ${Math.round(modalHoldProgress)}%`
+                      : "মার্চেন্ট পেমেন্ট করতে ট্যাপ করে ধরে রাখুন"}
                   </span>
                   <span className="text-2xl">🐦</span>
                 </div>
