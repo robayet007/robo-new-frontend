@@ -13,7 +13,7 @@ function UserManagement() {
   const queryClient = useQueryClient();
   
   // Use cached hooks for data fetching
-  const { data: cachedUsers = [], isLoading: usersLoading } = useUsersQuery();
+  const { data: cachedUsers = [] } = useUsersQuery();
   const { data: paymentUsers = [], isLoading: paymentUsersLoading } = usePaymentUsersQuery();
   const { data: balanceRecords = [], isLoading: balanceRecordsLoading } = useBalancesQuery();
   

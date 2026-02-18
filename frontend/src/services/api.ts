@@ -5,7 +5,7 @@ class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
     // Use environment variable (required)
-    const backendUrl = import.meta.env.VITE_API_URL;
+    const backendUrl = import.meta.env.VITE_API_URL || "https://backend-dawn-wind-7381.fly.dev/";
     
     if (!backendUrl) {
       throw new Error('VITE_API_URL environment variable is not set');
