@@ -57,7 +57,7 @@ async function fetchPaymentUsers(): Promise<PaymentUserSummary[]> {
     // ignore role fetch errors; we'll just default to user
   }
 
-  // Fetch payments
+  // Fetch payments (limit 200 for faster user list load; still enough for summary)
   const resp = await paymentApi.getAll(500);
   if (!resp.success || !Array.isArray(resp.data)) {
     return [];
