@@ -50,44 +50,52 @@ function Checkout({ products }: { products: Product[] }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [uid, setUid] = useState("");
+  const uidFetchRef = useRef<string | null>(null);
 
   useEffect(() => {
-  if (!uid) {
-    setPlayerName('');
-    return;
-  }
-
-  const trimmedUid = uid.trim();
-
-  const fetchName = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      const url = `http://api.ucbot.store/nickname?uid=${encodeURIComponent(trimmedUid)}`;
-      const token = import.meta.env.VITE_UCBOT_NICKNAME_AUTH_TOKEN;
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = token;
-
-      const res = await fetch(url, { headers });
-      const data = await res.json();
-
-      if (res.ok && data?.success && data?.player_info?.nickname != null) {
-        setPlayerName(String(data.player_info.nickname));
-      } else {
-        setPlayerName('');
-        setError('Player not found');
-      }
-    } catch (err) {
-      setError('Failed to fetch player');
+    if (!uid.trim()) {
+      uidFetchRef.current = null;
       setPlayerName('');
-    } finally {
+      setError('');
       setLoading(false);
+      return;
     }
-  };
 
-  fetchName();
-}, [uid]);
+    const trimmedUid = uid.trim();
+    uidFetchRef.current = trimmedUid;
+    setError('');
+    setLoading(true);
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        const url = `http://api.ucbot.store/nickname?uid=${encodeURIComponent(trimmedUid)}`;
+        const token = import.meta.env.VITE_UCBOT_NICKNAME_AUTH_TOKEN;
+        const headers: HeadersInit = { 'Content-Type': 'application/json' };
+        if (token) (headers as Record<string, string>)['Authorization'] = token;
+
+        const res = await fetch(url, { headers });
+        const data = await res.json();
+
+        if (uidFetchRef.current !== trimmedUid) return;
+
+        if (res.ok && data?.success && data?.player_info?.nickname != null) {
+          setPlayerName(String(data.player_info.nickname));
+          setError('');
+        } else {
+          setPlayerName('');
+          setError('Player not found');
+        }
+      } catch (err) {
+        if (uidFetchRef.current !== trimmedUid) return;
+        setPlayerName('');
+        setError('Failed to fetch player');
+      } finally {
+        if (uidFetchRef.current === trimmedUid) setLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [uid]);
 
   
   // Digital code product state
@@ -1286,7 +1294,7 @@ function Checkout({ products }: { products: Product[] }) {
                   )}
 
                   {error && (
-                    console.log(error)
+                    <p className="mt-2 text-sm text-red-500">{error}</p>
                   )}
                 </>
               )}
