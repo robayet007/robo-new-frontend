@@ -19,7 +19,8 @@ function UserManagement() {
   
   // Use Firestore users (for real-time updates) but fallback to cached if available
   const users = firestoreUsers.length > 0 ? firestoreUsers : cachedUsers;
-  const loading = firestoreLoading || usersLoading;
+  // Only block on Firestore so we don't wait for duplicate useUsersQuery fetch
+  const loading = firestoreLoading;
   
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -370,7 +371,7 @@ function UserManagement() {
             </button>
           </div>
           <div className="mb-3">
-            <p className="text-xs font-semibold text-purple-700 mb-2">
+            <p className="mb-2 text-xs font-semibold text-purple-700">
               Select which sidebar sections this moderator can access:
             </p>
           </div>
@@ -378,7 +379,7 @@ function UserManagement() {
             {/* Column 1: Matching sidebar order */}
             <div className="space-y-2">
               {/* Dashboard */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -396,7 +397,7 @@ function UserManagement() {
               </label>
 
               {/* Products & Categories */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -414,7 +415,7 @@ function UserManagement() {
               </label>
 
               {/* Digital Codes */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -432,7 +433,7 @@ function UserManagement() {
               </label>
 
               {/* Subscriptions */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -450,7 +451,7 @@ function UserManagement() {
               </label>
 
               {/* Banner Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -471,7 +472,7 @@ function UserManagement() {
             {/* Column 2: Continuing sidebar order */}
             <div className="space-y-2">
               {/* Notice Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -489,7 +490,7 @@ function UserManagement() {
               </label>
 
               {/* Game Packages */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -507,7 +508,7 @@ function UserManagement() {
               </label>
 
               {/* User Management */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -525,7 +526,7 @@ function UserManagement() {
               </label>
 
               {/* Order History */}
-              <label className="flex items-start gap-2 px-3 py-2 border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80 transition-colors">
+              <label className="flex items-start gap-2 px-3 py-2 transition-colors border border-purple-100 rounded-lg shadow-sm bg-white/60 hover:bg-white/80">
                 <input
                   type="checkbox"
                   className="mt-0.5"
@@ -543,7 +544,7 @@ function UserManagement() {
               </label>
 
               {/* Admin Only Notice */}
-              <div className="px-3 py-2 border border-slate-200 rounded-lg bg-slate-50/60">
+              <div className="px-3 py-2 border rounded-lg border-slate-200 bg-slate-50/60">
                 <p className="text-[10px] font-semibold text-slate-600 mb-1">
                   Admin Only Sections
                 </p>
@@ -918,49 +919,6 @@ function UserManagement() {
 }
 
 export default UserManagement;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
