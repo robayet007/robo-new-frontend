@@ -64,21 +64,23 @@ function Checkout({ products }: { products: Product[] }) {
       setLoading(true);
       setError('');
 
-      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
-        trimmedUid
-      )}&region=BD`;
+      const url = `http://api.ucbot.store/nickname?uid=${encodeURIComponent(trimmedUid)}`;
+      const token = import.meta.env.VITE_UCBOT_NICKNAME_AUTH_TOKEN;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = token;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { headers });
       const data = await res.json();
 
-      // 🔥 এখানেই nickname
-      if (data?.basicInfo?.nickname) {
-        setPlayerName(data.basicInfo.nickname);
+      if (res.ok && data?.success && data?.player_info?.nickname != null) {
+        setPlayerName(String(data.player_info.nickname));
       } else {
-        setError("Player not found");
+        setPlayerName('');
+        setError('Player not found');
       }
     } catch (err) {
-      setError("Failed to fetch player");
+      setError('Failed to fetch player');
+      setPlayerName('');
     } finally {
       setLoading(false);
     }
