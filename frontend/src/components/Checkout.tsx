@@ -68,12 +68,9 @@ function Checkout({ products }: { products: Product[] }) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const url = `http://api.ucbot.store/nickname?uid=${encodeURIComponent(trimmedUid)}`;
-        const token = import.meta.env.VITE_UCBOT_NICKNAME_AUTH_TOKEN;
-        const headers: HeadersInit = { 'Content-Type': 'application/json' };
-        if (token) (headers as Record<string, string>)['Authorization'] = token;
-
-        const res = await fetch(url, { headers });
+        const backendBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://backend-dawn-wind-7381.fly.dev').replace(/\/$/, '');
+        const url = `${backendBase}/api/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
+        const res = await fetch(url);
         const data = await res.json();
 
         if (uidFetchRef.current !== trimmedUid) return;
