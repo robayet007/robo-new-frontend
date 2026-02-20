@@ -68,7 +68,7 @@ function Checkout({ products }: { products: Product[] }) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const backendBase = (import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || 'https://backend-dawn-wind-7381.fly.dev').replace(/\/$/, '');
+        const backendBase = http://localhost:5000
         const url = `${backendBase}/api/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
         const res = await fetch(url);
         const data = await res.json();
