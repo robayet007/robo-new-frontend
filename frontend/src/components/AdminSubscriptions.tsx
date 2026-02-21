@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { subscriptionApi } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import type { BackendSubscriptionProduct } from '../types';
 import { FaEdit, FaTrash } from 'react-icons/fa';
+import ImageUpload from './ImageUpload';
 
 function AdminSubscriptions() {
+  const { showToast } = useToast();
   const [products, setProducts] = useState<BackendSubscriptionProduct[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
   // Product form state
   const [productId, setProductId] = useState('');
@@ -23,13 +25,6 @@ function AdminSubscriptions() {
   const [newInputFieldPlaceholder, setNewInputFieldPlaceholder] = useState('');
   const [newInputFieldType, setNewInputFieldType] = useState('text');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   useEffect(() => {
     loadProducts();
@@ -69,7 +64,7 @@ function AdminSubscriptions() {
   const handleAddProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!productName.trim() || !productPrice.trim()) {
-      setMessage({ type: 'error', text: 'Name and Price are required' });
+      showToast({ type: 'error', text: 'Name and Price are required' });
       return;
     }
 
@@ -88,14 +83,14 @@ function AdminSubscriptions() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product created successfully!' });
+        showToast({ type: 'success', text: 'Product created successfully!' });
         handleCancelEdit();
         await loadProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create product' });
+        showToast({ type: 'error', text: response.message || 'Failed to create product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create product' });
     }
   };
 
@@ -120,7 +115,7 @@ function AdminSubscriptions() {
   const handleUpdateProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !productName.trim() || !productPrice.trim()) {
-      setMessage({ type: 'error', text: 'Product name and price are required' });
+      showToast({ type: 'error', text: 'Product name and price are required' });
       return;
     }
 
@@ -137,14 +132,14 @@ function AdminSubscriptions() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product updated successfully!' });
+        showToast({ type: 'success', text: 'Product updated successfully!' });
         handleCancelEdit();
         await loadProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update product' });
+        showToast({ type: 'error', text: response.message || 'Failed to update product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update product' });
     }
   };
 
@@ -156,13 +151,13 @@ function AdminSubscriptions() {
     try {
       const response = await subscriptionApi.deleteProduct(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product deleted successfully!' });
+        showToast({ type: 'success', text: 'Product deleted successfully!' });
         await loadProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete product' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete product' });
     }
   };
 
@@ -170,19 +165,19 @@ function AdminSubscriptions() {
     try {
       const response = await subscriptionApi.updateProduct(id, { isActive: !currentStatus });
       if (response.success) {
-        setMessage({ type: 'success', text: `Product ${!currentStatus ? 'activated' : 'deactivated'} successfully!` });
+        showToast({ type: 'success', text: `Product ${!currentStatus ? 'activated' : 'deactivated'} successfully!` });
         await loadProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update product status' });
+        showToast({ type: 'error', text: response.message || 'Failed to update product status' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update product status' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update product status' });
     }
   };
 
   const handleAddInputField = () => {
     if (!newInputFieldName.trim()) {
-      setMessage({ type: 'error', text: 'Input field name is required' });
+      showToast({ type: 'error', text: 'Input field name is required' });
       return;
     }
     setInputFields([...inputFields, {
@@ -212,16 +207,6 @@ function AdminSubscriptions() {
         <h2 className="text-2xl font-bold text-slate-900">Subscriptions Management</h2>
         <p className="text-sm text-slate-600">Manage subscription products directly</p>
       </div>
-
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Products Section */}
       <div className="space-y-6">
@@ -274,17 +259,12 @@ function AdminSubscriptions() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Image URL</label>
-                <input
-                  type="text"
+                <ImageUpload
+                  label="Image"
                   value={productImage}
-                  onChange={(e) => setProductImage(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  onChange={setProductImage}
+                  uploadEndpoint="/upload/product-image"
                 />
-                {productImage && (
-                  <img src={productImage} alt="Preview" className="mt-2 w-20 h-20 object-cover rounded border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                )}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>

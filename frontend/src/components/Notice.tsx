@@ -21,7 +21,6 @@ const Notice: React.FC = () => {
         setLoading(true);
         const response = await noticeApi.getAll();
         if (response.success && response.data && response.data.length > 0) {
-          // Get the first active notice
           const activeNotice = response.data.find(n => n.isActive) || response.data[0];
           setNotice(activeNotice);
         }
@@ -41,30 +40,30 @@ const Notice: React.FC = () => {
   const IconComponent = iconMap[notice.icon || 'FaRobot'] || FaRobot;
 
   return (
-    <div className="mb-4 sm:mb-6">
-      <div className="relative px-3 py-3 rounded-lg shadow-sm bg-gradient-to-r from-purple-50 via-violet-50 to-fuchsia-50 sm:rounded-xl sm:px-4 md:px-6 sm:py-4">
+    <div className="mb-1.5 sm:mb-2">
+      <div className="relative px-2.5 py-2 rounded-lg shadow-sm bg-gradient-to-r from-red-50 via-rose-50 to-orange-50 sm:rounded-xl sm:px-3 md:px-5 sm:py-2.5">
         <button
           onClick={() => setIsVisible(false)}
-          className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 p-1 sm:p-1.5 rounded-full border-2 border-purple-500 hover:bg-purple-100 transition-colors text-purple-600 hover:text-purple-700 z-10 bg-white/80 backdrop-blur-sm"
+          className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 p-0.5 sm:p-1 rounded-full border-2 border-red-400 hover:bg-red-100 transition-colors text-red-500 hover:text-red-600 z-10 bg-white/80 backdrop-blur-sm"
           aria-label="Close notice"
         >
-          <FaTimes className="text-xs sm:text-sm md:text-base" />
+          <FaTimes className="text-[10px] sm:text-xs" />
         </button>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 pr-8 sm:pr-10">
-          <div className="flex items-center flex-1 min-w-0 gap-2 sm:gap-3">
-            <IconComponent className="flex-shrink-0 text-lg text-purple-600 sm:text-xl md:text-2xl" />
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pr-6 sm:pr-8">
+          <div className="flex items-center flex-1 min-w-0 gap-1.5 sm:gap-2">
+            <IconComponent className="flex-shrink-0 text-base text-red-500 sm:text-lg" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold leading-tight sm:text-sm md:text-base text-slate-800 pr-1">
+              <p className="text-[10px] font-semibold leading-tight sm:text-xs md:text-sm text-red-600 pr-1">
                 {notice.message}
               </p>
               {notice.features && notice.features.length > 0 && (
-                <div className="flex flex-wrap items-center gap-3 mt-1 sm:gap-4">
+                <div className="flex flex-wrap items-center gap-2 mt-0.5 sm:gap-3">
                   {notice.features.map((feature, index) => {
                     const FeatureIcon = feature.icon ? (iconMap[feature.icon] || FaShieldAlt) : FaShieldAlt;
                     return (
-                      <div key={index} className="flex items-center gap-1.5 sm:gap-2">
-                        <FeatureIcon className="flex-shrink-0 text-xs text-green-600 sm:text-sm" />
-                        <span className="text-[10px] sm:text-xs text-slate-700">
+                      <div key={index} className="flex items-center gap-1 sm:gap-1.5">
+                        <FeatureIcon className="flex-shrink-0 text-[10px] text-red-400 sm:text-xs" />
+                        <span className="text-[9px] sm:text-[10px] text-red-500">
                           {feature.text}
                         </span>
                       </div>
@@ -81,5 +80,3 @@ const Notice: React.FC = () => {
 };
 
 export default Notice;
-
-

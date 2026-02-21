@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaImages, FaBell, FaGamepad, FaPalette, FaKey, FaCalendarAlt, FaStore, FaCrown } from 'react-icons/fa';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaGamepad, FaPalette, FaKey, FaCalendarAlt, FaStore, FaCrown } from 'react-icons/fa';
 import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership') => void;
   onLogout: () => void;
 };
 
@@ -18,14 +18,12 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts', adminOnly: false },
     { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageDigitalCodes', adminOnly: false },
     { id: 'subscriptions' as const, label: 'Subscriptions', icon: FaCalendarAlt, permission: 'canManageSubscriptions', adminOnly: false },
-    { id: 'banners' as const, label: 'Banner Management', icon: FaImages, permission: 'canManageBanners', adminOnly: false },
-    { id: 'notices' as const, label: 'Notice Management', icon: FaBell, permission: 'canManageNotices', adminOnly: false },
+    { id: 'theme' as const, label: 'Store Customize & Logo', icon: FaPalette, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages', adminOnly: false },
     { id: 'users' as const, label: 'User Management', icon: FaUsers, permission: 'canManageUsers', adminOnly: false },
     { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders', adminOnly: false },
     { id: 'reseller' as const, label: 'Reseller Management', icon: FaStore, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'membership' as const, label: 'Membership Packages', icon: FaCrown, permission: 'canAccessDashboard', adminOnly: true },
-    { id: 'theme' as const, label: 'Store Customize', icon: FaPalette, permission: 'canAccessDashboard', adminOnly: true },
   ];
 
   // Filter menu items based on permissions
@@ -83,7 +81,7 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
             <p
               className="m-0 text-sm font-extrabold tracking-tight text-transparent bg-clip-text drop-shadow-sm"
               style={{ 
-                fontFamily: "'Poppins', 'Inter', system-ui", 
+                fontFamily: "var(--theme-font-family), sans-serif", 
                 letterSpacing: '0.5px',
                 backgroundImage: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary), var(--theme-primary))`
               }}

@@ -1,8 +1,10 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
+import SearchBarRow from './components/SearchBarRow';
 import Notice from './components/Notice';
 import Hero from './components/Hero';
+import SupportSection from './components/SupportSection';
 import ProductGrid from './components/ProductGrid';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
@@ -13,7 +15,7 @@ import ChangePassword from './components/ChangePassword';
 import OrderHistory from './components/OrderHistory';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
-import WhatsAppButton from './components/WhatsAppButton';
+import SupportFab from './components/SupportFab';
 import RoboGameZone from './components/RoboGameZone';
 import useCatalog from './hooks/useCatalog';
 import useDigitalCodes from './hooks/useDigitalCodes';
@@ -22,6 +24,7 @@ import useAuth from './hooks/useAuth';
 import useUserRole from './hooks/useUserRole';
 import { useTheme } from './contexts/ThemeContext';
 import { ModeratorPermissionsProvider } from './contexts/ModeratorPermissionsContext';
+import { ToastProvider } from './contexts/ToastContext';
 import FFIdInfo from './components/FFIdInfo';
 import CategoryPage from './components/CategoryPage';
 import Footer from './components/Footer';
@@ -46,6 +49,8 @@ function App() {
   const { isAdmin } = useUserRole();
   const { livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, subscriptionsEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsBadge, subscriptionsHeading } = useTheme();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const searchQuery = searchParams.get('search') ?? undefined;
   const isAdminRoute = location.pathname === '/admin';
   
   
@@ -84,7 +89,7 @@ function App() {
   // Wait for both catalog and digitalCodes to load before rendering website
   if (catalog.loading || digitalCodes.loading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
+      <div className="max-w-[1380px] mx-auto px-3 sm:px-4 md:px-6 pt-1 sm:pt-2 md:pt-3 pb-4 sm:pb-6 md:pb-12 min-h-screen">
         {!isAdminRoute && <Navbar />}
         <Notice />
         <SkeletonLoader />
@@ -101,8 +106,9 @@ function App() {
   return (
     <>
       {!isAdminRoute && (
-        <div className="max-w-[1200px] mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-12 min-h-screen">
+        <div className="max-w-[1380px] mx-auto px-3 sm:px-4 md:px-6 pt-1 sm:pt-2 md:pt-3 pb-4 sm:pb-6 md:pb-12 min-h-screen">
           <Navbar />
+          <SearchBarRow />
           <Routes>
             {/* Always accessible routes */}
             <Route path="/robo-game-zone" element={<RoboGameZone />} />
@@ -208,7 +214,8 @@ function App() {
                 <>
                   <Notice />
                   <Hero />
-                  {topUpCategoriesEnabled && <ProductGrid categories={catalog.categories} badgeText={topUpCategoriesBadge} headingText={topUpCategoriesHeading} />}
+                  <SupportSection />
+                  {topUpCategoriesEnabled && <ProductGrid categories={catalog.categories} badgeText={topUpCategoriesBadge} headingText={topUpCategoriesHeading} searchQuery={searchQuery} />}
                   {digitalCodesEnabled && <DigitalCodesGrid categories={digitalCodes.categories} badgeText={digitalCodesBadge} headingText={digitalCodesHeading} />}
                   {subscriptionsEnabled && <SubscriptionGrid products={subscriptions.products} badgeText={subscriptionsBadge} headingText={subscriptionsHeading} />}
                   {livePurchaseStatementEnabled && <LivePurchaseStatement />}
@@ -245,7 +252,7 @@ function App() {
             />
           </Routes>
           <InstallButton />
-          <WhatsAppButton />
+          <SupportFab />
         </div>
       )}
       {isAdminRoute && (
@@ -255,7 +262,9 @@ function App() {
               path="/admin"
               element={
                 user && isAdmin ? (
-                  <AdminPanel onLogout={logout} />
+                  <ToastProvider>
+                    <AdminPanel onLogout={logout} />
+                  </ToastProvider>
                 ) : user ? (
                   <NotFound />
                 ) : (

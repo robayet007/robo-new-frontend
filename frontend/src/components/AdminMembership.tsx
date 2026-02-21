@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import useAuth from '../hooks/useAuth';
 import { membershipApi } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import type { BackendMembershipPackage } from '../types';
 import { FaCrown, FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 
 function AdminMembership() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [packages, setPackages] = useState<BackendMembershipPackage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   
@@ -21,13 +22,6 @@ function AdminMembership() {
     description: '',
     isActive: true
   });
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   useEffect(() => {
     // Wait for user to be loaded before making API call
@@ -48,11 +42,11 @@ function AdminMembership() {
       if (response.success && Array.isArray(response.data)) {
         setPackages(response.data);
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to load packages' });
+        showToast({ type: 'error', text: response.message || 'Failed to load packages' });
       }
     } catch (error: any) {
       console.error('Failed to load packages:', error);
-      setMessage({ type: 'error', text: error?.message || 'Failed to load packages' });
+      showToast({ type: 'error', text: error?.message || 'Failed to load packages' });
     } finally {
       setLoading(false);
     }
@@ -88,7 +82,7 @@ function AdminMembership() {
     e.preventDefault();
     
     if (!formData.name || !formData.durationDays || !formData.price) {
-      setMessage({ type: 'error', text: 'Please fill in all required fields' });
+      showToast({ type: 'error', text: 'Please fill in all required fields' });
       return;
     }
 
@@ -96,12 +90,12 @@ function AdminMembership() {
     const price = parseFloat(formData.price);
 
     if (isNaN(durationDays) || durationDays < 1) {
-      setMessage({ type: 'error', text: 'Duration must be at least 1 day' });
+      showToast({ type: 'error', text: 'Duration must be at least 1 day' });
       return;
     }
 
     if (isNaN(price) || price < 0) {
-      setMessage({ type: 'error', text: 'Price must be a valid number' });
+      showToast({ type: 'error', text: 'Price must be a valid number' });
       return;
     }
 
@@ -139,18 +133,18 @@ function AdminMembership() {
       }
 
       if (response.success) {
-        setMessage({ 
+        showToast({ 
           type: 'success', 
           text: editingId ? 'Package updated successfully' : 'Package created successfully' 
         });
         resetForm();
         await loadPackages();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to save package' });
+        showToast({ type: 'error', text: response.message || 'Failed to save package' });
       }
     } catch (error: any) {
       console.error('Failed to save package:', error);
-      setMessage({ type: 'error', text: error?.message || 'Failed to save package' });
+      showToast({ type: 'error', text: error?.message || 'Failed to save package' });
     } finally {
       setLoading(false);
     }
@@ -165,14 +159,14 @@ function AdminMembership() {
       setLoading(true);
       const response = await membershipApi.deletePackage(id, user?.uid, user?.email || undefined);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Package disabled successfully' });
+        showToast({ type: 'success', text: 'Package disabled successfully' });
         await loadPackages();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete package' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete package' });
       }
     } catch (error: any) {
       console.error('Failed to delete package:', error);
-      setMessage({ type: 'error', text: error?.message || 'Failed to delete package' });
+      showToast({ type: 'error', text: error?.message || 'Failed to delete package' });
     } finally {
       setLoading(false);
     }
@@ -208,16 +202,6 @@ function AdminMembership() {
       </div>
 
       {/* Message */}
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          <p className="font-semibold">{message.text}</p>
-        </div>
-      )}
-
       {/* Create/Edit Form */}
       {showForm && (
         <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">

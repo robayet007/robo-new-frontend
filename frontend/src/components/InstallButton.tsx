@@ -201,9 +201,10 @@ function InstallButton() {
     return (
       <button
         onClick={handleIOSInstallClick}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold text-sm shadow-lg shadow-purple-500/30 hover:from-purple-600 hover:to-violet-700 transition-all duration-200 animate-pulse hover:animate-none"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
         style={{
-          boxShadow: '0 10px 30px rgba(168, 85, 247, 0.4)'
+          background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+          boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
         }}
         aria-label="Install App"
       >
@@ -221,9 +222,10 @@ function InstallButton() {
     return (
       <button
         onClick={handleInstallClick}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 text-white font-semibold text-sm shadow-lg shadow-purple-500/30 hover:from-purple-600 hover:to-violet-700 transition-all duration-200 animate-pulse hover:animate-none"
+        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
         style={{
-          boxShadow: '0 10px 30px rgba(168, 85, 247, 0.4)'
+          background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+          boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
         }}
         aria-label="Install App"
       >

@@ -20,14 +20,17 @@ export default defineConfig({
     // Ensure assets are referenced correctly
     assetsDir: 'assets',
   },
-  // Server configuration for WebSocket
+  // Server configuration for WebSocket / HMR
   server: {
+    host: true,
+    strictPort: false,
     hmr: {
-      // Suppress WebSocket connection errors in console
       overlay: true,
-      clientPort: 5173,
+      host: 'localhost',
+      port: 5173,
+      protocol: 'ws',
+      timeout: 5000,
     },
-    // Handle WebSocket reconnection gracefully
     watch: {
       usePolling: false,
     },

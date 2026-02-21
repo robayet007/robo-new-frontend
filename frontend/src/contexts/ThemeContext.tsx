@@ -14,21 +14,33 @@ interface ThemeContextType {
   subscriptionsEnabled: boolean;
   subscriptionsBadge: string;
   subscriptionsHeading: string;
+  navbarLogoUrl: string;
+  fontFamily: string;
+  fontSizeBase: number;
+  navbarSearchPlaceholder: string;
+  navbarSearchEnabled: boolean;
+  supportWhatsAppUrl: string;
+  supportMessengerUrl: string;
+  supportTelegramUrl: string;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, digitalCodesBadge?: string, digitalCodesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, digitalCodesBadge?: string, digitalCodesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Default colors (purple theme)
-const DEFAULT_PRIMARY = '#a855f7';
-const DEFAULT_SECONDARY = '#8b5cf6';
-const DEFAULT_TOP_UP_BADGE = '💎 Top-up categories';
+// Default colors (red theme #F05656)
+const DEFAULT_PRIMARY = '#F05656';
+const DEFAULT_SECONDARY = '#e04a4a';
+const DEFAULT_TOP_UP_BADGE = 'Top-up categories';
 const DEFAULT_TOP_UP_HEADING = 'Browse Categories';
-const DEFAULT_DIGITAL_CODES_BADGE = '🔑 Digital Codes';
+const DEFAULT_DIGITAL_CODES_BADGE = 'Digital Codes';
 const DEFAULT_DIGITAL_CODES_HEADING = 'Digital Codes Categories';
-const DEFAULT_SUBSCRIPTIONS_BADGE = '📅 Subscriptions';
+const DEFAULT_SUBSCRIPTIONS_BADGE = 'Subscriptions';
 const DEFAULT_SUBSCRIPTIONS_HEADING = 'Subscription Plans';
+const DEFAULT_FONT_FAMILY = 'Plus Jakarta Sans';
+const DEFAULT_FONT_SIZE_BASE = 16;
+const DEFAULT_NAVBAR_SEARCH_PLACEHOLDER = 'Search games...';
+const DEFAULT_NAVBAR_SEARCH_ENABLED = true;
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState<string>(DEFAULT_PRIMARY);
@@ -43,10 +55,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [subscriptionsEnabled, setSubscriptionsEnabled] = useState<boolean>(true);
   const [subscriptionsBadge, setSubscriptionsBadge] = useState<string>(DEFAULT_SUBSCRIPTIONS_BADGE);
   const [subscriptionsHeading, setSubscriptionsHeading] = useState<string>(DEFAULT_SUBSCRIPTIONS_HEADING);
+  const [navbarLogoUrl, setNavbarLogoUrl] = useState<string>('');
+  const [fontFamily, setFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
+  const [fontSizeBase, setFontSizeBase] = useState<number>(DEFAULT_FONT_SIZE_BASE);
+  const [navbarSearchPlaceholder, setNavbarSearchPlaceholder] = useState<string>(DEFAULT_NAVBAR_SEARCH_PLACEHOLDER);
+  const [navbarSearchEnabled, setNavbarSearchEnabled] = useState<boolean>(DEFAULT_NAVBAR_SEARCH_ENABLED);
+  const [supportWhatsAppUrl, setSupportWhatsAppUrl] = useState<string>('');
+  const [supportMessengerUrl, setSupportMessengerUrl] = useState<string>('');
+  const [supportTelegramUrl, setSupportTelegramUrl] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
-  // Apply CSS variables to root element
-  const applyTheme = (primary: string, secondary: string) => {
+  // Apply CSS variables to root element (colors + typography)
+  const applyTheme = (primary: string, secondary: string, font?: string, fontSize?: number) => {
     const root = document.documentElement;
     
     // Convert hex to RGB for rgba usage
@@ -86,11 +106,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const darkerB = Math.max(0, secondaryRgb.b - 20);
       root.style.setProperty('--theme-secondary-dark', `rgb(${darkerR}, ${darkerG}, ${darkerB})`);
     }
+
+    // Typography (use passed args when provided, else current state)
+    const fontVal = font !== undefined ? font : fontFamily;
+    const fontSizeVal = fontSize !== undefined ? fontSize : fontSizeBase;
+    root.style.setProperty('--theme-font-family', fontVal);
+    root.style.setProperty('--theme-font-size-base', `${fontSizeVal}px`);
   };
 
-  // Apply default theme immediately on mount (before Firestore loads)
+  // Apply default theme immediately on mount (before API loads)
   useEffect(() => {
-    applyTheme(DEFAULT_PRIMARY, DEFAULT_SECONDARY);
+    applyTheme(DEFAULT_PRIMARY, DEFAULT_SECONDARY, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE_BASE);
   }, []);
 
   // Load theme from MongoDB backend
@@ -111,8 +137,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const subscriptionsEnabledValue = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : true;
           const subscriptionsBadgeValue = response.data.subscriptionsBadge || DEFAULT_SUBSCRIPTIONS_BADGE;
           const subscriptionsHeadingValue = response.data.subscriptionsHeading || DEFAULT_SUBSCRIPTIONS_HEADING;
-          
-          // console.log('✅ Theme loaded from MongoDB:', { primary, secondary });
+          const navbarLogoUrlValue = response.data.navbarLogoUrl || '';
+          const fontFamilyValue = response.data.fontFamily ?? DEFAULT_FONT_FAMILY;
+          const fontSizeBaseValue = response.data.fontSizeBase ?? DEFAULT_FONT_SIZE_BASE;
+          const navbarSearchPlaceholderValue = response.data.navbarSearchPlaceholder ?? DEFAULT_NAVBAR_SEARCH_PLACEHOLDER;
+          const navbarSearchEnabledValue = response.data.navbarSearchEnabled ?? DEFAULT_NAVBAR_SEARCH_ENABLED;
+          const supportWhatsAppUrlValue = response.data.supportWhatsAppUrl ?? '';
+          const supportMessengerUrlValue = response.data.supportMessengerUrl ?? '';
+          const supportTelegramUrlValue = response.data.supportTelegramUrl ?? '';
+
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
           setLivePurchaseStatementEnabled(livePurchaseEnabled);
@@ -125,7 +158,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setSubscriptionsEnabled(subscriptionsEnabledValue);
           setSubscriptionsBadge(subscriptionsBadgeValue);
           setSubscriptionsHeading(subscriptionsHeadingValue);
-          applyTheme(primary, secondary);
+          setNavbarLogoUrl(navbarLogoUrlValue);
+          setFontFamily(fontFamilyValue);
+          setFontSizeBase(fontSizeBaseValue);
+          setNavbarSearchPlaceholder(navbarSearchPlaceholderValue);
+          setNavbarSearchEnabled(navbarSearchEnabledValue);
+          setSupportWhatsAppUrl(supportWhatsAppUrlValue);
+          setSupportMessengerUrl(supportMessengerUrlValue);
+          setSupportTelegramUrl(supportTelegramUrlValue);
+          applyTheme(primary, secondary, fontFamilyValue, fontSizeBaseValue);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
           // No theme settings found, use defaults
@@ -159,9 +200,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, digitalCodesBadgeValue?: string, digitalCodesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, digitalCodesBadgeValue?: string, digitalCodesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string) => {
     try {
-      // console.log('🔄 Updating theme:', { primary, secondary, updatedBy, livePurchaseEnabled, topUpCategoriesEnabled, digitalCodesEnabled, topUpCategoriesBadgeValue, topUpCategoriesHeadingValue, digitalCodesBadgeValue, digitalCodesHeadingValue, subscriptionsEnabledValue, subscriptionsBadgeValue, subscriptionsHeadingValue });
       const response = await themeApi.update({
         primaryColor: primary,
         secondaryColor: secondary,
@@ -175,12 +215,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         subscriptionsEnabled: subscriptionsEnabledValue,
         subscriptionsBadge: subscriptionsBadgeValue,
         subscriptionsHeading: subscriptionsHeadingValue,
+        navbarLogoUrl: navbarLogoUrlValue,
+        fontFamily: fontFamilyValue,
+        fontSizeBase: fontSizeBaseValue,
+        navbarSearchPlaceholder: navbarSearchPlaceholderValue,
+        navbarSearchEnabled: navbarSearchEnabledValue,
+        supportWhatsAppUrl: supportWhatsAppUrlValue,
+        supportMessengerUrl: supportMessengerUrlValue,
+        supportTelegramUrl: supportTelegramUrlValue,
         updatedBy: updatedBy || 'admin'
       });
 
       if (response.success && response.data) {
-        // console.log('✅ Theme updated successfully:', response.data);
-        // Use the colors returned from the server to ensure consistency
         const savedPrimary = response.data.primaryColor || primary;
         const savedSecondary = response.data.secondaryColor || secondary;
         const savedLivePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : (livePurchaseEnabled !== undefined ? livePurchaseEnabled : true);
@@ -193,8 +239,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedSubscriptionsEnabled = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : (subscriptionsEnabledValue !== undefined ? subscriptionsEnabledValue : true);
         const savedSubscriptionsBadge = response.data.subscriptionsBadge || subscriptionsBadgeValue || DEFAULT_SUBSCRIPTIONS_BADGE;
         const savedSubscriptionsHeading = response.data.subscriptionsHeading || subscriptionsHeadingValue || DEFAULT_SUBSCRIPTIONS_HEADING;
-        
-        // Update local state immediately
+        const savedNavbarLogoUrl = response.data.navbarLogoUrl ?? navbarLogoUrlValue ?? '';
+        const savedFontFamily = response.data.fontFamily ?? fontFamilyValue ?? fontFamily;
+        const savedFontSizeBase = response.data.fontSizeBase ?? fontSizeBaseValue ?? fontSizeBase;
+        const savedNavbarSearchPlaceholder = response.data.navbarSearchPlaceholder ?? navbarSearchPlaceholderValue ?? navbarSearchPlaceholder;
+        const savedNavbarSearchEnabled = response.data.navbarSearchEnabled ?? navbarSearchEnabledValue ?? navbarSearchEnabled;
+        const savedSupportWhatsAppUrl = response.data.supportWhatsAppUrl ?? supportWhatsAppUrlValue ?? supportWhatsAppUrl;
+        const savedSupportMessengerUrl = response.data.supportMessengerUrl ?? supportMessengerUrlValue ?? supportMessengerUrl;
+        const savedSupportTelegramUrl = response.data.supportTelegramUrl ?? supportTelegramUrlValue ?? supportTelegramUrl;
+
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
         setLivePurchaseStatementEnabled(savedLivePurchaseEnabled);
@@ -207,7 +260,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setSubscriptionsEnabled(savedSubscriptionsEnabled);
         setSubscriptionsBadge(savedSubscriptionsBadge);
         setSubscriptionsHeading(savedSubscriptionsHeading);
-        applyTheme(savedPrimary, savedSecondary);
+        setNavbarLogoUrl(savedNavbarLogoUrl);
+        setFontFamily(savedFontFamily);
+        setFontSizeBase(savedFontSizeBase);
+        setNavbarSearchPlaceholder(savedNavbarSearchPlaceholder);
+        setNavbarSearchEnabled(savedNavbarSearchEnabled);
+        setSupportWhatsAppUrl(savedSupportWhatsAppUrl);
+        setSupportMessengerUrl(savedSupportMessengerUrl);
+        setSupportTelegramUrl(savedSupportTelegramUrl);
+        applyTheme(savedPrimary, savedSecondary, savedFontFamily, savedFontSizeBase);
       } else {
         const errorMessage = response.message || 'Failed to update theme';
         console.error('❌ Theme update failed:', errorMessage);
@@ -237,6 +298,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         subscriptionsEnabled,
         subscriptionsBadge,
         subscriptionsHeading,
+        navbarLogoUrl,
+        fontFamily,
+        fontSizeBase,
+        navbarSearchPlaceholder,
+        navbarSearchEnabled,
+        supportWhatsAppUrl,
+        supportMessengerUrl,
+        supportTelegramUrl,
         isLoaded,
         updateTheme,
       }}

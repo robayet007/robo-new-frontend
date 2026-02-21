@@ -2,12 +2,15 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import type { FormEvent } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { digitalCodeApi, dealApi } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct, BackendDigitalCode, BackendDeal } from '../types';
 import { FaChartBar, FaEdit, FaTrash, FaCopy, FaCheck } from 'react-icons/fa';
+import ImageUpload from './ImageUpload';
 
 type DigitalCodeTab = 'categories' | 'products' | 'codes' | 'deals' | 'status';
 
 function AdminDigitalCodes() {
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<DigitalCodeTab>('categories');
   const [categories, setCategories] = useState<BackendDigitalCodeCategory[]>([]);
   const [products, setProducts] = useState<BackendDigitalCodeProduct[]>([]);
@@ -16,7 +19,6 @@ function AdminDigitalCodes() {
   const [stats, setStats] = useState<{ active: number; used: number; total: number }>({ active: 0, used: 0, total: 0 });
   const [loading, setLoading] = useState(false);
   const [productsLoading, setProductsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   
   // Category form state
   const [catId, setCatId] = useState('');
@@ -56,13 +58,6 @@ function AdminDigitalCodes() {
   
   // Status tab state
   const [selectedProductForStatus, setSelectedProductForStatus] = useState<string>('');
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   useEffect(() => {
     loadCategories();
@@ -269,7 +264,7 @@ function AdminDigitalCodes() {
   const handleAddCategory = async (e: FormEvent) => {
     e.preventDefault();
     if (!catId.trim() || !catName.trim()) {
-      setMessage({ type: 'error', text: 'Category ID and Name are required' });
+      showToast({ type: 'error', text: 'Category ID and Name are required' });
       return;
     }
 
@@ -285,7 +280,7 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Category created successfully!' });
+        showToast({ type: 'success', text: 'Category created successfully!' });
         setCatId('');
         setCatName('');
         setCatDesc('');
@@ -294,10 +289,10 @@ function AdminDigitalCodes() {
         setCatDealId('');
         await loadCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create category' });
+        showToast({ type: 'error', text: response.message || 'Failed to create category' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create category' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create category' });
     }
   };
 
@@ -314,7 +309,7 @@ function AdminDigitalCodes() {
   const handleUpdateCategory = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingCategory || !catName.trim()) {
-      setMessage({ type: 'error', text: 'Category name is required' });
+      showToast({ type: 'error', text: 'Category name is required' });
       return;
     }
 
@@ -328,7 +323,7 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Category updated successfully!' });
+        showToast({ type: 'success', text: 'Category updated successfully!' });
         setEditingCategory(null);
         setCatId('');
         setCatName('');
@@ -338,10 +333,10 @@ function AdminDigitalCodes() {
         setCatDealId('');
         await loadCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update category' });
+        showToast({ type: 'error', text: response.message || 'Failed to update category' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update category' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update category' });
     }
   };
 
@@ -353,13 +348,13 @@ function AdminDigitalCodes() {
     try {
       const response = await digitalCodeApi.deleteCategory(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Category deleted successfully!' });
+        showToast({ type: 'success', text: 'Category deleted successfully!' });
         await loadCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete category' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete category' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete category' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete category' });
     }
   };
 
@@ -367,13 +362,13 @@ function AdminDigitalCodes() {
     try {
       const response = await digitalCodeApi.updateCategory(id, { isActive: !currentStatus });
       if (response.success) {
-        setMessage({ type: 'success', text: `Category ${!currentStatus ? 'activated' : 'deactivated'} successfully!` });
+        showToast({ type: 'success', text: `Category ${!currentStatus ? 'activated' : 'deactivated'} successfully!` });
         await loadCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update category status' });
+        showToast({ type: 'error', text: response.message || 'Failed to update category status' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update category status' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update category status' });
     }
   };
 
@@ -381,7 +376,7 @@ function AdminDigitalCodes() {
   const handleAddProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!productName.trim() || !productPrice.trim()) {
-      setMessage({ type: 'error', text: 'Name and Price are required' });
+      showToast({ type: 'error', text: 'Name and Price are required' });
       return;
     }
 
@@ -402,7 +397,7 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product created successfully!' });
+        showToast({ type: 'success', text: 'Product created successfully!' });
         setProductId('');
         setProductName('');
         setProductDesc('');
@@ -412,10 +407,10 @@ function AdminDigitalCodes() {
         setInputFields([]);
         await loadProducts(true); // Force reload to get new product
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create product' });
+        showToast({ type: 'error', text: response.message || 'Failed to create product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create product' });
     }
   };
 
@@ -438,7 +433,7 @@ function AdminDigitalCodes() {
   const handleUpdateProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !productName.trim() || !productPrice.trim()) {
-      setMessage({ type: 'error', text: 'Product name and price are required' });
+      showToast({ type: 'error', text: 'Product name and price are required' });
       return;
     }
 
@@ -457,7 +452,7 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product updated successfully!' });
+        showToast({ type: 'success', text: 'Product updated successfully!' });
         setEditingProduct(null);
         setProductId('');
         setProductName('');
@@ -468,10 +463,10 @@ function AdminDigitalCodes() {
         setInputFields([]);
         await loadProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update product' });
+        showToast({ type: 'error', text: response.message || 'Failed to update product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update product' });
     }
   };
 
@@ -483,19 +478,19 @@ function AdminDigitalCodes() {
     try {
       const response = await digitalCodeApi.deleteProduct(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Product deleted successfully!' });
+        showToast({ type: 'success', text: 'Product deleted successfully!' });
         await loadProducts(true); // Force reload to remove deleted product
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete product' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete product' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete product' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete product' });
     }
   };
 
   const handleAddInputField = () => {
     if (!newInputFieldName.trim()) {
-      setMessage({ type: 'error', text: 'Input field name is required' });
+      showToast({ type: 'error', text: 'Input field name is required' });
       return;
     }
     setInputFields([...inputFields, {
@@ -515,18 +510,18 @@ function AdminDigitalCodes() {
   const handleBulkUploadCodes = async (e: FormEvent) => {
     e.preventDefault();
     if (!bulkCodeText.trim()) {
-      setMessage({ type: 'error', text: 'Code text is required' });
+      showToast({ type: 'error', text: 'Code text is required' });
       return;
     }
     if (!codeProductId) {
-      setMessage({ type: 'error', text: 'Product selection is required' });
+      showToast({ type: 'error', text: 'Product selection is required' });
       return;
     }
 
     try {
       setLoading(true);
       if (!codeCategoryId) {
-        setMessage({ type: 'error', text: 'Please select a category' });
+        showToast({ type: 'error', text: 'Please select a category' });
         return;
       }
       
@@ -537,17 +532,17 @@ function AdminDigitalCodes() {
       );
 
       if (response.success) {
-        setMessage({ type: 'success', text: `Successfully uploaded ${response.data?.inserted || 0} code(s)!` });
+        showToast({ type: 'success', text: `Successfully uploaded ${response.data?.inserted || 0} code(s)!` });
         setBulkCodeText('');
         if (activeTab === 'status') {
           await loadCodes();
         }
         await loadStats();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to upload codes' });
+        showToast({ type: 'error', text: response.message || 'Failed to upload codes' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to upload codes' });
+      showToast({ type: 'error', text: err?.message || 'Failed to upload codes' });
     } finally {
       setLoading(false);
     }
@@ -556,16 +551,16 @@ function AdminDigitalCodes() {
   const handleAddSingleCode = async (e: FormEvent) => {
     e.preventDefault();
     if (!singleCode.trim()) {
-      setMessage({ type: 'error', text: 'Code is required' });
+      showToast({ type: 'error', text: 'Code is required' });
       return;
     }
     if (!codeProductId) {
-      setMessage({ type: 'error', text: 'Product selection is required' });
+      showToast({ type: 'error', text: 'Product selection is required' });
       return;
     }
 
     if (!codeCategoryId) {
-      setMessage({ type: 'error', text: 'Please select a category' });
+      showToast({ type: 'error', text: 'Please select a category' });
       return;
     }
 
@@ -578,7 +573,7 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Code added successfully!' });
+        showToast({ type: 'success', text: 'Code added successfully!' });
         setSingleCode('');
         setSingleCodePrefix('');
         if (activeTab === 'status') {
@@ -586,10 +581,10 @@ function AdminDigitalCodes() {
         }
         await loadStats();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to add code' });
+        showToast({ type: 'error', text: response.message || 'Failed to add code' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to add code' });
+      showToast({ type: 'error', text: err?.message || 'Failed to add code' });
     }
   };
 
@@ -600,7 +595,7 @@ function AdminDigitalCodes() {
       setCopiedCode(code);
       setTimeout(() => setCopiedCode(null), 2000);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to copy code' });
+      showToast({ type: 'error', text: 'Failed to copy code' });
     }
   };
 
@@ -608,7 +603,7 @@ function AdminDigitalCodes() {
   const handleAddDeal = async (e: FormEvent) => {
     e.preventDefault();
     if (!dealName.trim()) {
-      setMessage({ type: 'error', text: 'Deal name is required' });
+      showToast({ type: 'error', text: 'Deal name is required' });
       return;
     }
 
@@ -623,16 +618,16 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal created successfully!' });
+        showToast({ type: 'success', text: 'Deal created successfully!' });
         setDealName('');
         setDealDesc('');
         setDealOrder('0');
         await loadDeals();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to create deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create deal' });
     }
   };
 
@@ -646,7 +641,7 @@ function AdminDigitalCodes() {
   const handleUpdateDeal = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingDeal || !dealName.trim()) {
-      setMessage({ type: 'error', text: 'Deal name is required' });
+      showToast({ type: 'error', text: 'Deal name is required' });
       return;
     }
 
@@ -658,17 +653,17 @@ function AdminDigitalCodes() {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal updated successfully!' });
+        showToast({ type: 'success', text: 'Deal updated successfully!' });
         setEditingDeal(null);
         setDealName('');
         setDealDesc('');
         setDealOrder('0');
         await loadDeals();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to update deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update deal' });
     }
   };
 
@@ -680,14 +675,14 @@ function AdminDigitalCodes() {
     try {
       const response = await dealApi.delete(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal deleted successfully!' });
+        showToast({ type: 'success', text: 'Deal deleted successfully!' });
         await loadDeals();
         await loadCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete deal' });
     }
   };
 
@@ -720,14 +715,6 @@ function AdminDigitalCodes() {
         <h2 className="text-2xl font-bold text-slate-900">Digital Codes Management</h2>
         <p className="text-sm text-slate-600">Manage categories, products, codes, and deals for digital codes</p>
       </div>
-
-      {message && (
-        <div className={`mb-4 p-3 rounded-lg ${
-          message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'
-        }`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="mb-6 border-b border-slate-200">
@@ -797,12 +784,11 @@ function AdminDigitalCodes() {
                   />
                 </div>
                 <div>
-                  <label className="block mb-1 text-sm font-medium">Image URL</label>
-                  <input
-                    type="text"
+                  <ImageUpload
+                    label="Image"
                     value={catImage}
-                    onChange={(e) => setCatImage(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-lg border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    onChange={setCatImage}
+                    uploadEndpoint="/upload/category-image"
                   />
                 </div>
                 <div>

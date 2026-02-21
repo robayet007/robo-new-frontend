@@ -18,13 +18,18 @@ import { db } from '../config/firebase';
 // Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
 // These are browser security warnings and Firebase permission errors that don't affect functionality
 // Note: This is a fallback - firebase.ts also handles suppression
+// In development, Firestore errors (FirebaseError, PERMISSION_DENIED) are not suppressed so rules issues are visible
 const originalError = console.error;
 const isProduction = import.meta.env.PROD;
 console.error = (...args: any[]) => {
   const message = String(args[0] || '');
+  if (!isProduction && (message.includes('FirebaseError') || message.includes('PERMISSION_DENIED'))) {
+    originalError.apply(console, args);
+    return;
+  }
   // Suppress COOP-related warnings and Firebase permission errors
   if (
-    message.includes('Cross-Origin-Opener-Policy') || 
+    message.includes('Cross-Origin-Opener-Policy') ||
     message.includes('window.closed') ||
     message.includes('FirebaseError') ||
     message.includes('Installations') ||

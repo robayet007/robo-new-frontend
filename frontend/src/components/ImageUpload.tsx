@@ -28,18 +28,9 @@ const getBackendBaseURL = (): string => {
   return backendUrl;
 };
 
-// Get API key for authentication
+// Get API key for authentication (optional – backend may allow requests without it)
 const getApiKey = (): string => {
-  const apiKey = import.meta.env.VITE_API_KEY;
-  
-  if (!apiKey) {
-    throw new Error(
-      'VITE_API_KEY environment variable is not set. ' +
-      'Please set it in your .env file or Vercel environment variables.'
-    );
-  }
-  
-  return apiKey;
+  return import.meta.env.VITE_API_KEY || '';
 };
 
 interface ImageUploadProps {
@@ -122,11 +113,12 @@ function ImageUpload({
       const fullUrl = `${baseURL}${uploadEndpoint}`;
       const apiKey = getApiKey();
 
+      const headers: Record<string, string> = {};
+      if (apiKey) headers['X-API-Key'] = apiKey;
+
       const response = await fetch(fullUrl, {
         method: 'POST',
-        headers: {
-          'X-API-Key': apiKey // Add API key header for authentication
-        },
+        headers,
         body: formData,
       });
 
@@ -217,10 +209,16 @@ function ImageUpload({
         <label
           htmlFor={`image-upload-${label.replace(/\s+/g, '-')}`}
           className={`px-4 py-2 text-sm font-semibold text-white rounded-lg cursor-pointer transition-all ${
-            uploading
-              ? 'bg-slate-400 cursor-not-allowed'
-              : 'bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700'
+            uploading ? 'bg-slate-400 cursor-not-allowed' : 'hover:opacity-90'
           }`}
+          style={
+            uploading
+              ? undefined
+              : {
+                  background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+                  boxShadow: '0 4px 14px rgba(var(--theme-primary-rgb), 0.35)'
+                }
+          }
         >
           {uploading ? 'Uploading...' : preview ? 'Change Image' : 'Choose Image'}
         </label>

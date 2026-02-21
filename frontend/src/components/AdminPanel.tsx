@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { categoryApi, dealApi, bannerApi, noticeApi, gamePackageApi } from '../services/api';
-import type { BackendDeal, BackendBanner, BackendNotice, BackendGamePackage } from '../types';
+import { categoryApi, dealApi, gamePackageApi } from '../services/api';
+import type { BackendDeal, BackendGamePackage } from '../types';
 import UserManagement from './UserManagement';
 import AdminOrders from './AdminOrders';
 import AdminSidebar from './AdminSidebar';
@@ -12,7 +12,9 @@ import AdminDigitalCodes from './AdminDigitalCodes';
 import AdminSubscriptions from './AdminSubscriptions';
 import AdminReseller from './AdminReseller';
 import AdminMembership from './AdminMembership';
+import ImageUpload from './ImageUpload';
 import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
+import { useToast } from '../contexts/ToastContext';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
 function utcToBDTimeForInput(utcDateString: string): string {
@@ -29,7 +31,7 @@ function utcToBDTimeForInput(utcDateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'banners' | 'notices' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { 
@@ -47,6 +49,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   } = useCatalog();
 
   const { role, permissions, loading: permissionsLoading } = useModeratorPermissionsContext();
+  const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   // Permission check helper
@@ -63,8 +66,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     const tabPermissions: Record<TabType, keyof typeof permissions> = {
       dashboard: 'canAccessDashboard',
       products: 'canManageProducts',
-      banners: 'canManageBanners',
-      notices: 'canManageNotices',
       gamePackages: 'canManageGamePackages',
       users: 'canManageUsers',
       orders: 'canManageOrders',
@@ -108,7 +109,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [bonus, setBonus] = useState('');
   const [tag, setTag] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [allCategories, setAllCategories] = useState<any[]>([]);
   const [deals, setDeals] = useState<BackendDeal[]>([]);
@@ -117,23 +117,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [dealDesc, setDealDesc] = useState('');
   const [dealOrder, setDealOrder] = useState('0');
   const [editingDeal, setEditingDeal] = useState<string | null>(null);
-  const [banners, setBanners] = useState<BackendBanner[]>([]);
-  const [bannerImage, setBannerImage] = useState('');
-  const [bannerTitle, setBannerTitle] = useState('');
-  const [bannerSubtitle, setBannerSubtitle] = useState('');
-  const [bannerButtonText, setBannerButtonText] = useState('');
-  const [bannerLink, setBannerLink] = useState('');
-  const [bannerOrder, setBannerOrder] = useState('0');
-  const [editingBanner, setEditingBanner] = useState<string | null>(null);
-  const [notices, setNotices] = useState<BackendNotice[]>([]);
-  const [noticeMessage, setNoticeMessage] = useState('');
-  const [noticeTitle, setNoticeTitle] = useState('');
-  const [noticeIcon, setNoticeIcon] = useState('FaRobot');
-  const [noticeFeatures, setNoticeFeatures] = useState<Array<{ icon?: string; text: string }>>([]);
-  const [noticeOrder, setNoticeOrder] = useState('0');
-  const [editingNotice, setEditingNotice] = useState<string | null>(null);
-  const [newFeatureText, setNewFeatureText] = useState('');
-  const [newFeatureIcon, setNewFeatureIcon] = useState('FaShieldAlt');
   const [gamePackages, setGamePackages] = useState<BackendGamePackage[]>([]);
   const [packageId, setPackageId] = useState('');
   const [packageTitle, setPackageTitle] = useState('');
@@ -165,13 +148,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     [products],
   );
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
   // Load all categories (including inactive) for admin
   const loadAllCategories = async () => {
     try {
@@ -189,12 +165,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       loadAllCategories();
       loadDeals();
     }
-    if (activeTab === 'banners' || activeTab === 'products') {
-      loadBanners();
-    }
-    if (activeTab === 'notices') {
-      loadNotices();
-    }
     if (activeTab === 'gamePackages') {
       loadGamePackages();
     }
@@ -204,7 +174,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   useEffect(() => {
     loadAllCategories();
     loadDeals();
-    loadBanners();
   }, []);
 
   // Load game packages
@@ -236,34 +205,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     }
   };
 
-  // Load banners
-  const loadBanners = async () => {
-    try {
-      const response = await bannerApi.getAll(true);
-      if (response.success && Array.isArray(response.data)) {
-        setBanners(response.data);
-      }
-    } catch (err) {
-      console.error('Failed to load banners:', err);
-    }
-  };
-
-  // Load notices
-  const loadNotices = async () => {
-    try {
-      const response = await noticeApi.getAll(true);
-      if (response.success && Array.isArray(response.data)) {
-        setNotices(response.data);
-      }
-    } catch (err) {
-      console.error('Failed to load notices:', err);
-    }
-  };
-
   const handleAddCategory = async (e: FormEvent) => {
     e.preventDefault();
     if (!catName.trim()) {
-      setMessage({ type: 'error', text: 'Category name is required' });
+      showToast({ type: 'error', text: 'Category name is required' });
       return;
     }
 
@@ -276,7 +221,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     });
 
     if (result.success) {
-      setMessage({ type: 'success', text: 'Category added to database!' });
+      showToast({ type: 'success', text: 'Category added to database!' });
       setCatName('');
       setCatDesc('');
       setCatBadge('');
@@ -286,7 +231,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       // Reload all categories to show the new one
       await loadAllCategories();
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to add category' });
+      showToast({ type: 'error', text: result.error || 'Failed to add category' });
     }
   };
 
@@ -297,11 +242,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
     const result = await deleteCategory(id);
     if (result.success) {
-      setMessage({ type: 'success', text: 'Category permanently deleted from database!' });
+      showToast({ type: 'success', text: 'Category permanently deleted from database!' });
       // Reload all categories
       await loadAllCategories();
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to delete category' });
+      showToast({ type: 'error', text: result.error || 'Failed to delete category' });
     }
   };
 
@@ -309,7 +254,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await categoryApi.update(id, { isActive: !currentStatus });
       if (response.success) {
-        setMessage({ 
+        showToast({ 
           type: 'success', 
           text: `Category ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
         });
@@ -317,17 +262,17 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         await loadAllCategories();
         refresh(); // Refresh to update frontend display for regular users
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update category status' });
+        showToast({ type: 'error', text: response.message || 'Failed to update category status' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update category status' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update category status' });
     }
   };
 
   const handleAddDeal = async (e: FormEvent) => {
     e.preventDefault();
     if (!dealName.trim()) {
-      setMessage({ type: 'error', text: 'Deal name is required' });
+      showToast({ type: 'error', text: 'Deal name is required' });
       return;
     }
 
@@ -342,7 +287,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal created successfully!' });
+        showToast({ type: 'success', text: 'Deal created successfully!' });
         setDealName('');
         setDealDesc('');
         setDealOrder('0');
@@ -350,10 +295,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         await loadDeals();
         // console.log('Deal created, reloading deals...');
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to create deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create deal' });
     }
   };
 
@@ -374,7 +319,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const handleUpdateDeal = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingDeal || !dealName.trim()) {
-      setMessage({ type: 'error', text: 'Deal name is required' });
+      showToast({ type: 'error', text: 'Deal name is required' });
       return;
     }
 
@@ -386,14 +331,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal updated successfully!' });
+        showToast({ type: 'success', text: 'Deal updated successfully!' });
         handleCancelDealEdit();
         await loadDeals();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to update deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update deal' });
     }
   };
 
@@ -405,281 +350,22 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await dealApi.delete(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Deal deleted successfully!' });
+        showToast({ type: 'success', text: 'Deal deleted successfully!' });
         await loadDeals();
         await loadAllCategories();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete deal' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete deal' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete deal' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete deal' });
     }
-  };
-
-  // Banner handlers
-  const handleAddBanner = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!bannerImage || !bannerImage.trim()) {
-      setMessage({ type: 'error', text: 'Banner image is required. Please upload an image.' });
-      return;
-    }
-
-    try {
-      const bannerId = crypto.randomUUID();
-      const imageUrl = bannerImage.trim();
-      
-      const response = await bannerApi.create({
-        id: bannerId,
-        image: imageUrl,
-        title: bannerTitle.trim() || '',
-        subtitle: bannerSubtitle.trim() || '',
-        buttonText: bannerButtonText.trim() || '',
-        link: bannerLink.trim() || undefined,
-        displayOrder: Number(bannerOrder) || 0,
-        isActive: true
-      });
-
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Banner added successfully!' });
-        setBannerImage('');
-        setBannerTitle('');
-        setBannerSubtitle('');
-        setBannerButtonText('');
-        setBannerLink('');
-        setBannerOrder('0');
-        await loadBanners();
-      } else {
-        // Debug log
-        if (import.meta.env.DEV) {
-          console.error('Banner creation failed:', response);
-        }
-        setMessage({ type: 'error', text: response.message || 'Failed to create banner' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create banner' });
-    }
-  };
-
-  const handleEditBanner = (banner: BackendBanner) => {
-    setEditingBanner(banner.id);
-    setBannerImage(banner.image);
-    setBannerTitle(banner.title || '');
-    setBannerSubtitle(banner.subtitle || '');
-    setBannerButtonText(banner.buttonText || '');
-    setBannerLink(banner.link || '');
-    setBannerOrder(banner.displayOrder.toString());
-  };
-
-  const handleCancelBannerEdit = () => {
-    setEditingBanner(null);
-    setBannerImage('');
-    setBannerTitle('');
-    setBannerSubtitle('');
-    setBannerButtonText('');
-    setBannerLink('');
-    setBannerOrder('0');
-  };
-
-  const handleUpdateBanner = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!editingBanner || !bannerImage.trim()) {
-      setMessage({ type: 'error', text: 'Banner image is required' });
-      return;
-    }
-
-    try {
-      const response = await bannerApi.update(editingBanner, {
-        image: bannerImage.trim(),
-        title: bannerTitle.trim() || '',
-        subtitle: bannerSubtitle.trim() || '',
-        buttonText: bannerButtonText.trim() || '',
-        link: bannerLink.trim() || undefined,
-        displayOrder: Number(bannerOrder) || 0
-      });
-
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Banner updated successfully!' });
-        handleCancelBannerEdit();
-        await loadBanners();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update banner' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update banner' });
-    }
-  };
-
-  const handleRemoveBanner = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this banner?')) {
-      return;
-    }
-
-    try {
-      const response = await bannerApi.delete(id);
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Banner deleted successfully!' });
-        await loadBanners();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete banner' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete banner' });
-    }
-  };
-
-  const handleToggleBannerActive = async (id: string, currentStatus: boolean) => {
-    try {
-      const response = await bannerApi.update(id, { isActive: !currentStatus });
-      if (response.success) {
-        setMessage({ 
-          type: 'success', 
-          text: `Banner ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
-        });
-        await loadBanners();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update banner status' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update banner status' });
-    }
-  };
-
-  // Notice handlers
-  const handleAddNotice = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!noticeMessage.trim()) {
-      setMessage({ type: 'error', text: 'Notice message is required' });
-      return;
-    }
-
-    try {
-      const noticeId = crypto.randomUUID();
-      const response = await noticeApi.create({
-        id: noticeId,
-        title: noticeTitle.trim() || '',
-        message: noticeMessage.trim(),
-        icon: noticeIcon,
-        features: noticeFeatures,
-        displayOrder: Number(noticeOrder) || 0,
-        isActive: true
-      });
-
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Notice added successfully!' });
-        setNoticeMessage('');
-        setNoticeTitle('');
-        setNoticeIcon('FaRobot');
-        setNoticeFeatures([]);
-        setNoticeOrder('0');
-        await loadNotices();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create notice' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create notice' });
-    }
-  };
-
-  const handleEditNotice = (notice: BackendNotice) => {
-    setEditingNotice(notice.id);
-    setNoticeMessage(notice.message);
-    setNoticeTitle(notice.title || '');
-    setNoticeIcon(notice.icon || 'FaRobot');
-    setNoticeFeatures(notice.features || []);
-    setNoticeOrder(notice.displayOrder.toString());
-  };
-
-  const handleCancelNoticeEdit = () => {
-    setEditingNotice(null);
-    setNoticeMessage('');
-    setNoticeTitle('');
-    setNoticeIcon('FaRobot');
-    setNoticeFeatures([]);
-    setNoticeOrder('0');
-    setNewFeatureText('');
-    setNewFeatureIcon('FaShieldAlt');
-  };
-
-  const handleUpdateNotice = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!editingNotice || !noticeMessage.trim()) {
-      setMessage({ type: 'error', text: 'Notice message is required' });
-      return;
-    }
-
-    try {
-      const response = await noticeApi.update(editingNotice, {
-        title: noticeTitle.trim() || '',
-        message: noticeMessage.trim(),
-        icon: noticeIcon,
-        features: noticeFeatures,
-        displayOrder: Number(noticeOrder) || 0
-      });
-
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Notice updated successfully!' });
-        handleCancelNoticeEdit();
-        await loadNotices();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update notice' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update notice' });
-    }
-  };
-
-  const handleRemoveNotice = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this notice?')) {
-      return;
-    }
-
-    try {
-      const response = await noticeApi.delete(id);
-      if (response.success) {
-        setMessage({ type: 'success', text: 'Notice deleted successfully!' });
-        await loadNotices();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete notice' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete notice' });
-    }
-  };
-
-  const handleToggleNoticeActive = async (id: string, currentStatus: boolean) => {
-    try {
-      const response = await noticeApi.update(id, { isActive: !currentStatus });
-      if (response.success) {
-        setMessage({ 
-          type: 'success', 
-          text: `Notice ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
-        });
-        await loadNotices();
-      } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update notice status' });
-      }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update notice status' });
-    }
-  };
-
-  const handleAddFeature = () => {
-    if (newFeatureText.trim()) {
-      setNoticeFeatures([...noticeFeatures, { icon: newFeatureIcon, text: newFeatureText.trim() }]);
-      setNewFeatureText('');
-      setNewFeatureIcon('FaShieldAlt');
-    }
-  };
-
-  const handleRemoveFeature = (index: number) => {
-    setNoticeFeatures(noticeFeatures.filter((_, i) => i !== index));
   };
 
   // Game Package handlers
   const handleAddGamePackage = async (e: FormEvent) => {
     e.preventDefault();
     if (!packageId.trim() || !packageTitle.trim() || !packageImage.trim() || !packageEntryFee || !packageWinnerPrize.trim() || !packageRoomId.trim() || !packageRoomPassword.trim() || !packageStartTime) {
-      setMessage({ type: 'error', text: 'Package ID, title, image, entry fee, winner prize, room ID, room password, and start time are required' });
+      showToast({ type: 'error', text: 'Package ID, title, image, entry fee, winner prize, room ID, room password, and start time are required' });
       return;
     }
 
@@ -699,7 +385,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Game package created successfully!' });
+        showToast({ type: 'success', text: 'Game package created successfully!' });
         setPackageId('');
         setPackageTitle('');
         setPackageImage('');
@@ -712,10 +398,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
         setPackageStartTime('');
         await loadGamePackages();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to create game package' });
+        showToast({ type: 'error', text: response.message || 'Failed to create game package' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to create game package' });
+      showToast({ type: 'error', text: err?.message || 'Failed to create game package' });
     }
   };
 
@@ -750,7 +436,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const handleUpdateGamePackage = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingPackage || !packageTitle.trim() || !packageImage.trim() || !packageEntryFee || !packageWinnerPrize.trim() || !packageRoomId.trim() || !packageRoomPassword.trim() || !packageStartTime) {
-      setMessage({ type: 'error', text: 'Title, image, entry fee, winner prize, room ID, room password, and start time are required' });
+      showToast({ type: 'error', text: 'Title, image, entry fee, winner prize, room ID, room password, and start time are required' });
       return;
     }
 
@@ -768,14 +454,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Game package updated successfully!' });
+        showToast({ type: 'success', text: 'Game package updated successfully!' });
         handleCancelGamePackageEdit();
         await loadGamePackages();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update game package' });
+        showToast({ type: 'error', text: response.message || 'Failed to update game package' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update game package' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update game package' });
     }
   };
 
@@ -787,16 +473,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await gamePackageApi.delete(id);
       if (response.success) {
-        setMessage({ type: 'success', text: 'Game package deleted successfully!' });
+        showToast({ type: 'success', text: 'Game package deleted successfully!' });
         await loadGamePackages();
         if (editingPackage === id) {
           handleCancelGamePackageEdit();
         }
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to delete game package' });
+        showToast({ type: 'error', text: response.message || 'Failed to delete game package' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to delete game package' });
+      showToast({ type: 'error', text: err?.message || 'Failed to delete game package' });
     }
   };
 
@@ -804,16 +490,16 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await gamePackageApi.update(id, { isActive: !currentStatus });
       if (response.success) {
-        setMessage({ 
+        showToast({ 
           type: 'success', 
           text: `Game package ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
         });
         await loadGamePackages();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update game package status' });
+        showToast({ type: 'error', text: response.message || 'Failed to update game package status' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update game package status' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update game package status' });
     }
   };
 
@@ -821,14 +507,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await categoryApi.update(categoryId, { dealId });
       if (response.success) {
-        setMessage({ type: 'success', text: 'Category assigned to deal successfully!' });
+        showToast({ type: 'success', text: 'Category assigned to deal successfully!' });
         await loadAllCategories();
         refresh();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to assign category' });
+        showToast({ type: 'error', text: response.message || 'Failed to assign category' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to assign category' });
+      showToast({ type: 'error', text: err?.message || 'Failed to assign category' });
     }
   };
 
@@ -853,7 +539,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const handleUpdateCategory = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingCategory || !catName.trim()) {
-      setMessage({ type: 'error', text: 'Category name is required' });
+      showToast({ type: 'error', text: 'Category name is required' });
       return;
     }
 
@@ -867,22 +553,22 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       if (response.success) {
-        setMessage({ type: 'success', text: 'Category updated successfully!' });
+        showToast({ type: 'success', text: 'Category updated successfully!' });
         handleCancelCategoryEdit();
         await loadAllCategories();
         refresh();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update category' });
+        showToast({ type: 'error', text: response.message || 'Failed to update category' });
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err?.message || 'Failed to update category' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update category' });
     }
   };
 
   const handleAddProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!name || !price || !categoryId) {
-      setMessage({ type: 'error', text: 'Product name, price and category are required' });
+      showToast({ type: 'error', text: 'Product name, price and category are required' });
       return;
     }
 
@@ -897,7 +583,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     });
 
     if (result.success) {
-      setMessage({ type: 'success', text: 'Product added to database!' });
+      showToast({ type: 'success', text: 'Product added to database!' });
       setName('');
       setDiamonds('');
       setPrice('');
@@ -905,7 +591,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setBonus('');
       setTag('');
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to add product' });
+      showToast({ type: 'error', text: result.error || 'Failed to add product' });
     }
   };
 
@@ -938,7 +624,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const handleUpdateProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !name || !price || !categoryId) {
-      setMessage({ type: 'error', text: 'Product name, price and category are required' });
+      showToast({ type: 'error', text: 'Product name, price and category are required' });
       return;
     }
 
@@ -953,10 +639,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     });
 
     if (result.success) {
-      setMessage({ type: 'success', text: 'Product updated in database!' });
+      showToast({ type: 'success', text: 'Product updated in database!' });
       handleCancelEdit();
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to update product' });
+      showToast({ type: 'error', text: result.error || 'Failed to update product' });
     }
   };
 
@@ -967,12 +653,12 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
     const result = await deleteProduct(id);
     if (result.success) {
-      setMessage({ type: 'success', text: 'Product deleted from database!' });
+      showToast({ type: 'success', text: 'Product deleted from database!' });
       if (editingProduct === id) {
         handleCancelEdit();
       }
     } else {
-      setMessage({ type: 'error', text: result.error || 'Failed to delete product' });
+      showToast({ type: 'error', text: result.error || 'Failed to delete product' });
     }
   };
 
@@ -1003,8 +689,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             <h1 className="mb-2 text-2xl font-bold sm:text-3xl text-slate-900">
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'products' && 'Products & Categories'}
-              {activeTab === 'banners' && 'Banner Management'}
-              {activeTab === 'notices' && 'Notice Management'}
               {activeTab === 'gamePackages' && 'Game Packages'}
               {activeTab === 'users' && 'User Management'}
               {activeTab === 'orders' && 'Order History'}
@@ -1012,13 +696,11 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'subscriptions' && 'Subscriptions'}
               {activeTab === 'reseller' && 'Reseller Management'}
               {activeTab === 'membership' && 'Membership Packages'}
-              {activeTab === 'theme' && 'Store Customize'}
+              {activeTab === 'theme' && 'Store Customize & Logo'}
             </h1>
             <p className="text-sm text-slate-600">
               {activeTab === 'dashboard' && 'Overview of your business metrics and analytics'}
               {activeTab === 'products' && 'Manage products and categories'}
-              {activeTab === 'banners' && 'Manage carousel banners and images'}
-              {activeTab === 'notices' && 'Manage site notices and announcements'}
               {activeTab === 'gamePackages' && 'Manage RoboGameZone packages and room credentials'}
               {activeTab === 'users' && 'Manage users and their balances'}
               {activeTab === 'orders' && 'View and manage all orders'}
@@ -1026,7 +708,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'subscriptions' && 'Manage subscription categories and products'}
               {activeTab === 'reseller' && 'Manage reseller prices for all products'}
               {activeTab === 'membership' && 'Create and manage membership packages for users'}
-              {activeTab === 'theme' && 'Customize your store theme colors and branding'}
+              {activeTab === 'theme' && 'Upload navbar logo and customize theme colors and branding'}
             </p>
             {error && (
               <div className="p-3 mt-3 border border-red-200 rounded-lg bg-red-50">
@@ -1040,16 +722,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </div>
             )}
           </div>
-
-          {message && (
-            <div className={`p-4 rounded-xl mb-4 mr-4 sm:mr-5 md:mr-6 ml-0 ${
-              message.type === 'success' 
-                ? 'bg-green-50 border border-green-200 text-green-700' 
-                : 'bg-red-50 border border-red-200 text-red-700'
-            }`}>
-              <p className="font-semibold">{message.text}</p>
-            </div>
-          )}
 
           {/* Tab Content */}
           <div className="px-0">
@@ -1069,213 +741,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               <UserManagement />
             ) : activeTab === 'orders' && hasPermission('canManageOrders') ? (
               <AdminOrders />
-            ) : activeTab === 'banners' && hasPermission('canManageBanners') ? (
-              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-                {/* Banner Management Section */}
-                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-                  <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
-                  
-                  {/* Add/Edit Banner Form */}
-                  <form 
-                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
-                    onSubmit={editingBanner ? handleUpdateBanner : handleAddBanner}
-                  >
-                    <h4 className="mb-3 text-base font-semibold text-slate-700">
-                      {editingBanner ? 'Edit Banner' : 'Add New Banner'}
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="md:col-span-2">
-                        <label className="block">
-                          <span className="block mb-2 text-sm font-semibold text-slate-700">Banner Image URL *</span>
-                          <input
-                            required
-                            value={bannerImage}
-                            onChange={(e) => setBannerImage(e.target.value)}
-                            placeholder="https://example.com/banner.jpg"
-                            className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                          />
-                          {bannerImage && (
-                            <div className="mt-2">
-                              <img
-                                src={bannerImage}
-                                alt="Preview"
-                                className="w-full max-w-xs h-32 object-cover rounded-lg border-2 border-slate-300"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                        </label>
-                      </div>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
-                        <input
-                          value={bannerTitle}
-                          onChange={(e) => setBannerTitle(e.target.value)}
-                          placeholder="Banner Title"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Subtitle (optional)</span>
-                        <input
-                          value={bannerSubtitle}
-                          onChange={(e) => setBannerSubtitle(e.target.value)}
-                          placeholder="Banner Subtitle"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Button Text (optional)</span>
-                        <input
-                          value={bannerButtonText}
-                          onChange={(e) => setBannerButtonText(e.target.value)}
-                          placeholder="Click Here"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Link (optional)</span>
-                        <input
-                          type="url"
-                          value={bannerLink}
-                          onChange={(e) => setBannerLink(e.target.value)}
-                          placeholder="https://example.com or /category/123"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                        <p className="mt-1 text-xs text-slate-500">When user clicks on banner, they will be redirected to this link</p>
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
-                        <input
-                          type="number"
-                          value={bannerOrder}
-                          onChange={(e) => setBannerOrder(e.target.value)}
-                          placeholder="0"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
-                        style={{
-                          background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
-                        }}
-                        type="submit"
-                      >
-                        {editingBanner ? 'Update Banner' : 'Add Banner'}
-                      </button>
-                      {editingBanner && (
-                        <button 
-                          type="button"
-                          onClick={handleCancelBannerEdit}
-                          className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </form>
-
-                  {/* Banners List */}
-                  <div>
-                    <h4 className="mb-3 text-base font-semibold text-slate-700">
-                      Existing Banners ({banners.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {banners.length > 0 ? (
-                        banners.map((banner) => {
-                          const isActive = banner.isActive !== false;
-                          return (
-                            <div key={banner.id} className={`p-4 transition-colors border rounded-lg ${
-                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
-                            } hover:bg-slate-50`}>
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    {!isActive && (
-                                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
-                                        Inactive
-                                      </span>
-                                    )}
-                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                                      Order: {banner.displayOrder}
-                                    </span>
-                                  </div>
-                                  <div className="mb-2">
-                                    <img 
-                                      src={banner.image} 
-                                      alt={banner.title || 'Banner'}
-                                      className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                      }}
-                                    />
-                                  </div>
-                                  {banner.title && (
-                                    <p className="mb-1 text-sm font-semibold text-slate-900">{banner.title}</p>
-                                  )}
-                                  {banner.subtitle && (
-                                    <p className="mb-1 text-sm text-slate-600">{banner.subtitle}</p>
-                                  )}
-                                  {banner.buttonText && (
-                                    <p className="text-xs text-slate-500">Button: {banner.buttonText}</p>
-                                  )}
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={isActive}
-                                        onChange={() => handleToggleBannerActive(banner.id, isActive)}
-                                        className="sr-only peer"
-                                      />
-                                      <div 
-                                        className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
-                                        style={{
-                                          '--tw-ring-color': 'var(--theme-primary)'
-                                        } as React.CSSProperties}
-                                      ></div>
-                                    </label>
-                                    <span className="text-[10px] text-slate-500">
-                                      {isActive ? 'ON' : 'OFF'}
-                                    </span>
-                                  </div>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
-                                    onClick={() => handleEditBanner(banner)}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
-                                    onClick={() => handleRemoveBanner(banner.id)}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="p-8 text-center text-slate-500">
-                          No banners yet. Add your first banner.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             ) : activeTab === 'gamePackages' && hasPermission('canManageGamePackages') ? (
               <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Game Package Management Section */}
@@ -1312,29 +777,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                           className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                         />
                       </label>
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Image URL *</span>
-                        <input
-                          required
-                          type="url"
+                      <div className="md:col-span-2">
+                        <ImageUpload
+                          label="Image *"
                           value={packageImage}
-                          onChange={(e) => setPackageImage(e.target.value)}
-                          placeholder="https://example.com/package.jpg"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          onChange={setPackageImage}
+                          uploadEndpoint="/upload/package-image"
                         />
-                        {packageImage && (
-                          <div className="mt-2">
-                            <img 
-                              src={packageImage} 
-                              alt="Preview" 
-                              className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        )}
-                      </label>
+                      </div>
                       <label className="block">
                         <span className="block mb-2 text-sm font-semibold text-slate-700">Entry Fee (৳) *</span>
                         <input
@@ -1539,221 +989,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   </div>
                 </div>
               </div>
-            ) : activeTab === 'notices' && hasPermission('canManageNotices') ? (
-              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-                {/* Notice Management Section */}
-                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-                  <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
-                  
-                  {/* Add/Edit Notice Form */}
-                  <form 
-                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
-                    onSubmit={editingNotice ? handleUpdateNotice : handleAddNotice}
-                  >
-                    <h4 className="mb-3 text-base font-semibold text-slate-700">
-                      {editingNotice ? 'Edit Notice' : 'Add New Notice'}
-                    </h4>
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                      <label className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
-                        <textarea
-                          required
-                          value={noticeMessage}
-                          onChange={(e) => setNoticeMessage(e.target.value)}
-                          placeholder="🚀 আমাদের সিস্টেম AI দ্বারা নিয়ন্ত্রিত..."
-                          rows={3}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
-                        <input
-                          value={noticeTitle}
-                          onChange={(e) => setNoticeTitle(e.target.value)}
-                          placeholder="Notice Title"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Icon</span>
-                        <select
-                          value={noticeIcon}
-                          onChange={(e) => setNoticeIcon(e.target.value)}
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        >
-                          <option value="FaRobot">Robot</option>
-                          <option value="FaShieldAlt">Shield</option>
-                          <option value="FaBolt">Bolt</option>
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
-                        <input
-                          type="number"
-                          value={noticeOrder}
-                          onChange={(e) => setNoticeOrder(e.target.value)}
-                          placeholder="0"
-                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        />
-                      </label>
-                      
-                      {/* Features Section */}
-                      <div className="block md:col-span-2">
-                        <span className="block mb-2 text-sm font-semibold text-slate-700">Features (optional)</span>
-                        <div className="mb-2 space-y-2">
-                          {noticeFeatures.map((feature, index) => (
-                            <div key={index} className="flex items-center gap-2 p-2 bg-white border rounded-lg border-slate-200">
-                              <span className="flex-1 text-sm">{feature.text}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveFeature(index)}
-                                className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={newFeatureText}
-                            onChange={(e) => setNewFeatureText(e.target.value)}
-                            placeholder="Feature text"
-                            className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                          />
-                          <select
-                            value={newFeatureIcon}
-                            onChange={(e) => setNewFeatureIcon(e.target.value)}
-                            className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                          >
-                            <option value="FaShieldAlt">Shield</option>
-                            <option value="FaBolt">Bolt</option>
-                            <option value="FaRobot">Robot</option>
-                          </select>
-                          <button
-                            type="button"
-                            onClick={handleAddFeature}
-                            className="px-4 py-2 text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200"
-                          >
-                            Add Feature
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-4">
-                      <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
-                        style={{
-                          background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
-                        }}
-                        type="submit"
-                      >
-                        {editingNotice ? 'Update Notice' : 'Add Notice'}
-                      </button>
-                      {editingNotice && (
-                        <button 
-                          type="button"
-                          onClick={handleCancelNoticeEdit}
-                          className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </form>
-
-                  {/* Notices List */}
-                  <div>
-                    <h4 className="mb-3 text-base font-semibold text-slate-700">
-                      Existing Notices ({notices.length})
-                    </h4>
-                    <div className="space-y-2">
-                      {notices.length > 0 ? (
-                        notices.map((notice) => {
-                          const isActive = notice.isActive !== false;
-                          return (
-                            <div key={notice.id} className={`p-4 transition-colors border rounded-lg ${
-                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
-                            } hover:bg-slate-50`}>
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    {!isActive && (
-                                      <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
-                                        Inactive
-                                      </span>
-                                    )}
-                                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                                      Order: {notice.displayOrder}
-                                    </span>
-                                  </div>
-                                  {notice.title && (
-                                    <p className="mb-1 text-sm font-semibold text-slate-900">{notice.title}</p>
-                                  )}
-                                  <p className="mb-2 text-sm text-slate-700">{notice.message}</p>
-                                  {notice.features && notice.features.length > 0 && (
-                                    <div className="flex flex-wrap gap-2">
-                                      {notice.features.map((feature, index) => (
-                                        <span key={index} className="px-2 py-1 text-xs rounded text-slate-600 bg-slate-100">
-                                          {feature.text}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={isActive}
-                                        onChange={() => handleToggleNoticeActive(notice.id, isActive)}
-                                        className="sr-only peer"
-                                      />
-                                      <div 
-                                        className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
-                                        style={{
-                                          '--tw-ring-color': 'var(--theme-primary)'
-                                        } as React.CSSProperties}
-                                      ></div>
-                                    </label>
-                                    <span className="text-[10px] text-slate-500">
-                                      {isActive ? 'ON' : 'OFF'}
-                                    </span>
-                                  </div>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
-                                    onClick={() => handleEditNotice(notice)}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
-                                    onClick={() => handleRemoveNotice(notice.id)}
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="p-8 text-center text-slate-500">
-                          No notices yet. Add your first notice.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
             ) : activeTab === 'products' && hasPermission('canManageProducts') ? (
         <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
 
@@ -1908,27 +1143,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   />
                 </label>
-                <label className="block">
-                  <span className="block mb-2 text-sm font-semibold text-slate-700">Category Image URL (optional)</span>
-                  <input
+                <div>
+                  <ImageUpload
+                    label="Category Image (optional)"
                     value={catImage}
-                    onChange={(e) => setCatImage(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                    onChange={setCatImage}
+                    uploadEndpoint="/upload/category-image"
                   />
-                  {catImage && (
-                    <div className="mt-2">
-                      <img
-                        src={catImage}
-                        alt="Preview"
-                        className="w-full max-w-xs h-32 object-cover rounded-lg border-2 border-slate-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                </label>
+                </div>
                 <label className="block">
                   <span className="block mb-2 text-sm font-semibold text-slate-700">Deal (optional)</span>
                   <select

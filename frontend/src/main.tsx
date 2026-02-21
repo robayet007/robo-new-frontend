@@ -3,7 +3,6 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import UpdateNotification from './components/UpdateNotification'
-import SplashScreen from './components/SplashScreen'
 import { RoboGameZoneProvider } from './contexts/RoboGameZoneContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { QueryClientProvider } from './contexts/QueryClientProvider'
@@ -86,7 +85,6 @@ function AppWithUpdates() {
 
   return (
     <>
-      <SplashScreen />
       <App />
       {updateAvailable && (
         <UpdateNotification 

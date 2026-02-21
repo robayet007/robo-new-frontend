@@ -5,8 +5,8 @@ class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
     // Use environment variable (required)
-    const backendUrl = http://localhost:5000
-    
+    const backendUrl = 'http://localhost:5000';
+  
     if (!backendUrl) {
       throw new Error('VITE_API_URL environment variable is not set');
     }
@@ -432,6 +432,14 @@ export const adminRoleApi = {
   },
 };
 
+/** Sync Firebase Auth users to Firestore (backend uses Firebase Admin SDK). */
+export const userSyncApi = {
+  syncFromAuth: async (): Promise<ApiResponse<{ synced: number }>> => {
+    const response = await SmartAPIManager.smartFetch('/users/sync-from-auth', { method: 'POST' });
+    return response.json();
+  },
+};
+
 // Payments API with smart fetch
 export const paymentApi = {
   verify: async (paymentData: {
@@ -843,7 +851,7 @@ export const gamePackageApi = {
 
 // Theme Settings API (using MongoDB backend)
 export const themeApi = {
-  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; updatedAt?: string; updatedBy?: string }>> => {
+  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme');
       return response.json();
@@ -856,7 +864,7 @@ export const themeApi = {
     }
   },
   
-  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; updatedAt?: string; updatedBy?: string }>> => {
+  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme', {
         method: 'PUT',

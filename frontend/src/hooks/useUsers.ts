@@ -12,7 +12,7 @@ import {
 import { db } from '../config/firebase';
 import type { AuthUser } from './useAuth';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'admin' | 'moderator' | 'reseller';
 
 export interface AppUser extends AuthUser {
   role: UserRole;

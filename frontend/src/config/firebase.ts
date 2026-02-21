@@ -99,6 +99,12 @@ if (typeof window !== 'undefined') {
     // Filter out Firebase Analytics/Installations permission errors
     const message = args[0]?.toString() || '';
     const fullMessage = args.map(a => String(a)).join(' ');
+    // In development, show Firestore errors (e.g. PERMISSION_DENIED) so rules issues are visible
+    const isDev = import.meta.env.DEV;
+    if (isDev && (message.includes('FirebaseError') || fullMessage.includes('PERMISSION_DENIED'))) {
+      originalError.apply(console, args);
+      return;
+    }
     if (
       message.includes('FirebaseError') ||
       message.includes('Installations') ||

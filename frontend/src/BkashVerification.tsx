@@ -153,7 +153,7 @@ function BkashVerification({
                 width: "32px",
                 height: "32px",
                 borderRadius: "50%",
-                background: "linear-gradient(135deg, #a855f7, #8b5cf6)",
+                background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",

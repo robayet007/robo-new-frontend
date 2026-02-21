@@ -19,7 +19,7 @@ const Niyom: React.FC = () => {
     section: {
       background: 'radial-gradient(circle at top left, #eef2ff 0, #f9fafb 40%, #ffffff 100%)',
       padding: isMobile ? '20px 10px' : isTablet ? '36px 16px' : '48px 24px',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      fontFamily: "var(--theme-font-family), sans-serif",
       maxWidth: '1200px',
       margin: '0 auto',
     },

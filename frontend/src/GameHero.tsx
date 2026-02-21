@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa"
 import { bannerApi } from "./services/api"
 import type { BackendBanner } from "./types"
 
@@ -16,6 +16,8 @@ interface Slide {
   link?: string
 }
 
+type Direction = "next" | "prev"
+
 export default function GameHero() {
   const navigate = useNavigate()
   const [activeSlide, setActiveSlide] = useState(0)
@@ -23,6 +25,10 @@ export default function GameHero() {
   const [isTablet, setIsTablet] = useState(false)
   const [slides, setSlides] = useState<Slide[]>([])
   const [loading, setLoading] = useState(true)
+  const [animating, setAnimating] = useState(false)
+  const [direction, setDirection] = useState<Direction>("next")
+  const [containerWidth, setContainerWidth] = useState<number>(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const checkSize = () => {
@@ -30,8 +36,25 @@ export default function GameHero() {
       setIsTablet(window.innerWidth < 1024)
     }
     checkSize()
-    window.addEventListener('resize', checkSize)
-    return () => window.removeEventListener('resize', checkSize)
+    window.addEventListener("resize", checkSize)
+    return () => window.removeEventListener("resize", checkSize)
+  }, [])
+
+  // কন্টেইনারের width ট্র্যাক করার জন্য
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width)
+      }
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
   }, [])
 
   useEffect(() => {
@@ -42,23 +65,18 @@ export default function GameHero() {
         if (response.success && response.data) {
           const bannerSlides: Slide[] = response.data.map((banner: BackendBanner) => ({
             id: banner.id,
-            title: banner.title || '',
-            subtitle: banner.subtitle || '',
-            buttonText: banner.buttonText || '',
+            title: banner.title || "",
+            subtitle: banner.subtitle || "",
+            buttonText: banner.buttonText || "",
             image: banner.image,
-            link: banner.link
+            link: banner.link,
           }))
-          // Debug: Log banners with links
-          if (import.meta.env.DEV) {
-            // console.log('Banners loaded:', bannerSlides.map(s => ({ id: s.id, title: s.title, link: s.link })))
-          }
           setSlides(bannerSlides)
         } else {
-          // Fallback to empty array if API fails
           setSlides([])
         }
       } catch (error) {
-        console.error('Failed to load banners:', error)
+        console.error("Failed to load banners:", error)
         setSlides([])
       } finally {
         setLoading(false)
@@ -67,16 +85,33 @@ export default function GameHero() {
     loadBanners()
   }, [])
 
+  const goTo = useCallback(
+    (index: number, dir: Direction) => {
+      if (animating || slides.length <= 1) return
+      setDirection(dir)
+      setAnimating(true)
+      setActiveSlide(index)
+      setTimeout(() => setAnimating(false), 500)
+    },
+    [animating, slides.length]
+  )
+
+  const goNext = useCallback(() => {
+    const next = (activeSlide + 1) % slides.length
+    goTo(next, "next")
+  }, [activeSlide, slides.length, goTo])
+
+  const goPrev = useCallback(() => {
+    const prev = (activeSlide - 1 + slides.length) % slides.length
+    goTo(prev, "prev")
+  }, [activeSlide, slides.length, goTo])
+
   useEffect(() => {
     if (slides.length <= 1) return
-    const interval = setInterval(() => {
-      setActiveSlide((prev) => (prev + 1) % slides.length)
-    }, 5000)
-
+    const interval = setInterval(goNext, 5000)
     return () => clearInterval(interval)
-  }, [slides.length])
+  }, [slides.length, goNext])
 
-  // Ensure activeSlide is within bounds
   useEffect(() => {
     if (slides.length > 0 && activeSlide >= slides.length) {
       setActiveSlide(0)
@@ -86,31 +121,11 @@ export default function GameHero() {
   const containerStyle: React.CSSProperties = {
     position: "relative",
     width: "100%",
-    maxWidth: "1200px",
-    // YouTube image aspect ratio (16:9) এর জন্য aspect ratio maintain করা হয়েছে
-    aspectRatio: "16 / 9",
+    maxWidth: "1380px",
     margin: "0 auto",
     overflow: "hidden",
     borderRadius: "8px",
-  }
-
-  const overlayStyle: React.CSSProperties = {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // আগে অনেক ডার্ক ছিল, এখন লাইট করেছি যাতে ছবি বেশি ব্রাইট দেখা যায়
-    background: "linear-gradient(to right, rgba(0,0,0,0.28), rgba(0,0,0,0.06))",
-    zIndex: 1,
-    pointerEvents: "none", // Allow clicks to pass through overlay
-  }
-
-  const contentStyle: React.CSSProperties = {
-    position: "relative",
-    zIndex: 2,
-    color: "white",
-    animation: "fadeIn 0.6s ease-in",
+    minHeight: "200px",
   }
 
   const titleStyle: React.CSSProperties = {
@@ -128,7 +143,7 @@ export default function GameHero() {
   }
 
   const buttonStyle: React.CSSProperties = {
-    background: "linear-gradient(135deg, #a855f7, #8b5cf6)",
+    background: "linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))",
     color: "white",
     border: "none",
     padding: "15px 35px",
@@ -142,133 +157,164 @@ export default function GameHero() {
     boxShadow: "0 4px 15px rgba(168, 85, 247, 0.4)",
   }
 
-  const dotsContainerStyle: React.CSSProperties = {
-    position: "absolute",
-    bottom: "30px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    display: "flex",
-    gap: "12px",
-    zIndex: 3,
-  }
-
-  const dotStyle = (isActive: boolean): React.CSSProperties => ({
-    width: isActive ? "30px" : "10px",
-    height: "4px",
-    backgroundColor: isActive ? "#a855f7" : "#666",
-    border: "none",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    borderRadius: "2px",
-  })
-
   if (loading) {
     return (
       <div style={containerStyle}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          backgroundColor: '#000'
-        }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #8b5cf6',
-            borderTopColor: 'transparent',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }}></div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "280px",
+            backgroundColor: "#000",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              border: "4px solid var(--theme-primary)",
+              borderTopColor: "transparent",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          ></div>
         </div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
-  if (slides.length === 0) {
-    return null
-  }
+  if (slides.length === 0) return null
 
-  // Get current slide safely
   const currentSlide = slides[activeSlide] || slides[0]
-  if (!currentSlide) {
-    return null
+  if (!currentSlide) return null
+
+  const handleBannerClick = (slide: Slide) => {
+    const link = slide.link?.trim()
+    if (!link) return
+    if (link.startsWith("http://") || link.startsWith("https://")) {
+      window.open(link, "_blank", "noopener,noreferrer")
+    } else if (link.startsWith("/")) {
+      navigate(link)
+    } else {
+      window.location.href = link
+    }
   }
 
-  const slideStyle: React.CSSProperties = {
-    position: "relative",
+  const animClass =
+    direction === "next"
+      ? animating
+        ? "slide-enter-next"
+        : "slide-active"
+      : animating
+      ? "slide-enter-prev"
+      : "slide-active"
+
+  // ইমেজের জন্য CSS স্টাইল - এটাই মূল সমাধান
+  const imageStyle: React.CSSProperties = {
     width: "100%",
     height: "100%",
-    backgroundImage: `url(${currentSlide.image})`,
-    // পুরো ইমেজ দেখানোর জন্য cover ব্যবহার করা হয়েছে যাতে container fill হয়
-    backgroundSize: "cover",
-    backgroundPosition: "center center",
-    backgroundRepeat: "no-repeat",
-    backgroundColor: "#000",
-    // ইমেজকে একটু উজ্জ্বল/সেটুরেটেড করা
+    display: "block",
+    objectFit: "cover", // ইমেজ পুরো কভার করবে
+    objectPosition: "center", // সেন্টার পজিশন
     filter: "brightness(1.18) saturate(1.1)",
-    transition: "background-image 0.5s ease-in-out",
   }
 
   return (
     <>
       <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @keyframes slideInFromRight {
+          from { transform: translateX(6%); opacity: 0; }
+          to   { transform: translateX(0);  opacity: 1; }
+        }
+        @keyframes slideInFromLeft {
+          from { transform: translateX(-6%); opacity: 0; }
+          to   { transform: translateX(0);   opacity: 1; }
+        }
+
+        .slide-enter-next {
+          animation: slideInFromRight 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .slide-enter-prev {
+          animation: slideInFromLeft 0.45s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        .slide-active { opacity: 1; }
+
+        .carousel-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 5;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(255,255,255,0.25);
+          color: white;
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+          backdrop-filter: blur(4px);
+        }
+        .carousel-arrow:hover {
+          background: rgba(0,0,0,0.65);
+          transform: translateY(-50%) scale(1.08);
+        }
+        .carousel-arrow-left  { left: 12px; }
+        .carousel-arrow-right { right: 12px; }
+
+        .carousel-dot {
+          border: none;
+          cursor: pointer;
+          border-radius: 2px;
+          transition: all 0.3s ease;
         }
       `}</style>
 
-      <div style={containerStyle}>
-        <div 
-          style={{
-            ...slideStyle,
-            cursor: currentSlide.link?.trim() ? 'pointer' : 'default'
-          }} 
+      <div ref={containerRef} style={containerStyle}>
+        <div
           key={activeSlide}
-          onClick={() => {
-            const link = currentSlide.link?.trim()
-            if (!link) {
-              if (import.meta.env.DEV) {
-                // console.log('Banner clicked but no link set', { slide: currentSlide })
-              }
-              return
-            }
-            
-            if (import.meta.env.DEV) {
-              // console.log('Banner clicked, redirecting to:', link)
-            }
-            
-            // Handle external URLs
-            if (link.startsWith('http://') || link.startsWith('https://')) {
-              window.open(link, '_blank', 'noopener,noreferrer');
-            } 
-            // Handle internal routes
-            else if (link.startsWith('/')) {
-              navigate(link);
-            }
-            // Fallback for any other format
-            else {
-              window.location.href = link;
-            }
+          className={animClass}
+          style={{
+            position: "relative",
+            width: "100%",
+            height: containerWidth ? `${containerWidth * 0.4}px` : "auto", // এখানে height সেট করা হচ্ছে
+            minHeight: "300px",
+            maxHeight: "600px",
+            cursor: currentSlide.link?.trim() ? "pointer" : "default",
           }}
+          onClick={() => handleBannerClick(currentSlide)}
         >
-          <div style={overlayStyle} />
-
+          {/* ইমেজ */}
+          <img
+            src={currentSlide.image}
+            alt=""
+            style={imageStyle}
+            onError={(e) => {
+              // ইমেজ লোড হতে সমস্যা হলে ফallback
+              e.currentTarget.src = "/placeholder-image.jpg" // আপনার placeholder ইমেজের path দিন
+            }}
+          />
+          
+          {/* Overlay */}
           <div
             style={{
-              ...contentStyle,
+              position: "absolute",
+              inset: 0,
+              background: "linear-gradient(to right, rgba(0,0,0,0.28), rgba(0,0,0,0.06))",
+              zIndex: 1,
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Content */}
+          <div
+            style={{
               position: "absolute",
               inset: 0,
               display: "flex",
@@ -276,69 +322,90 @@ export default function GameHero() {
               justifyContent: "center",
               padding: isMobile ? "16px" : "32px",
               maxWidth: isTablet ? "70%" : "60%",
-              pointerEvents: "none", // Allow clicks to pass through, except for button
+              pointerEvents: "none",
+              color: "white",
+              zIndex: 2,
             }}
           >
             <h1 style={titleStyle}>{currentSlide.title}</h1>
-            {currentSlide.subtitle && (
-              <p style={subtitleStyle}>{currentSlide.subtitle}</p>
-            )}
+            {currentSlide.subtitle && <p style={subtitleStyle}>{currentSlide.subtitle}</p>}
             {currentSlide.buttonText && (
               <button
                 type="button"
-                style={{
-                  ...buttonStyle,
-                  pointerEvents: "auto", // Button should be clickable
-                }}
+                style={{ ...buttonStyle, pointerEvents: "auto" }}
                 onClick={(e) => {
-                  e.stopPropagation();
-                  const link = currentSlide.link?.trim()
-                  if (!link) {
-                    if (import.meta.env.DEV) {
-                      // console.log('Button clicked but no link set')
-                    }
-                    return
-                  }
-                  
-                  if (import.meta.env.DEV) {
-                    // console.log('Button clicked, redirecting to:', link)
-                  }
-                  
-                  // Handle external URLs
-                  if (link.startsWith('http://') || link.startsWith('https://')) {
-                    window.open(link, '_blank', 'noopener,noreferrer');
-                  } 
-                  // Handle internal routes
-                  else if (link.startsWith('/')) {
-                    navigate(link);
-                  }
-                  // Fallback for any other format
-                  else {
-                    window.location.href = link;
-                  }
+                  e.stopPropagation()
+                  handleBannerClick(currentSlide)
                 }}
               >
                 {currentSlide.buttonText}
               </button>
             )}
           </div>
-
-          {slides.length > 1 && (
-            <div style={dotsContainerStyle}>
-              {slides.map((_, index) => (
-                <button
-                  key={index}
-                  style={dotStyle(index === activeSlide)}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent banner click when clicking dots
-                    setActiveSlide(index)
-                  }}
-                  aria-label={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* Left arrow */}
+        {slides.length > 1 && (
+          <button
+            type="button"
+            className="carousel-arrow carousel-arrow-left"
+            onClick={(e) => {
+              e.stopPropagation()
+              goPrev()
+            }}
+            aria-label="Previous banner"
+          >
+            <FaChevronLeft size={13} />
+          </button>
+        )}
+
+        {/* Right arrow */}
+        {slides.length > 1 && (
+          <button
+            type="button"
+            className="carousel-arrow carousel-arrow-right"
+            onClick={(e) => {
+              e.stopPropagation()
+              goNext()
+            }}
+            aria-label="Next banner"
+          >
+            <FaChevronRight size={13} />
+          </button>
+        )}
+
+        {/* Dots */}
+        {slides.length > 1 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: "14px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: "10px",
+              zIndex: 4,
+            }}
+          >
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                className="carousel-dot"
+                style={{
+                  width: index === activeSlide ? "28px" : "8px",
+                  height: "4px",
+                  backgroundColor: index === activeSlide ? "var(--theme-primary)" : "rgba(255,255,255,0.5)",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  goTo(index, index > activeSlide ? "next" : "prev")
+                }}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </>
   )

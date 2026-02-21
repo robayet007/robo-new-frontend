@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { productApi, digitalCodeApi, subscriptionApi } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import type { BackendProduct, BackendDigitalCodeProduct, BackendSubscriptionProduct } from '../types';
 import { FaSave, FaSearch, FaFilter } from 'react-icons/fa';
 
@@ -17,22 +18,15 @@ interface CombinedProduct {
 }
 
 function AdminReseller() {
+  const { showToast } = useToast();
   const [regularProducts, setRegularProducts] = useState<BackendProduct[]>([]);
   const [digitalCodeProducts, setDigitalCodeProducts] = useState<BackendDigitalCodeProduct[]>([]);
   const [subscriptionProducts, setSubscriptionProducts] = useState<BackendSubscriptionProduct[]>([]);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<ProductType | 'all'>('all');
   const [editingProducts, setEditingProducts] = useState<Record<string, string>>({}); // productId -> resellerPrice string
   const [savingProducts, setSavingProducts] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
 
   useEffect(() => {
     loadAllProducts();
@@ -41,7 +35,6 @@ function AdminReseller() {
   const loadAllProducts = async () => {
     try {
       setLoading(true);
-      setMessage(null);
       // For regular products, use getAll() - it returns active products
       // For digital codes and subscriptions, use getAllProductsForAdmin() to get all including inactive
       const [regularRes, digitalRes, subscriptionRes] = await Promise.all([
@@ -102,7 +95,7 @@ function AdminReseller() {
       }
     } catch (err) {
       console.error('Failed to load products:', err);
-      setMessage({ type: 'error', text: `Failed to load products: ${err instanceof Error ? err.message : 'Unknown error'}` });
+      showToast({ type: 'error', text: `Failed to load products: ${err instanceof Error ? err.message : 'Unknown error'}` });
     } finally {
       setLoading(false);
     }
@@ -238,7 +231,7 @@ function AdminReseller() {
         : null;
 
       if (resellerPrice !== null && (isNaN(resellerPrice) || resellerPrice < 0)) {
-        setMessage({ type: 'error', text: 'Please enter a valid price' });
+        showToast({ type: 'error', text: 'Please enter a valid price' });
         return;
       }
 
@@ -260,7 +253,7 @@ function AdminReseller() {
       }
 
       if (response.success) {
-        setMessage({ type: 'success', text: `Reseller price updated for ${product.name}` });
+        showToast({ type: 'success', text: `Reseller price updated for ${product.name}` });
         // Remove from editing state
         setEditingProducts(prev => {
           const next = { ...prev };
@@ -270,11 +263,11 @@ function AdminReseller() {
         // Reload products
         await loadAllProducts();
       } else {
-        setMessage({ type: 'error', text: response.message || 'Failed to update reseller price' });
+        showToast({ type: 'error', text: response.message || 'Failed to update reseller price' });
       }
     } catch (err: any) {
       console.error('Error saving reseller price:', err);
-      setMessage({ type: 'error', text: err?.message || 'Failed to update reseller price' });
+      showToast({ type: 'error', text: err?.message || 'Failed to update reseller price' });
     } finally {
       setSavingProducts(prev => {
         const next = new Set(prev);
@@ -325,16 +318,6 @@ function AdminReseller() {
       </div>
 
       {/* Message */}
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          <p className="font-semibold">{message.text}</p>
-        </div>
-      )}
-
       {/* Filters */}
       <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

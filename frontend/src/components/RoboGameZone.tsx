@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FaCheck } from 'react-icons/fa';
 import { gamePackageApi } from '../services/api';
 import type { BackendGamePackage, BackendGamePackagePurchase } from '../types';
 import useAuth from '../hooks/useAuth';
@@ -252,17 +253,29 @@ function RoboGameZone() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+          <div
+            className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center shadow-lg"
+            style={{
+              background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))',
+              boxShadow: '0 10px 40px rgba(var(--theme-primary-rgb), 0.35)'
+            }}
+          >
             <span className="text-4xl">🎮</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-violet-600 to-fuchsia-500 mb-2">
+          <h1
+            className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text mb-2"
+            style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+          >
             Robo Game Zone
           </h1>
           <p className="text-slate-600">Join tournaments and win amazing prizes!</p>
           {user && (
-            <div className="mt-4 inline-block px-4 py-2 bg-purple-100 rounded-lg">
+            <div
+              className="mt-4 inline-block px-4 py-2 rounded-lg"
+              style={{ background: 'var(--theme-primary-light)', color: 'var(--theme-primary)' }}
+            >
               <span className="text-sm text-slate-600">Your Balance: </span>
-              <span className="text-lg font-bold text-purple-700">৳{balance}</span>
+              <span className="text-lg font-bold" style={{ color: 'var(--theme-primary)' }}>৳{balance}</span>
             </div>
           )}
         </div>
@@ -430,7 +443,7 @@ function RoboGameZone() {
                             )}
                             {tournamentStatus.status === 'active' && (
                               <>
-                                <p className="text-sm font-semibold text-green-700 mb-1">✅ Tournament Active</p>
+                                <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700 mb-1"><FaCheck className="w-3.5 h-3.5 shrink-0" /> Tournament Active</p>
                                 <p className="text-xs text-green-600">Started: {formatBDTime(pkg.startTime)}</p>
                               </>
                             )}

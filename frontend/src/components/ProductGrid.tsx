@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { dealApi } from '../services/api';
 import type { Category, Deal } from '../types';
 
-function ProductGrid({ categories, badgeText, headingText }: { categories: Category[]; badgeText?: string; headingText?: string }) {
+function ProductGrid({ categories, badgeText, headingText, searchQuery }: { categories: Category[]; badgeText?: string; headingText?: string; searchQuery?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
 
   useEffect(() => {
@@ -63,35 +63,54 @@ function ProductGrid({ categories, badgeText, headingText }: { categories: Categ
 
   const navigate = useNavigate();
 
-  // Group categories by deals
-  const categoriesByDeal = deals.map(deal => ({
+  const q = searchQuery?.trim().toLowerCase();
+  const matchCategory = (cat: Category) =>
+    !q || (cat.name?.toLowerCase().includes(q) ?? false) || ((cat as { description?: string }).description?.toLowerCase().includes(q) ?? false);
+  const matchDeal = (deal: Deal) =>
+    !q || (deal.name?.toLowerCase().includes(q) ?? false) || (deal.description?.toLowerCase().includes(q) ?? false);
+
+  // Group categories by deals; when searchQuery is set, filter by name/description
+  let categoriesByDeal = deals.map(deal => ({
     deal,
     categories: categories.filter(cat => cat.dealId === deal.id)
   }));
+  if (q) {
+    categoriesByDeal = categoriesByDeal
+      .map(({ deal, categories: cats }) => ({
+        deal,
+        categories: matchDeal(deal) ? cats : cats.filter(matchCategory)
+      }))
+      .filter(({ categories: cats }) => cats.length > 0);
+  }
 
   // Categories without a deal
-  const categoriesWithoutDeal = categories.filter(cat => !cat.dealId || !deals.find(d => d.id === cat.dealId));
+  let categoriesWithoutDeal = categories.filter(cat => !cat.dealId || !deals.find(d => d.id === cat.dealId));
+  if (q) {
+    categoriesWithoutDeal = categoriesWithoutDeal.filter(matchCategory);
+  }
 
   return (
-    <section id="diamonds" className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
+    <section id="diamonds" className="mt-2 sm:mt-2.5 md:mt-3.5 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1">
-          <p
-            className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border font-semibold text-[11px] sm:text-[12px] md:text-[13px]"
-            style={{
-              backgroundColor: 'var(--theme-primary-light)',
-              borderColor: 'rgba(var(--theme-primary-rgb), 0.35)',
-              color: 'var(--theme-primary)',
-            }}
-          >
-            {badgeText || '💎 Top-up categories'}
-          </p>
-          <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
-            {headingText || 'Browse Categories'}
-          </h2>
-          <p className="mb-2 text-xs sm:text-sm text-slate-600">
-            অফার দেখতে নিচের ক্যাটাগরিতে ক্লিক করুন
-          </p>
+          <div className="inline-block">
+            <h2
+              className="text-xl sm:text-2xl font-semibold text-slate-900"
+              style={{ fontFamily: 'var(--theme-font-family)' }}
+            >
+              {badgeText || 'Top-up categories'}
+            </h2>
+            <div className="mt-1.5 space-y-1">
+              <div
+                className="h-0.5 rounded-full"
+                style={{ width: '50%', backgroundColor: 'var(--theme-primary)' }}
+              />
+              <div
+                className="h-0.5 rounded-full"
+                style={{ width: '70%', backgroundColor: 'var(--theme-primary)' }}
+              />
+            </div>
+          </div>
         </div>
         {/* Render categories grouped by deals */}
         {categoriesByDeal
@@ -106,9 +125,76 @@ function ProductGrid({ categories, badgeText, headingText }: { categories: Categ
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
                 {dealCategories.map((cat) => (
+                  <div key={cat.id} className="flex justify-center">
+                    <button
+                      className="flex flex-col w-[80%] max-w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
+                      style={{
+                        borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor =
+                          'rgba(var(--theme-primary-rgb), 0.45)';
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                          '0 10px 25px rgba(var(--theme-primary-rgb), 0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLButtonElement).style.borderColor =
+                          'rgba(var(--theme-primary-rgb), 0.25)';
+                        (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                      }}
+                      onClick={() => {
+                        window.scrollTo(0, 0);
+                        navigate(`/category/${cat.id}`);
+                      }}
+                    >
+                      <div className="w-full aspect-[1.25] overflow-hidden">
+                        <img
+                          src={getCategoryImage(cat)}
+                          alt={cat.name}
+                          loading="lazy"
+                          className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/diamond-top-up.png';
+                          }}
+                        />
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1.5 py-1.5 sm:py-2">
+                        <span className="font-medium text-center text-[9px] sm:text-[10px] md:text-xs leading-tight text-slate-900">
+                          {cat.name}
+                        </span>
+                        {cat.badge ? (
+                          <span
+                            className="px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-medium"
+                            style={{
+                              backgroundColor: 'var(--theme-primary-light)',
+                              color: 'var(--theme-primary)',
+                            }}
+                          >
+                            {cat.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+        {/* Categories without a deal */}
+        {categoriesWithoutDeal.length > 0 && (
+          <div className="w-full mt-6 sm:mt-8">
+            <h3
+              className="text-center text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
+              style={{ color: 'var(--theme-primary)' }}
+            >
+              Other Categories
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
+              {categoriesWithoutDeal.map((cat) => (
+                <div key={cat.id} className="flex justify-center">
                   <button
-                    key={cat.id}
-                    className="flex flex-col rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
+                    className="flex flex-col w-[80%] max-w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
                     style={{
                       borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
                     }}
@@ -128,25 +214,24 @@ function ProductGrid({ categories, badgeText, headingText }: { categories: Categ
                       navigate(`/category/${cat.id}`);
                     }}
                   >
-                    <div className="w-full aspect-square overflow-hidden">
+                    <div className="w-full aspect-[1.25] overflow-hidden">
                       <img
                         src={getCategoryImage(cat)}
                         alt={cat.name}
                         loading="lazy"
                         className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
                         onError={(e) => {
-                          // Fallback to default image if custom image fails to load
                           (e.target as HTMLImageElement).src = '/diamond-top-up.png';
                         }}
                       />
                     </div>
-                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-2 py-2 sm:py-2.5">
-                      <span className="font-semibold text-center text-[10px] sm:text-xs md:text-sm leading-tight text-slate-900">
+                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1.5 py-1.5 sm:py-2">
+                      <span className="font-medium text-center text-[9px] sm:text-[10px] md:text-xs leading-tight text-slate-900">
                         {cat.name}
                       </span>
                       {cat.badge ? (
                         <span
-                          className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold"
+                          className="px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-medium"
                           style={{
                             backgroundColor: 'var(--theme-primary-light)',
                             color: 'var(--theme-primary)',
@@ -157,83 +242,17 @@ function ProductGrid({ categories, badgeText, headingText }: { categories: Categ
                       ) : null}
                     </div>
                   </button>
-                ))}
-              </div>
-            </div>
-          ))}
-
-        {/* Categories without a deal */}
-        {categoriesWithoutDeal.length > 0 && (
-          <div className="w-full mt-6 sm:mt-8">
-            <h3
-              className="text-center text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
-              style={{ color: 'var(--theme-primary)' }}
-            >
-              Other Categories
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
-              {categoriesWithoutDeal.map((cat) => (
-                <button
-                  key={cat.id}
-                  className="flex flex-col rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
-                  style={{
-                    borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      'rgba(var(--theme-primary-rgb), 0.45)';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                      '0 10px 25px rgba(var(--theme-primary-rgb), 0.25)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      'rgba(var(--theme-primary-rgb), 0.25)';
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-                  }}
-                  onClick={() => {
-                    window.scrollTo(0, 0);
-                    navigate(`/category/${cat.id}`);
-                  }}
-                >
-                  <div className="w-full aspect-square overflow-hidden">
-                    <img
-                      src={getCategoryImage(cat)}
-                      alt={cat.name}
-                      loading="lazy"
-                      className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
-                      onError={(e) => {
-                        // Fallback to default image if custom image fails to load
-                        (e.target as HTMLImageElement).src = '/diamond-top-up.png';
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-2 py-2 sm:py-2.5">
-                    <span className="font-semibold text-center text-[10px] sm:text-xs md:text-sm leading-tight text-slate-900">
-                      {cat.name}
-                    </span>
-                    {cat.badge ? (
-                      <span
-                        className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold"
-                        style={{
-                          backgroundColor: 'var(--theme-primary-light)',
-                          color: 'var(--theme-primary)',
-                        }}
-                      >
-                        {cat.badge}
-                      </span>
-                    ) : null}
-                  </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Show message if no categories */}
-        {categories.length === 0 && (
+        {/* Show message when search has no results only (no categories case handled by early return) */}
+        {q && categoriesByDeal.length === 0 && categoriesWithoutDeal.length === 0 && (
           <div className="w-full mt-6 sm:mt-8">
             <p className="text-center text-xs sm:text-sm text-slate-500">
-              No categories available yet
+              No categories or deals match &quot;{searchQuery}&quot;
             </p>
           </div>
         )}

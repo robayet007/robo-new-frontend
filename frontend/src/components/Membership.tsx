@@ -6,7 +6,7 @@ import useReseller from '../hooks/useReseller';
 import useCatalog from '../hooks/useCatalog';
 import { membershipApi } from '../services/api';
 import type { BackendMembershipPackage, BackendMembershipPurchase } from '../types';
-import { FaCrown, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaCrown, FaCheckCircle, FaClock, FaTag, FaWallet } from 'react-icons/fa';
 
 function Membership() {
   const navigate = useNavigate();
@@ -291,8 +291,9 @@ function Membership() {
         <div className="space-y-6">
         {/* Header */}
         <div className="mb-8 text-center">
-          <h1 className="mb-2 text-3xl font-bold sm:text-4xl text-slate-900">
-            🔰 Membership Packages
+          <h1 className="flex items-center gap-2 mb-2 text-3xl font-bold sm:text-4xl text-slate-900">
+            <FaTag className="w-8 h-8 sm:w-9 sm:h-9 text-purple-600 shrink-0" />
+            Membership Packages
           </h1>
           <p className="text-slate-600">
             Purchase Reseller membership to get access to reseller prices
@@ -338,8 +339,8 @@ function Membership() {
         <div className="relative p-6 overflow-hidden border-2 border-green-200 shadow-lg bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl">
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div className="flex items-center gap-3">
-              <div className="p-3 shadow-sm bg-white/80 rounded-xl">
-                <span className="text-2xl">💰</span>
+              <div className="flex items-center justify-center p-3 shadow-sm bg-white/80 rounded-xl">
+                <FaWallet className="text-2xl text-green-600" />
               </div>
               <div>
                 <p className="mb-1 text-sm font-medium text-slate-600">Available Balance</p>

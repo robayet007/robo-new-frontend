@@ -1,0 +1,22 @@
+rules_version = '2';
+// Firestore security rules for Admin Panel user list and app auth.
+// Deploy: Firebase Console → Firestore → Rules (paste and Publish), or: firebase deploy --only firestore
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: true if the requesting user's document has role == 'admin'
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // users collection: own doc read/write; admins can read all (for Admin Panel user list)
+    match /users/{userId} {
+      allow read: if request.auth != null
+        && (request.auth.uid == userId || isAdmin());
+      allow create, update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+    }
+  }
+}

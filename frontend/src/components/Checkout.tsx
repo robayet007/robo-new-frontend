@@ -68,7 +68,7 @@ function Checkout({ products }: { products: Product[] }) {
 
     const timeoutId = setTimeout(async () => {
       try {
-        const backendBase = http://localhost:5000
+        const backendBase = "http://localhost:5000";
         const url = `${backendBase}/api/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
         const res = await fetch(url);
         const data = await res.json();

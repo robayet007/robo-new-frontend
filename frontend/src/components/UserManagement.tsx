@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import { FaUsers, FaCrown, FaTag, FaShieldAlt, FaSync, FaPlus, FaTimes } from 'react-icons/fa';
 import useUsers, { type UserRole, type AppUser } from '../hooks/useUsers';
 import useAuth from '../hooks/useAuth';
-import { balanceApi, adminRoleApi, type AdminModerationPermissions } from '../services/api';
+import { balanceApi, adminRoleApi, userSyncApi, type AdminModerationPermissions } from '../services/api';
+import { useToast } from '../contexts/ToastContext';
 import { useUsersQuery, usersQueryKeys } from '../hooks/useUsersQuery';
-import { usePaymentUsersQuery, paymentUsersQueryKeys, type PaymentUserSummary } from '../hooks/usePaymentUsersQuery';
 import { useBalancesQuery, balancesQueryKeys } from '../hooks/useBalancesQuery';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -11,29 +12,26 @@ function UserManagement() {
   const { users: firestoreUsers, loading: firestoreLoading, updateUserRole, refreshUsers, addUser, syncCurrentUser } = useUsers();
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
   
-  // Use cached hooks for data fetching it's done
   const { data: cachedUsers = [] } = useUsersQuery();
-  const { data: paymentUsers = [], isLoading: paymentUsersLoading } = usePaymentUsersQuery();
   const { data: balanceRecords = [], isLoading: balanceRecordsLoading } = useBalancesQuery();
   
-  // Use Firestore users (for real-time updates) but fallback to cached if available
   const users = firestoreUsers.length > 0 ? firestoreUsers : cachedUsers;
-  // Only block on Firestore so we don't wait for duplicate useUsersQuery fetch
   const loading = firestoreLoading;
   
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserForBalance, setSelectedUserForBalance] = useState<AppUser | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [balanceValue, setBalanceValue] = useState<string>('');
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [syncFromAuthLoading, setSyncFromAuthLoading] = useState(false);
 
   type ModerationPermissions = AdminModerationPermissions;
 
   type Role = 'user' | 'moderator' | 'admin' | 'reseller';
 
-  const [selectedModerator, setSelectedModerator] = useState<PaymentUserSummary | null>(null);
+  const [selectedModerator, setSelectedModerator] = useState<AppUser | null>(null);
   const [modPerms, setModPerms] = useState<ModerationPermissions>({
     canAccessDashboard: false,
     canManageProducts: false,
@@ -57,13 +55,6 @@ function UserManagement() {
     }
   }, [currentUser, users, loading, addUser, refreshUsers]);
 
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [message]);
-
   // Add current user if not in list
   useEffect(() => {
     if (currentUser && !loading) {
@@ -77,20 +68,17 @@ function UserManagement() {
 
     // Prevent changing own role
     if (userEmail === currentUser?.email) {
-      setMessage({ type: 'error', text: 'You cannot change your own role' });
+      showToast({ type: 'error', text: 'You cannot change your own role' });
       return;
     }
 
     updateUserRole(userEmail, newRole);
-    setMessage({ 
+    showToast({ 
       type: 'success', 
       text: `User role updated to ${newRole}` 
     });
     
-    // Invalidate cache to refresh data
     queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
-    queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
-    
     setTimeout(() => refreshUsers(), 300);
   };
 
@@ -107,41 +95,21 @@ function UserManagement() {
   const adminUsers = filteredUsers.filter(u => u.role === 'admin');
   const regularUsers = filteredUsers.filter(u => u.role === 'user');
 
-  // Calculate role counts from paymentUsers (more comprehensive)
-  const totalUsers = paymentUsers.length;
-  const adminCount = paymentUsers.filter(u => u.role === 'admin').length;
-  const resellerCount = paymentUsers.filter(u => u.role === 'reseller').length;
-  const moderatorCount = paymentUsers.filter(u => u.role === 'moderator').length;
+  const totalUsers = users.length;
+  const adminCount = users.filter(u => u.role === 'admin').length;
+  const resellerCount = users.filter(u => u.role === 'reseller').length;
+  const moderatorCount = users.filter(u => u.role === 'moderator').length;
 
-  const filteredPaymentUsers = paymentUsers.filter((u) => {
-    if (!searchTerm) return true;
-    const s = searchTerm.toLowerCase();
-    return (
-      u.userEmail.toLowerCase().includes(s) ||
-      u.userName.toLowerCase().includes(s) ||
-      u.userId.toLowerCase().includes(s)
-    );
-  });
+  const regularUsersList = filteredUsers.filter(u => u.role !== 'admin');
 
-  const openBalanceForPaymentUser = (u: PaymentUserSummary) => {
-    const pseudoUser: AppUser = {
-      uid: u.userId,
-      email: u.userEmail,
-      displayName: u.userName,
-      photoURL: null,
-      role: 'user',
-      createdAt: Date.now(),
-      lastLogin: undefined,
-    };
-    void handleOpenBalanceEditor(pseudoUser);
+  const openBalanceForUser = (user: AppUser) => {
+    void handleOpenBalanceEditor(user);
   };
 
   const handleOpenBalanceEditor = async (user: AppUser) => {
     try {
       setSelectedUserForBalance(user);
       setBalanceLoading(true);
-      setMessage(null);
-
       let current = 0;
 
       // Get current balance from balance API (single source of truth)
@@ -155,7 +123,7 @@ function UserManagement() {
       setBalanceValue(current.toString());
     } catch (err: any) {
       // console.error('Error fetching user balance:', err);
-      setMessage({ type: 'error', text: 'Failed to load user balance' });
+      showToast({ type: 'error', text: 'Failed to load user balance' });
       setBalanceValue('0');
     } finally {
       setBalanceLoading(false);
@@ -179,12 +147,12 @@ function UserManagement() {
     // });
     
     if (Number.isNaN(amount)) {
-      setMessage({ type: 'error', text: 'Please enter a valid balance amount' });
+      showToast({ type: 'error', text: 'Please enter a valid balance amount' });
       return;
     }
     
     if (amount < 0) {
-      setMessage({ type: 'error', text: 'Balance cannot be negative. Please enter 0 or greater.' });
+      showToast({ type: 'error', text: 'Balance cannot be negative. Please enter 0 or greater.' });
       return;
     }
 
@@ -207,23 +175,22 @@ function UserManagement() {
       // console.log('📥 Balance sync response:', resp);
 
       if (resp.success) {
-        setMessage({
+        showToast({
           type: 'success',
           text: `Balance updated to ৳${amount.toFixed(2)} for ${selectedUserForBalance.email || 'user'}`,
         });
 
-        // Invalidate cache to refresh data
         queryClient.invalidateQueries({ queryKey: balancesQueryKeys.list() });
-        queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
+        queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
       } else {
-        setMessage({
+        showToast({
           type: 'error',
           text: resp.message || 'Failed to update balance',
         });
       }
     } catch (err: any) {
       // console.error('Error updating balance:', err);
-      setMessage({
+      showToast({
         type: 'error',
         text: err?.message || 'Failed to update balance',
       });
@@ -232,12 +199,34 @@ function UserManagement() {
     }
   };
 
-  // Debug: Log users from Firestore
   useEffect(() => {
-    // console.log('📊 Users loaded from Firestore:', users.length);
-    // console.log('👥 Users list:', users);
-    // console.log('🔐 Current user:', currentUser);
-  }, [users, currentUser]);
+    if (!selectedModerator) return;
+    let cancelled = false;
+    adminRoleApi.getAll().then((resp) => {
+      if (cancelled || !resp.success || !Array.isArray(resp.data)) return;
+      const entry = (resp.data as any[]).find(
+        (r) =>
+          r.userId === selectedModerator.uid ||
+          (r.userEmail && selectedModerator.email && r.userEmail.toLowerCase() === selectedModerator.email.toLowerCase())
+      );
+      if (!cancelled && entry?.moderationPermissions) {
+        setModPerms(entry.moderationPermissions as ModerationPermissions);
+      } else if (!cancelled) {
+        setModPerms({
+          canAccessDashboard: false,
+          canManageProducts: false,
+          canManageDigitalCodes: false,
+          canManageSubscriptions: false,
+          canManageBanners: false,
+          canManageNotices: false,
+          canManageGamePackages: false,
+          canManageUsers: false,
+          canManageOrders: false,
+        });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selectedModerator]);
 
   if (loading) {
     return (
@@ -250,15 +239,6 @@ function UserManagement() {
 
   return (
     <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-      {message && (
-        <div className={`p-4 rounded-xl ${
-          message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          <p className="font-semibold">{message.text}</p>
-        </div>
-      )}
 
       {/* Role Summary Cards */}
       <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4 sm:gap-4">
@@ -268,7 +248,7 @@ function UserManagement() {
               <p className="mb-1 text-xs font-medium text-blue-700 sm:text-sm">Total Users</p>
               <p className="text-2xl font-bold text-blue-900 sm:text-3xl">{totalUsers}</p>
             </div>
-            <div className="text-2xl sm:text-3xl">👥</div>
+            <div className="text-2xl sm:text-3xl text-blue-600"><FaUsers /></div>
           </div>
         </div>
         <div className="p-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
@@ -277,7 +257,7 @@ function UserManagement() {
               <p className="mb-1 text-xs font-medium text-purple-700 sm:text-sm">Admins</p>
               <p className="text-2xl font-bold text-purple-900 sm:text-3xl">{adminCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl">👑</div>
+            <div className="text-2xl sm:text-3xl text-purple-600"><FaCrown /></div>
           </div>
         </div>
         <div className="p-4 border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
@@ -286,7 +266,7 @@ function UserManagement() {
               <p className="mb-1 text-xs font-medium text-green-700 sm:text-sm">Resellers</p>
               <p className="text-2xl font-bold text-green-900 sm:text-3xl">{resellerCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl">🔰</div>
+            <div className="text-2xl sm:text-3xl text-green-600"><FaTag /></div>
           </div>
         </div>
         <div className="p-4 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
@@ -295,7 +275,7 @@ function UserManagement() {
               <p className="mb-1 text-xs font-medium text-orange-700 sm:text-sm">Moderators</p>
               <p className="text-2xl font-bold text-orange-900 sm:text-3xl">{moderatorCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl">🛡️</div>
+            <div className="text-2xl sm:text-3xl text-orange-600"><FaShieldAlt /></div>
           </div>
         </div>
       </div>
@@ -307,8 +287,9 @@ function UserManagement() {
             <span className="font-semibold text-slate-900">Total: {users.length} Firestore users</span>
             {' '}({adminUsers.length} admins, {regularUsers.length} regular)
           </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 mt-1">
-            🔄 Data fetched from Firebase Firestore (Real-time sync)
+          <p className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-500 mt-1">
+            <FaSync className="w-3 h-3 shrink-0" />
+            Data fetched from Firebase Firestore (Real-time sync)
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -319,23 +300,49 @@ function UserManagement() {
                   addUser(currentUser);
                   setTimeout(() => {
                     refreshUsers();
-                    setMessage({ type: 'success', text: 'Current user added to list' });
+                    showToast({ type: 'success', text: 'Current user added to list' });
                   }, 300);
                 }
               }}
-              className="px-3 py-2 text-xs font-semibold text-white transition-all bg-green-500 sm:px-4 rounded-xl sm:text-sm hover:bg-green-600"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white transition-all bg-green-500 sm:px-4 rounded-xl sm:text-sm hover:bg-green-600"
             >
-              ➕ Add Current User
+              <FaPlus className="w-3.5 h-3.5 shrink-0" />
+              Add Current User
             </button>
           )}
           <button
+            onClick={async () => {
+              setSyncFromAuthLoading(true);
+              try {
+                const res = await userSyncApi.syncFromAuth();
+                if (res.success && res.data != null) {
+                  showToast({ type: 'success', text: res.message || `Synced ${res.data.synced} user(s) from Firebase Auth.` });
+                  queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
+                  refreshUsers();
+                } else {
+                  showToast({ type: 'error', text: (res as { message?: string }).message || 'Sync failed.' });
+                }
+              } catch (e: any) {
+                showToast({ type: 'error', text: e?.message || 'Sync from Auth failed.' });
+              } finally {
+                setSyncFromAuthLoading(false);
+              }
+            }}
+            disabled={syncFromAuthLoading}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white transition-all bg-indigo-600 sm:px-4 rounded-xl sm:text-sm hover:bg-indigo-700 disabled:opacity-50"
+          >
+            <FaSync className="w-3.5 h-3.5 shrink-0" />
+            {syncFromAuthLoading ? 'Syncing…' : 'Sync from Firebase Auth'}
+          </button>
+          <button
             onClick={() => {
               refreshUsers();
-              setMessage({ type: 'success', text: 'User list refreshed' });
+              showToast({ type: 'success', text: 'User list refreshed' });
             }}
-            className="px-3 py-2 text-xs font-semibold transition-all border sm:px-4 rounded-xl border-slate-300 text-slate-700 sm:text-sm hover:bg-slate-50"
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-all border sm:px-4 rounded-xl border-slate-300 text-slate-700 sm:text-sm hover:bg-slate-50"
           >
-            🔄 Refresh
+            <FaSync className="w-3.5 h-3.5 shrink-0" />
+            Refresh
           </button>
           <div className="flex-1 sm:max-w-md">
             <input
@@ -356,18 +363,19 @@ function UserManagement() {
             <div>
               <p className="mb-1 text-xs font-semibold text-purple-700">Moderator permissions</p>
               <p className="text-sm font-bold sm:text-base text-slate-900">
-                {selectedModerator.userName || selectedModerator.userEmail}
+                {selectedModerator.displayName || selectedModerator.email}
               </p>
               <p className="text-[11px] sm:text-xs text-slate-600">
-                UID: {selectedModerator.userId}
+                UID: {selectedModerator.uid}
               </p>
             </div>
             <button
               type="button"
               onClick={() => setSelectedModerator(null)}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
             >
-              ✕ Close
+              <FaTimes className="w-3.5 h-3.5 shrink-0" />
+              Close
             </button>
           </div>
           <div className="mb-3">
@@ -559,15 +567,14 @@ function UserManagement() {
             onClick={async () => {
               if (!selectedModerator) return;
               await adminRoleApi.upsert({
-                userId: selectedModerator.userId,
-                userEmail: selectedModerator.userEmail,
+                userId: selectedModerator.uid,
+                userEmail: selectedModerator.email || '',
                 role: 'moderator',
                 moderationPermissions: modPerms,
               });
-              
-              // Invalidate cache to refresh data
-              queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
-              setMessage({ type: 'success', text: 'Moderator permissions updated' });
+              queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
+              showToast({ type: 'success', text: 'Moderator permissions updated' });
+              refreshUsers();
             }}
             className="px-4 py-2 mt-4 text-xs font-semibold text-white transition-all bg-purple-600 rounded-xl sm:text-sm hover:bg-purple-700"
           >
@@ -592,9 +599,10 @@ function UserManagement() {
             <button
               type="button"
               onClick={() => setSelectedUserForBalance(null)}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
+              className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
             >
-              ✕ Close
+              <FaTimes className="w-3.5 h-3.5 shrink-0" />
+              Close
             </button>
           </div>
           <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
@@ -707,11 +715,11 @@ function UserManagement() {
         </div>
       )}
 
-      {/* Regular Users Section (from payments API summaries) */}
+      {/* Regular Users Section (from Firebase) */}
       <div>
         <h4 className="flex items-center gap-2 mb-3 text-lg font-semibold text-slate-900">
           <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-          Regular Users ({filteredPaymentUsers.length})
+          Regular Users ({regularUsersList.length})
         </h4>
           <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
           <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 font-semibold text-xs sm:text-sm text-slate-700 min-w-[760px]">
@@ -721,101 +729,98 @@ function UserManagement() {
             <div>Balance</div>
             <div>Actions</div>
           </div>
-          {filteredPaymentUsers.length > 0 ? (
-            filteredPaymentUsers.map((u) => (
-              <div key={`${u.userId}-${u.userEmail}`} className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[760px]">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-violet-600 sm:text-sm">
-                    {u.userName?.[0] || u.userEmail?.[0] || 'U'}
+          {regularUsersList.length > 0 ? (
+            regularUsersList.map((u) => {
+              const balanceFromApi = balanceRecords.find(
+                (b) =>
+                  b.userId === u.uid ||
+                  (!!b.userEmail && u.email && b.userEmail.toLowerCase() === u.email.toLowerCase())
+              );
+              const displayBalance = balanceFromApi?.balance ?? null;
+              return (
+                <div key={u.uid} className="grid grid-cols-[2fr_1fr_1fr_1fr_1.2fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[760px]">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    {u.photoURL && !imageErrors.has(u.uid) ? (
+                      <img
+                        src={u.photoURL}
+                        alt={u.displayName || 'User'}
+                        className="w-8 h-8 rounded-full sm:w-10 sm:h-10"
+                        onError={() => setImageErrors(prev => new Set(prev).add(u.uid))}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-8 h-8 text-xs font-bold text-white rounded-full sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-violet-600 sm:text-sm">
+                        {u.displayName?.[0] || u.email?.[0] || 'U'}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">
+                        {u.displayName || 'No Name'}
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-slate-500">
+                        UID: {u.uid.substring(0, 12)}...
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-slate-600 sm:hidden truncate">
+                        {u.email || '-'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">
-                      {u.userName || 'No Name'}
+                  <div className="hidden text-xs truncate sm:text-sm text-slate-700 sm:block">
+                    {u.email || '-'}
+                  </div>
+                  <div>
+                    <select
+                      value={u.role || 'user'}
+                      onChange={async (e) => {
+                        const newRole = e.target.value as Role;
+                        await adminRoleApi.upsert({
+                          userId: u.uid,
+                          userEmail: u.email || '',
+                          role: newRole,
+                          moderationPermissions: {},
+                        });
+                        showToast({ type: 'success', text: `Role updated to ${newRole}` });
+                        queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
+                        refreshUsers();
+                      }}
+                      className="px-2 py-1 rounded-lg border border-slate-300 text-[10px] sm:text-xs bg-white text-slate-700"
+                    >
+                      <option value="user">User</option>
+                      <option value="moderator">Moderator</option>
+                      <option value="admin">Admin</option>
+                      <option value="reseller">Reseller</option>
+                    </select>
+                  </div>
+                  <div>
+                    <p className="text-[11px] sm:text-xs font-semibold text-slate-900">
+                      {typeof displayBalance === 'number'
+                        ? `৳${displayBalance.toFixed(2)}`
+                        : '—'}
                     </p>
-                    <p className="text-[10px] sm:text-xs text-slate-500">
-                      UID: {u.userId.substring(0, 12)}...
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-slate-600 sm:hidden truncate">
-                      {u.userEmail || '-'}
+                    <p className="text-[10px] text-slate-400 hidden sm:block">
+                      {balanceRecordsLoading ? 'Loading...' : 'Balance'}
                     </p>
                   </div>
-                </div>
-                <div className="hidden text-xs truncate sm:text-sm text-slate-700 sm:block">
-                  {u.userEmail || '-'}
-                </div>
-                <div>
-                  <select
-                    value={u.role || 'user'}
-                    onChange={async (e) => {
-                      const newRole = e.target.value as Role;
-                      if (!u.userId && !u.userEmail) return;
-                      await adminRoleApi.upsert({
-                        userId: u.userId,
-                        userEmail: u.userEmail,
-                        role: newRole,
-                        moderationPermissions: u.moderationPermissions || {},
-                      });
-                      setMessage({ type: 'success', text: `Role updated to ${newRole}` });
-                      
-                      // Invalidate cache to refresh data
-                      queryClient.invalidateQueries({ queryKey: paymentUsersQueryKeys.list() });
-                    }}
-                    className="px-2 py-1 rounded-lg border border-slate-300 text-[10px] sm:text-xs bg-white text-slate-700"
-                  >
-                    <option value="user">User</option>
-                    <option value="moderator">Moderator</option>
-                    <option value="admin">Admin</option>
-                    <option value="reseller">Reseller</option>
-                  </select>
-                </div>
-                <div>
-                  {(() => {
-                    const balanceFromApi = balanceRecords.find(
-                      (b) =>
-                        b.userId === u.userId ||
-                        (!!b.userEmail && b.userEmail.toLowerCase() === u.userEmail.toLowerCase())
-                    );
-                    const displayBalance =
-                      balanceFromApi?.balance ??
-                      (typeof u.lastBalance === 'number' ? u.lastBalance : null);
-
-                    return (
-                      <>
-                        <p className="text-[11px] sm:text-xs font-semibold text-slate-900">
-                          {typeof displayBalance === 'number'
-                            ? `৳${displayBalance.toFixed(2)}`
-                            : '—'}
-                        </p>
-                        <p className="text-[10px] text-slate-400 hidden sm:block">
-                          {balanceRecordsLoading ? 'Loading current balance...' : 'Current balance'}
-                        </p>
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="flex flex-col gap-1 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => openBalanceForPaymentUser(u)}
-                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-slate-300 text-[10px] sm:text-xs text-slate-700 hover:bg-slate-100 transition-all whitespace-nowrap"
-                  >
-                    View / Edit
-                  </button>
-                  {u.role === 'moderator' && (
+                  <div className="flex flex-col gap-1 sm:flex-row">
                     <button
                       type="button"
-                      onClick={() => {
-                        setSelectedModerator(u);
-                        setModPerms(u.moderationPermissions || {});
-                      }}
-                      className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-[10px] sm:text-xs text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      onClick={() => openBalanceForUser(u)}
+                      className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-slate-300 text-[10px] sm:text-xs text-slate-700 hover:bg-slate-100 transition-all whitespace-nowrap"
                     >
-                      Edit Moderation
+                      View / Edit
                     </button>
-                  )}
+                    {u.role === 'moderator' && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedModerator(u)}
+                        className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-purple-300 bg-purple-50 text-[10px] sm:text-xs text-purple-700 hover:bg-purple-100 transition-all whitespace-nowrap"
+                      >
+                        Edit Moderation
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="p-8 text-center text-slate-500">
               {searchTerm ? (
@@ -829,7 +834,7 @@ function UserManagement() {
                         if (currentUser) {
                           addUser(currentUser);
                           setTimeout(() => refreshUsers(), 500);
-                          setMessage({ type: 'success', text: 'Current user added to list' });
+                          showToast({ type: 'success', text: 'Current user added to list' });
                         }
                       }}
                       className="px-4 py-2 mt-4 font-semibold text-white transition-all rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700"
@@ -842,77 +847,6 @@ function UserManagement() {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Users from Payments API (summary) */}
-      <div>
-        <h4 className="flex items-center gap-2 mb-3 text-lg font-semibold text-slate-900">
-          <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-          Users from Payments API ({paymentUsers.length})
-        </h4>
-        {paymentUsersLoading ? (
-          <div className="flex items-center justify-center py-6 text-sm text-slate-600">
-            <div className="w-5 h-5 mr-2 border-4 rounded-full border-amber-400 border-t-transparent animate-spin" />
-            Loading payment users...
-          </div>
-        ) : (
-          <div className="overflow-hidden overflow-x-auto border border-slate-200 rounded-xl">
-            <div className="grid grid-cols-[2fr_1.4fr_1fr_1fr] gap-2 sm:gap-4 p-3 sm:p-4 bg-slate-50 border-b border-slate-200 font-semibold text-xs sm:text-sm text-slate-700 min-w-[720px]">
-              <div>User</div>
-              <div>Email</div>
-              <div>Last Balance</div>
-              <div>Orders</div>
-            </div>
-            {paymentUsers.length > 0 ? (
-              paymentUsers.map((u) => {
-                const dateLabel = u.lastPaymentAt
-                  ? new Date(u.lastPaymentAt).toLocaleString('bn-BD', {
-                      day: '2-digit',
-                      month: 'short',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                    })
-                  : '-';
-
-                return (
-                  <div
-                    key={`${u.userId}-${u.userEmail}`}
-                    className="grid grid-cols-[2fr_1.4fr_1fr_1fr] gap-2 sm:gap-4 p-3 sm:p-4 border-b border-slate-100 items-center hover:bg-slate-50 transition-colors min-w-[720px]"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold truncate sm:text-sm text-slate-900">
-                        {u.userName || u.userEmail}
-                      </p>
-                      <p className="text-[10px] sm:text-xs text-slate-500 truncate">
-                        UID: {u.userId}
-                      </p>
-                      <p className="text-[10px] text-slate-400 truncate">
-                        Last payment: {dateLabel}
-                      </p>
-                    </div>
-                    <div className="text-xs truncate sm:text-sm text-slate-700">
-                      {u.userEmail}
-                    </div>
-                    <div className="text-xs font-semibold sm:text-sm text-emerald-700">
-                      {typeof u.lastBalance === 'number'
-                        ? `৳${u.lastBalance.toFixed(2)}`
-                        : '—'}
-                    </div>
-                    <div className="text-xs sm:text-sm text-slate-700">
-                      {u.totalOrders}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="p-8 text-sm text-center text-slate-500">
-                No payment data yet.
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
