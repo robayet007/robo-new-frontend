@@ -69,7 +69,9 @@ function ThemeCustomization() {
     { id: 'notices', label: 'Notices', icon: FaBullhorn },
   ];
 
-  // Initialize local state from theme context
+  // Initialize local state from theme context.
+  // Skip syncing Uddokta fields when user is on Integrations tab - ThemeContext polls every 5s
+  // and would overwrite user input (API key, base URL, etc.) causing "input box vanish" bug.
   useEffect(() => {
     if (isLoaded) {
       setLocalPrimary(primaryColor);
@@ -90,12 +92,14 @@ function ThemeCustomization() {
       setLocalSupportWhatsAppUrl(supportWhatsAppUrl ?? '');
       setLocalSupportMessengerUrl(supportMessengerUrl ?? '');
       setLocalSupportTelegramUrl(supportTelegramUrl ?? '');
-      setLocalUddoktaBaseUrl(uddoktaBaseUrl ?? '');
-      setLocalUddoktaApiKey('');
-      setLocalUddoktaCheckoutPath(uddoktaGatewayConfig?.checkoutPath ?? '');
-      setLocalUddoktaVerifyPath(uddoktaGatewayConfig?.verifyPath ?? '');
+      if (activeTab !== 'integrations') {
+        setLocalUddoktaBaseUrl(uddoktaBaseUrl ?? '');
+        setLocalUddoktaApiKey('');
+        setLocalUddoktaCheckoutPath(uddoktaGatewayConfig?.checkoutPath ?? '');
+        setLocalUddoktaVerifyPath(uddoktaGatewayConfig?.verifyPath ?? '');
+      }
     }
-  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig]);
+  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig]);
 
   // Apply preview colors
   useEffect(() => {
