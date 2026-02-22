@@ -21,7 +21,6 @@ function AddMoney() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
-    backendBalance,
     loading: balanceLoading,
     refreshBalance,
   } = useRoboBalance();
@@ -184,11 +183,6 @@ function AddMoney() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, user, navigate]);
-
-  // ✅ currentBalance navbar এর মতই same source থেকে নিচ্ছি
-  const currentBalance =
-    backendBalance !== null && backendBalance !== undefined ? backendBalance : 0;
-  // console.log('💰 Current balance value:', currentBalance);
 
   const predefinedAmounts = [100, 500, 1000, 5000];
 

@@ -578,9 +578,9 @@ function InlinePurchasePanel({
               <span className="text-slate-600">Status</span>
               <span className={`font-semibold ${
                 ucTopupStatus?.transactionId === paymentResult.transactionId
-                  ? ucTopupStatus.status === "completed"
+                  ? ucTopupStatus?.status === "completed"
                     ? "text-emerald-600"
-                    : ucTopupStatus.status === "failed"
+                    : ucTopupStatus?.status === "failed"
                       ? "text-red-600"
                       : "text-blue-600"
                   : product.diamonds && paymentResult.status === "success"
@@ -590,11 +590,11 @@ function InlinePurchasePanel({
                       : "text-amber-600"
               }`}>
                 {ucTopupStatus?.transactionId === paymentResult.transactionId
-                  ? ucTopupStatus.status === "processing"
+                  ? ucTopupStatus?.status === "processing"
                     ? "⏳ Processing"
-                    : ucTopupStatus.status === "completed"
+                    : ucTopupStatus?.status === "completed"
                       ? "✅ Completed"
-                      : ucTopupStatus.status === "failed"
+                      : ucTopupStatus?.status === "failed"
                         ? "❌ Failed"
                         : "Verified"
                   : product.diamonds && paymentResult.status === "success"
@@ -606,20 +606,20 @@ function InlinePurchasePanel({
             </div>
             <p className={`mt-2 text-sm ${
               ucTopupStatus?.transactionId === paymentResult.transactionId
-                ? ucTopupStatus.status === "completed"
+                ? ucTopupStatus?.status === "completed"
                   ? "text-emerald-700"
-                  : ucTopupStatus.status === "failed"
+                  : ucTopupStatus?.status === "failed"
                     ? "text-red-600"
                     : "text-blue-600"
                 : "text-slate-600"
             }`}>
               {ucTopupStatus?.transactionId === paymentResult.transactionId
-                ? ucTopupStatus.status === "processing"
-                  ? (ucTopupStatus.message || "UC top-up is being processed. Waiting for response...")
-                  : ucTopupStatus.status === "completed"
-                    ? (ucTopupStatus.message || "UC top-up completed successfully!")
-                    : ucTopupStatus.status === "failed"
-                      ? (ucTopupStatus.message || "UC top-up failed.")
+                ? ucTopupStatus?.status === "processing"
+                  ? (ucTopupStatus?.message || "UC top-up is being processed. Waiting for response...")
+                  : ucTopupStatus?.status === "completed"
+                    ? (ucTopupStatus?.message || "UC top-up completed successfully!")
+                    : ucTopupStatus?.status === "failed"
+                      ? (ucTopupStatus?.message || "UC top-up failed.")
                       : paymentResult.message
                 : product.diamonds
                   ? "Payment successful! UC top-up is being processed..."

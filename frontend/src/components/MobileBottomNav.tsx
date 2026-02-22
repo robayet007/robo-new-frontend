@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaMoneyBillWave, FaRegUserCircle } from 'react-icons/fa';
+import { FaHome, FaRegUserCircle } from 'react-icons/fa';
 import { FaCirclePlus } from 'react-icons/fa6';
 import { MdOutlineShoppingBag } from 'react-icons/md';
 
