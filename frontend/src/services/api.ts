@@ -4,16 +4,17 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    // Use environment variable (required)
-    const backendUrl = 'http://localhost:5000';
-  
+    const backendUrl = import.meta.env.VITE_BACKEND_URL
+      || import.meta.env.VITE_API_URL
+      || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+
     if (!backendUrl) {
-      throw new Error('VITE_API_URL environment variable is not set');
+      throw new Error('VITE_BACKEND_URL or VITE_API_URL environment variable is not set');
     }
-    
+
     // Remove trailing slash if present
     const cleanUrl = backendUrl.replace(/\/$/, '');
-    
+
     return `${cleanUrl}/api`;
   }
   
