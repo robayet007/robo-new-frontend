@@ -1,7 +1,7 @@
 import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase, BackendDigitalCodeCategory, BackendDigitalCodeProduct, BackendDigitalCode, BackendDigitalCodePurchase, BackendSubscriptionCategory, BackendSubscriptionProduct, BackendSubscriptionPurchase, BackendMembershipPackage, BackendMembershipPurchase } from '../types';
 
 // ==================== API MANAGER - Smart URL Detection ====================
-class SmartAPIManager {
+export class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
     const backendUrl = import.meta.env.VITE_BACKEND_URL

@@ -493,12 +493,12 @@ function ThemeCustomization() {
   return (
     <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
       {/* Summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-4 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
-              <div className="w-8 h-8 rounded-lg border border-slate-300 shadow-sm" style={{ backgroundColor: primaryColor }} />
-              <div className="w-8 h-8 rounded-lg border border-slate-300 shadow-sm" style={{ backgroundColor: secondaryColor }} />
+              <div className="w-8 h-8 border rounded-lg shadow-sm border-slate-300" style={{ backgroundColor: primaryColor }} />
+              <div className="w-8 h-8 border rounded-lg shadow-sm border-slate-300" style={{ backgroundColor: secondaryColor }} />
             </div>
             <div>
               <p className="text-xs font-medium text-slate-500">Current Theme</p>
@@ -507,9 +507,9 @@ function ThemeCustomization() {
           </div>
           <div className="flex items-center gap-3">
             {navbarLogoUrl ? (
-              <img src={navbarLogoUrl} alt="Logo" className="h-10 w-auto object-contain rounded" />
+              <img src={navbarLogoUrl} alt="Logo" className="object-contain w-auto h-10 rounded" />
             ) : (
-              <div className="h-10 w-20 rounded bg-slate-100 flex items-center justify-center">
+              <div className="flex items-center justify-center w-20 h-10 rounded bg-slate-100">
                 <span className="text-xs text-slate-400">No logo</span>
               </div>
             )}
@@ -527,7 +527,7 @@ function ThemeCustomization() {
             <p className="text-xl font-bold text-slate-900">{notices.length}</p>
           </div>
         </div>
-        <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+        <div className="flex overflow-hidden border rounded-lg border-slate-200">
           {themeTabs.map((t) => (
             <button
               key={t.id}
@@ -546,7 +546,7 @@ function ThemeCustomization() {
       </div>
 
       {previewMode && (
-        <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+        <div className="p-4 border border-blue-200 rounded-xl bg-blue-50">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-blue-900">Preview Mode Active</p>
@@ -554,7 +554,7 @@ function ThemeCustomization() {
             </div>
             <button
               onClick={handleCancelPreview}
-              className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-all"
+              className="px-4 py-2 text-sm font-semibold text-blue-700 transition-all bg-blue-100 rounded-lg hover:bg-blue-200"
             >
               Cancel Preview
             </button>
@@ -562,7 +562,7 @@ function ThemeCustomization() {
         </div>
       )}
 
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200 shadow-sm">
+      <div className="p-4 bg-white border shadow-sm sm:p-5 md:p-6 rounded-xl border-slate-200">
         <div className="mb-6">
           <h3 className="text-lg font-bold text-slate-900">Store Theme Customization</h3>
           <p className="mt-1 text-sm text-slate-600">
@@ -574,13 +574,13 @@ function ThemeCustomization() {
           <form id="theme-form" onSubmit={handleSave} className="space-y-6">
             {/* Brand & Logo tab */}
             <div className={activeTab !== 'brand' ? 'hidden' : 'space-y-6'}>
-              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Store logo (navbar)</span>
             <p className="mb-4 text-xs text-slate-500">Upload an image to show in the navbar instead of text. Recommended size: height 40–48px. Display size is fixed in the navbar.</p>
             <div className="max-w-xs">
               {localNavbarLogoUrl && (
                 <div className="mb-2">
-                  <img src={localNavbarLogoUrl} alt="Navbar logo preview" className="max-h-12 w-auto object-contain" />
+                  <img src={localNavbarLogoUrl} alt="Navbar logo preview" className="object-contain w-auto max-h-12" />
                 </div>
               )}
               <ImageUpload
@@ -593,7 +593,7 @@ function ThemeCustomization() {
                 type="button"
                 onClick={handleSaveLogo}
                 disabled={savingLogo}
-                className="mt-3 px-4 py-2 text-sm font-semibold text-white transition-all rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
+                className="px-4 py-2 mt-3 text-sm font-semibold text-white transition-all rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
               >
                 {savingLogo ? 'Saving…' : 'Save logo'}
               </button>
@@ -601,8 +601,8 @@ function ThemeCustomization() {
           </div>
 
           {/* Color Pickers - Brand tab */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
               <label className="block mb-3">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Primary Color *</span>
                 <div className="flex items-center gap-4">
@@ -616,7 +616,7 @@ function ThemeCustomization() {
                         setTimeout(() => setPreviewMode(true), 10);
                       }
                     }}
-                    className="w-20 h-20 rounded-lg border-2 border-slate-300 cursor-pointer"
+                    className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
                   />
                   <div className="flex-1">
                     <input
@@ -633,7 +633,7 @@ function ThemeCustomization() {
                         }
                       }}
                       placeholder="#a855f7"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 font-mono"
+                      className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                       style={inputRingStyle}
                     />
                     <p className="mt-1 text-xs text-slate-500">Used for buttons, links, and primary accents</p>
@@ -641,7 +641,7 @@ function ThemeCustomization() {
                 </div>
               </label>
             </div>
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
               <label className="block mb-3">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Secondary Color *</span>
                 <div className="flex items-center gap-4">
@@ -655,7 +655,7 @@ function ThemeCustomization() {
                         setTimeout(() => setPreviewMode(true), 10);
                       }
                     }}
-                    className="w-20 h-20 rounded-lg border-2 border-slate-300 cursor-pointer"
+                    className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
                   />
                   <div className="flex-1">
                     <input
@@ -672,7 +672,7 @@ function ThemeCustomization() {
                         }
                       }}
                       placeholder="#8b5cf6"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 font-mono"
+                      className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                       style={inputRingStyle}
                     />
                     <p className="mt-1 text-xs text-slate-500">Used for gradients and secondary accents</p>
@@ -683,26 +683,26 @@ function ThemeCustomization() {
           </div>
 
           {/* Color Preview - Brand tab */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Color Preview</span>
             <div className="flex flex-wrap gap-4">
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className="w-24 h-24 rounded-lg border-2 border-slate-300 shadow-md"
+                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
                   style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
                 />
                 <span className="text-xs text-slate-600">Gradient</span>
               </div>
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className="w-24 h-24 rounded-lg border-2 border-slate-300 shadow-md"
+                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
                   style={{ backgroundColor: localPrimary }}
                 />
                 <span className="text-xs text-slate-600">Primary</span>
               </div>
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className="w-24 h-24 rounded-lg border-2 border-slate-300 shadow-md"
+                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
                   style={{ backgroundColor: localSecondary }}
                 />
                 <span className="text-xs text-slate-600">Secondary</span>
@@ -710,7 +710,7 @@ function ThemeCustomization() {
               <div className="flex flex-col items-center gap-2">
                 <button
                   type="button"
-                  className="px-6 py-3 rounded-lg text-white font-semibold shadow-md transition-all"
+                  className="px-6 py-3 font-semibold text-white transition-all rounded-lg shadow-md"
                   style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
                 >
                   Sample Button
@@ -721,9 +721,9 @@ function ThemeCustomization() {
           </div>
 
           {/* Typography & Navbar - Brand tab */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Typography & Navbar</span>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div>
                 <label className="block mb-2 text-sm font-semibold text-slate-700">Font family</label>
                 <select
@@ -762,7 +762,7 @@ function ThemeCustomization() {
                   <span className="block mb-1 text-sm font-semibold text-slate-700">Show search box in navbar</span>
                   <p className="text-xs text-slate-500">Display a search input and button in the navbar</p>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
+                <label className="relative inline-flex items-center ml-4 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={localNavbarSearchEnabled}
@@ -793,9 +793,9 @@ function ThemeCustomization() {
           </div>
 
           {/* Quick Presets - Brand tab */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Quick Presets</span>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               {presetColors.map((preset) => (
                 <button
                   key={preset.name}
@@ -808,22 +808,22 @@ function ThemeCustomization() {
                       setTimeout(() => setPreviewMode(true), 10);
                     }
                   }}
-                  className="p-3 border rounded-lg bg-white border-slate-200 hover:border-slate-300 transition-all text-left shadow-sm"
+                  className="p-3 text-left transition-all bg-white border rounded-lg shadow-sm border-slate-200 hover:border-slate-300"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div
-                      className="w-6 h-6 rounded border border-slate-300"
+                      className="w-6 h-6 border rounded border-slate-300"
                       style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }}
                     />
                     <span className="text-sm font-semibold text-slate-700">{preset.name}</span>
                   </div>
                   <div className="flex gap-1">
                     <div
-                      className="w-4 h-4 rounded border border-slate-300"
+                      className="w-4 h-4 border rounded border-slate-300"
                       style={{ backgroundColor: preset.primary }}
                     />
                     <div
-                      className="w-4 h-4 rounded border border-slate-300"
+                      className="w-4 h-4 border rounded border-slate-300"
                       style={{ backgroundColor: preset.secondary }}
                     />
                   </div>
@@ -837,13 +837,13 @@ function ThemeCustomization() {
             <div className={activeTab !== 'content' ? 'hidden' : 'space-y-6'}>
             {/* Section Visibility Toggles */}
             <div className="space-y-4">
-              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
                     <p className="text-xs text-slate-500">Show or hide the live purchase statement section on the home page</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={localLivePurchaseEnabled}
@@ -860,13 +860,13 @@ function ThemeCustomization() {
                   </label>
                 </div>
               </div>
-              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="block mb-1 text-sm font-semibold text-slate-700">Top-up Categories</span>
                     <p className="text-xs text-slate-500">Show or hide the top-up categories section on the home page</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={localTopUpCategoriesEnabled}
@@ -883,13 +883,13 @@ function ThemeCustomization() {
                   </label>
                 </div>
               </div>
-              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="block mb-1 text-sm font-semibold text-slate-700">Subscriptions</span>
                     <p className="text-xs text-slate-500">Show or hide the subscriptions section on the home page</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={localSubscriptionsEnabled}
@@ -906,13 +906,13 @@ function ThemeCustomization() {
                   </label>
                 </div>
               </div>
-              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <span className="block mb-1 text-sm font-semibold text-slate-700">Review Section</span>
                     <p className="text-xs text-slate-500">Show or hide the customer reviews section on the home page</p>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={localReviewSectionEnabled}
@@ -931,7 +931,7 @@ function ThemeCustomization() {
               </div>
             </div>
             {/* Section Titles Customization */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
               <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
               <p className="mb-6 text-sm text-slate-600">
                 Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
@@ -939,7 +939,7 @@ function ThemeCustomization() {
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
                       <input
@@ -968,7 +968,7 @@ function ThemeCustomization() {
                 </div>
                 <div className="space-y-4">
                   <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div>
                       <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
                       <input
@@ -1002,10 +1002,10 @@ function ThemeCustomization() {
             {/* Integrations tab */}
             <div className={activeTab !== 'integrations' ? 'hidden' : 'space-y-6'}>
           {/* Support links */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Support Links</span>
             <p className="mb-4 text-xs text-slate-500">URLs for the Support section on the landing page (WhatsApp, Messenger, Telegram). Leave empty to hide that card.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div>
                 <label className="block mb-1.5 text-xs font-medium text-slate-600">WhatsApp URL</label>
                 <input
@@ -1043,12 +1043,12 @@ function ThemeCustomization() {
           </div>
 
           {/* Payment Gateway (Uddokta Pay) */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Payment Gateway (Uddokta Pay)</span>
             <p className="mb-4 text-xs text-slate-500">
               Add gateway base URL and API key from admin panel. After saving, Instant Pay will start using this config dynamically.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway Base URL</label>
                 <input
@@ -1102,7 +1102,7 @@ function ThemeCustomization() {
             </div>
 
             {/* Sticky action bar */}
-            <div className="sticky top-4 z-10 flex flex-wrap gap-3 pt-4 pb-2 bg-white/95 backdrop-blur-sm -mx-1 px-1 rounded-lg">
+            <div className="sticky z-10 flex flex-wrap gap-3 px-1 pt-4 pb-2 -mx-1 rounded-lg top-4 bg-white/95 backdrop-blur-sm">
             <button
               type="submit"
               disabled={isSaving}
@@ -1127,7 +1127,7 @@ function ThemeCustomization() {
               type="button"
               onClick={handlePreview}
               disabled={isSaving || previewMode}
-              className="px-6 py-3 font-semibold transition-all bg-blue-100 rounded-xl text-blue-700 hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 font-semibold text-blue-700 transition-all bg-blue-100 rounded-xl hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Preview Changes
             </button>
@@ -1144,7 +1144,7 @@ function ThemeCustomization() {
         )}
 
         {activeTab === 'banners' && (
-        <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm sm:p-5 md:p-6">
+        <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
           <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
           <form
             className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
@@ -1259,7 +1259,7 @@ function ThemeCustomization() {
         )}
 
         {activeTab === 'notices' && (
-        <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm sm:p-5 md:p-6">
+        <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
           <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
           <form
             className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"

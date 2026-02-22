@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaCheck, FaSearch, FaSyncAlt } from "react-icons/fa";
-import { digitalCodeApi, paymentApi, subscriptionApi } from "../services/api";
+import { digitalCodeApi, paymentApi, subscriptionApi, SmartAPIManager } from "../services/api";
 import useRoboBalance from "../hooks/useRoboBalance";
 import useAuth from "../hooks/useAuth";
 import type { BackendDigitalCodeProduct, BackendSubscriptionProduct, Product } from "../types";
@@ -162,9 +162,12 @@ function InlinePurchasePanel({
     setPlayerName("");
 
     try {
-      const backendBase = "http://localhost:5000";
-      const url = `${backendBase}/api/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
-      const res = await fetch(url);
+      const baseUrl = SmartAPIManager.getBaseURL();
+      const url = `${baseUrl}/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
+      const headers: HeadersInit = {};
+      const apiKey = SmartAPIManager.getApiKey();
+      if (apiKey) headers["X-API-Key"] = apiKey;
+      const res = await fetch(url, { headers });
       const data = await res.json();
       if (uidFetchRef.current !== trimmedUid) return;
 
