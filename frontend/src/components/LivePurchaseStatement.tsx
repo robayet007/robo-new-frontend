@@ -3,6 +3,28 @@ import { paymentApi } from '../services/api';
 import type { BackendPurchase } from '../types';
 import { formatTimeAgo } from '../utils/timeUtils';
 
+const normalizedStatus = (order: BackendPurchase): 'completed' | 'pending' | 'processing' | 'failed' => {
+  const status = String(order.status || '').toLowerCase();
+  if (status === 'processing') return 'processing';
+  if (status === 'failed' || status === 'cancelled' || status === 'rejected') return 'failed';
+  if (status === 'completed' || status === 'verified' || !!order.verifiedAt) return 'completed';
+  return 'pending';
+};
+
+const statusBadgeStyle = (status: 'completed' | 'pending' | 'processing' | 'failed') => {
+  switch (status) {
+    case 'completed': return 'bg-emerald-100 text-emerald-700';
+    case 'processing': return 'bg-amber-100 text-amber-700';
+    case 'failed': return 'bg-red-100 text-red-700';
+    default: return 'bg-slate-100 text-slate-600';
+  }
+};
+
+const statusDisplayLabel = (status: string) => {
+  if (status === 'processing') return 'Processing';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
 function LivePurchaseStatement() {
   const [purchases, setPurchases] = useState<BackendPurchase[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,9 +35,12 @@ function LivePurchaseStatement() {
   const fetchRecentPurchases = async () => {
     try {
       setError(null);
-      const response = await paymentApi.getRecentPurchases(10);
+      const response = await paymentApi.getAll(50);
       if (response.success && Array.isArray(response.data)) {
-        setPurchases(response.data);
+        const filtered = response.data.filter(
+          (p: BackendPurchase) => !['add_money', 'balance_transfer'].includes(p.productId || '')
+        );
+        setPurchases(filtered.slice(0, 10));
       } else {
         setPurchases([]);
         if (response.message) {
@@ -240,22 +265,21 @@ function LivePurchaseStatement() {
     <section className="mt-4 sm:mt-5 md:mt-7 p-3 sm:p-4 md:p-6 rounded-[12px] sm:rounded-[16px] md:rounded-[18px] bg-white border border-slate-900/6 shadow-[0_16px_40px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-3 sm:gap-4">
         <div className="flex-1">
-          <p
-            className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border font-semibold text-[11px] sm:text-[12px] md:text-[13px]"
-            style={{
-              backgroundColor: 'var(--theme-primary-light)',
-              borderColor: 'rgba(var(--theme-primary-rgb), 0.35)',
-              color: 'var(--theme-primary)',
-            }}
-          >
-            💎 Top-up categories
-          </p>
-          <h2 className="mt-2 mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
-            Live Purchase Statement
-          </h2>
-          <p className="mb-2 text-xs sm:text-sm text-slate-600">
-            সর্বশেষ ১০টি ক্রয়ের তথ্য দেখুন
-          </p>
+          <div className="inline-block">
+            <h2 className="mb-1 text-lg sm:text-xl md:text-2xl text-slate-900">
+              Recent Order
+            </h2>
+            <div className="space-y-1">
+              <div
+                className="h-0.5 rounded-full"
+                style={{ width: '50%', backgroundColor: 'var(--theme-primary)' }}
+              />
+              <div
+                className="h-0.5 rounded-full"
+                style={{ width: '70%', backgroundColor: 'var(--theme-primary)' }}
+              />
+            </div>
+          </div>
         </div>
 
         {loading && (
@@ -313,12 +337,13 @@ function LivePurchaseStatement() {
                     return (
                       <div
                         key={purchase._id}
-                        className="flex items-center justify-between p-3 sm:p-4 rounded-lg bg-slate-50/80 border border-slate-200/60"
+                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-slate-50/80 border border-slate-200/60"
                       >
+                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-slate-200 animate-pulse flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4"></div>
+                          <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4" />
                         </div>
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
                           <p
                             className="font-bold text-sm sm:text-base"
                             style={{ color: 'var(--theme-primary)' }}
@@ -334,35 +359,60 @@ function LivePurchaseStatement() {
                   }
                 }
                 
+                const status = normalizedStatus(purchase);
+                const displayName = getUserDisplayName(purchase);
+                const initial = displayName.charAt(0).toUpperCase();
+
                 return (
                   <div
                     key={purchase._id}
-                    className="flex items-center justify-between p-3 sm:p-4 rounded-lg bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/80 transition-colors duration-150"
+                    className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/80 transition-colors duration-150"
                   >
+                    <div className="relative flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10">
+                      {purchase.userPhotoURL ? (
+                        <img
+                          src={purchase.userPhotoURL}
+                          alt={displayName}
+                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling;
+                            if (fallback) (fallback as HTMLElement).classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div
+                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-semibold border border-slate-200 ${purchase.userPhotoURL ? 'hidden' : ''}`}
+                        style={{ backgroundColor: 'var(--theme-primary)', color: 'white', opacity: 0.9 }}
+                      >
+                        {initial}
+                      </div>
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm sm:text-base text-slate-900 truncate">
-                            {productNameDisplay}
+                      <div className="flex flex-col gap-0.5">
+                        <p className="font-semibold text-sm sm:text-base text-slate-900 truncate">
+                          {productNameDisplay}
+                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-xs sm:text-sm text-slate-600">
+                            {displayName}
                           </p>
-                          {!isTransfer && (
-                            <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
-                              {getUserDisplayName(purchase)}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <p
-                            className="font-bold text-sm sm:text-base"
-                            style={{ color: 'var(--theme-primary)' }}
-                          >
-                            {formatPrice(purchase.price || purchase.amount)}
-                          </p>
-                          <p className="text-xs text-slate-500">
-                            {formatTimeAgo(getPurchaseDate(purchase))}
-                          </p>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeStyle(status)}`}>
+                            {statusDisplayLabel(status)}
+                          </span>
                         </div>
                       </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      <p
+                        className="font-bold text-sm sm:text-base"
+                        style={{ color: 'var(--theme-primary)' }}
+                      >
+                        {formatPrice(purchase.price || purchase.amount)}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {formatTimeAgo(getPurchaseDate(purchase))}
+                      </p>
                     </div>
                   </div>
                 );

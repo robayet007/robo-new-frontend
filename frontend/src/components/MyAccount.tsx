@@ -1,235 +1,270 @@
 import { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  FaUser,
+  FaBox,
+  FaWallet,
+  FaCog,
+  FaPen,
+  FaLock,
+  FaFileInvoice,
+} from 'react-icons/fa';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
-import { paymentApi } from '../services/api';
-import { FaSyncAlt, FaWallet, FaChartLine, FaChartBar, FaShoppingBag, FaBox } from 'react-icons/fa';
+import ImageUpload from './ImageUpload';
+
+type SectionKey = 'account' | 'wallet' | 'settings';
 
 function MyAccount() {
-  const { user } = useAuth();
-  const { backendBalance, loading: balanceLoading, refreshBalance } = useRoboBalance();
-  const [weeklySpend, setWeeklySpend] = useState<number>(0);
-  const [totalSpend, setTotalSpend] = useState<number>(0);
-  const [weeklyOrderCount, setWeeklyOrderCount] = useState<number>(0);
-  const [totalOrderCount, setTotalOrderCount] = useState<number>(0);
-  const [spendLoading, setSpendLoading] = useState(true);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { user, changePassword, updateUserProfile } = useAuth();
+  const { backendBalance, loading: balanceLoading } = useRoboBalance();
 
-  // Get user initials
+  const initialTab = (searchParams.get('tab') as SectionKey) || 'wallet';
+  const [activeSection, setActiveSection] = useState<SectionKey>(
+    initialTab === 'account' || initialTab === 'settings' ? initialTab : 'wallet',
+  );
+
+  const [profileName, setProfileName] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordLoading, setPasswordLoading] = useState(false);
+
   const userInitials = user?.displayName
-    ? user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    : user?.email?.[0].toUpperCase() || 'U';
+    ? user.displayName
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() || 'U';
 
-  // Calculate weekly and total spend
   useEffect(() => {
-    const calculateSpends = async () => {
-      if (!user?.uid) {
-        setSpendLoading(false);
-        return;
-      }
+    setProfileName(user?.displayName || '');
+    setProfilePhoto(user?.photoURL || '');
+  }, [user?.displayName, user?.photoURL]);
 
-      try {
-        setSpendLoading(true);
-        const response = await paymentApi.getAll(1000, user.uid);
-        
-        if (response.success && Array.isArray(response.data)) {
-          const payments = response.data;
-          
-          // Calculate date 7 days ago
-          const now = new Date();
-          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          
-          let weeklyTotal = 0;
-          let totalSpent = 0;
-          let weeklyOrders = 0;
-          let totalOrders = 0;
-          
-          payments.forEach((payment: any) => {
-            // Count all orders (not add_money) that are verified/completed
-            if (
-              payment.productId !== 'add_money' &&
-              (payment.status === 'verified' || payment.status === 'completed' || payment.verifiedAt)
-            ) {
-              totalOrders++;
-              
-              // Check if payment is within last 7 days
-              const paymentDate = payment.verifiedAt 
-                ? new Date(payment.verifiedAt) 
-                : payment.createdAt 
-                  ? new Date(payment.createdAt) 
-                  : null;
-              
-              if (paymentDate && paymentDate >= weekAgo) {
-                weeklyOrders++;
-              }
-              
-              // Only count purchases with robo payment method for spend calculation
-              if (payment.paymentMethod === 'robo') {
-                const amount = typeof payment.amount === 'number' 
-                  ? payment.amount 
-                  : parseFloat(payment.amount) || 0;
-                
-                totalSpent += amount;
-                
-                if (paymentDate && paymentDate >= weekAgo) {
-                  weeklyTotal += amount;
-                }
-              }
-            }
-          });
-          
-          setWeeklySpend(weeklyTotal);
-          setTotalSpend(totalSpent);
-          setWeeklyOrderCount(weeklyOrders);
-          setTotalOrderCount(totalOrders);
-        }
-      } catch (error) {
-        console.error('Error calculating spends:', error);
-        setWeeklySpend(0);
-        setTotalSpend(0);
-      } finally {
-        setSpendLoading(false);
-      }
-    };
+  useEffect(() => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('tab', activeSection);
+      return next;
+    });
+  }, [activeSection, setSearchParams]);
 
-    calculateSpends();
-  }, [user?.uid]);
+  const handleProfileSave = async (e: FormEvent) => {
+    e.preventDefault();
+    setProfileError('');
+    setProfileSuccess('');
+
+    if (!profileName.trim()) {
+      setProfileError('Name is required');
+      return;
+    }
+
+    setProfileLoading(true);
+    const result = await updateUserProfile({
+      displayName: profileName.trim(),
+      photoURL: profilePhoto.trim(),
+    });
+    setProfileLoading(false);
+
+    if (result.success) {
+      setProfileSuccess('Profile updated successfully');
+    } else {
+      setProfileError(result.error || 'Failed to update profile');
+    }
+  };
+
+  const handlePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New password and confirm password do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters');
+      return;
+    }
+
+    setPasswordLoading(true);
+    const result = await changePassword(currentPassword, newPassword);
+    setPasswordLoading(false);
+
+    if (result.success) {
+      setPasswordSuccess('Password changed successfully');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } else {
+      setPasswordError(result.error || 'Failed to change password');
+    }
+  };
+
+  const tabClass = (isActive: boolean) =>
+    `inline-flex items-center gap-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 ${
+      isActive
+        ? 'border-pink-500 text-pink-600'
+        : 'border-transparent text-slate-600 hover:text-slate-800'
+    }`;
 
   return (
-    <div className="max-w-3xl mx-auto mt-4 sm:mt-6 md:mt-8 p-4 sm:p-6 bg-gradient-to-br from-purple-50 via-violet-50/30 to-white min-h-screen">
-      <div className="space-y-6">
-        {/* Profile Header */}
-        <div className="flex flex-col items-center text-center mb-6">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-600 to-emerald-700 flex items-center justify-center text-white text-2xl font-bold mb-3 shadow-lg">
-            {userInitials}
-          </div>
-          <h2 className="text-xl sm:text-2xl font-semibold text-sky-500 mb-2">
-            Hi, {user?.displayName || user?.email?.split('@')[0] || 'User'}
-          </h2>
-        </div>
-
-        {/* User Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Email Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-slate-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-blue-600 text-sm font-semibold">@</span>
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Email</p>
-                <p className="text-sm font-semibold text-slate-900 break-all">{user?.email || 'N/A'}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Balance Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-purple-200 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                  <FaWallet className="text-purple-600 text-sm" />
-                </div>
-                <div>
-                  <p className="text-xs text-slate-500 font-medium">Available Balance</p>
-                  <p className="text-lg font-bold text-slate-900">
-                    {balanceLoading ? (
-                      <span className="inline-block w-16 h-5 bg-slate-200 rounded animate-pulse"></span>
-                    ) : (
-                      `${(backendBalance !== null ? backendBalance : 0).toFixed(2)} Tk`
-                    )}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={refreshBalance}
-                className="p-1.5 rounded-full hover:bg-slate-100 transition-colors"
-                title="Refresh Balance"
-              >
-                <FaSyncAlt className="text-slate-600 text-sm" />
-              </button>
-            </div>
-          </div>
-
-          {/* Weekly Spend Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-emerald-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                <FaChartLine className="text-emerald-600 text-sm" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Weekly Spend</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {spendLoading ? (
-                    <span className="inline-block w-16 h-5 bg-slate-200 rounded animate-pulse"></span>
-                  ) : (
-                    `${weeklySpend.toFixed(2)} Tk`
-                  )}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">Last 7 days</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Spend Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-orange-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <FaChartBar className="text-orange-600 text-sm" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Total Spend</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {spendLoading ? (
-                    <span className="inline-block w-16 h-5 bg-slate-200 rounded animate-pulse"></span>
-                  ) : (
-                    `${totalSpend.toFixed(2)} Tk`
-                  )}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">All time</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Weekly Orders Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-indigo-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <FaShoppingBag className="text-indigo-600 text-sm" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Weekly Orders</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {spendLoading ? (
-                    <span className="inline-block w-12 h-5 bg-slate-200 rounded animate-pulse"></span>
-                  ) : (
-                    weeklyOrderCount
-                  )}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">Last 7 days</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Orders Card */}
-          <div className="p-5 rounded-xl bg-white border-2 border-pink-200 shadow-sm">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-pink-100 flex items-center justify-center">
-                <FaBox className="text-pink-600 text-sm" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-500 font-medium">Total Orders</p>
-                <p className="text-lg font-bold text-slate-900">
-                  {spendLoading ? (
-                    <span className="inline-block w-12 h-5 bg-slate-200 rounded animate-pulse"></span>
-                  ) : (
-                    totalOrderCount
-                  )}
-                </p>
-                <p className="text-[10px] text-slate-400 mt-1">All time</p>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="max-w-4xl p-4 mx-auto sm:p-6">
+      <div className="flex items-center gap-4 overflow-x-auto border-b border-slate-200">
+        <button className={tabClass(activeSection === 'account')} onClick={() => setActiveSection('account')}>
+          <FaUser className="w-3.5 h-3.5" /> My Account
+        </button>
+        <button className={tabClass(false)} onClick={() => navigate('/orders')}>
+          <FaBox className="w-3.5 h-3.5" /> My Orders
+        </button>
+        <button className={tabClass(activeSection === 'wallet')} onClick={() => setActiveSection('wallet')}>
+          <FaWallet className="w-3.5 h-3.5" /> My Wallet
+        </button>
+        <button className={tabClass(activeSection === 'settings')} onClick={() => setActiveSection('settings')}>
+          <FaCog className="w-3.5 h-3.5" /> Settings
+        </button>
       </div>
+
+      {activeSection === 'wallet' && (
+        <div className="max-w-xs mt-4">
+          <div className="p-3.5 bg-white border shadow-sm rounded-2xl border-slate-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xl text-slate-600">Wallet Balance</p>
+                <p className="text-4xl font-bold text-slate-900">
+                  {balanceLoading ? '...' : `৳${(backendBalance ?? 0).toFixed(2)}`}
+                </p>
+              </div>
+              <FaFileInvoice className="mt-1 text-base text-slate-400" />
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/add-money')}
+              className="w-full py-2 mt-3 text-xl font-semibold text-white rounded-xl"
+              style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+            >
+              + Add Balance
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'account' && (
+        <div className="p-5 mt-4 bg-white border shadow-sm rounded-2xl border-slate-200">
+          <div className="flex items-center gap-4">
+            {user?.photoURL ? (
+              <img
+                src={user.photoURL}
+                alt={user.displayName || 'User'}
+                className="object-cover w-16 h-16 rounded-full border-2 border-slate-200"
+              />
+            ) : (
+              <div className="flex items-center justify-center w-16 h-16 text-2xl font-bold text-white bg-teal-700 rounded-full">
+                {userInitials}
+              </div>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">{user?.displayName || 'User'}</h2>
+              <p className="text-sm text-slate-500">{user?.email}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeSection === 'settings' && (
+        <div className="max-w-2xl mt-4 space-y-4">
+          <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
+            <div className="flex items-center gap-2 mb-4">
+              <FaPen className="text-slate-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Edit Profile</h3>
+            </div>
+            <form onSubmit={handleProfileSave} className="space-y-4">
+              <input
+                value={profileName}
+                onChange={(e) => setProfileName(e.target.value)}
+                placeholder="Enter your name"
+                className="w-full px-4 py-3 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+              />
+              <ImageUpload
+                label="Profile Image"
+                value={profilePhoto}
+                onChange={setProfilePhoto}
+                uploadEndpoint="/upload/profile-image"
+              />
+              {profileError && <p className="text-sm text-red-600">{profileError}</p>}
+              {profileSuccess && <p className="text-sm text-emerald-700">{profileSuccess}</p>}
+              <button
+                type="submit"
+                disabled={profileLoading}
+                className="w-full py-2.5 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+              >
+                {profileLoading ? 'Saving...' : 'Save Profile'}
+              </button>
+            </form>
+          </div>
+
+          <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
+            <div className="flex items-center gap-2 mb-4">
+              <FaLock className="text-slate-600" />
+              <h3 className="text-lg font-semibold text-slate-900">Change Password</h3>
+            </div>
+            <form onSubmit={handlePasswordSubmit} className="space-y-3">
+              <input
+                type="password"
+                required
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Current Password"
+                className="w-full px-4 py-3 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+              />
+              <input
+                type="password"
+                required
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="New Password"
+                className="w-full px-4 py-3 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+              />
+              <input
+                type="password"
+                required
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm New Password"
+                className="w-full px-4 py-3 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+              />
+              {passwordError && <p className="text-sm text-red-600">{passwordError}</p>}
+              {passwordSuccess && <p className="text-sm text-emerald-700">{passwordSuccess}</p>}
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className="w-full py-2.5 text-sm font-semibold text-white rounded-xl disabled:opacity-50"
+                style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+              >
+                {passwordLoading ? 'Updating...' : 'Update Password'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

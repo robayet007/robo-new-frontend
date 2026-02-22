@@ -43,6 +43,7 @@ function InstallButton() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [dismissedMobileBanner, setDismissedMobileBanner] = useState(false);
   const promptRef = useRef<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -121,6 +122,15 @@ function InstallButton() {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('install_banner_dismissed');
+      setDismissedMobileBanner(saved === '1');
+    } catch {
+      setDismissedMobileBanner(false);
+    }
+  }, []);
+
   const handleInstallClick = async () => {
     const prompt = deferredPrompt || promptRef.current;
     
@@ -164,6 +174,15 @@ function InstallButton() {
     setShowIOSInstructions(false);
   };
 
+  const dismissMobileBanner = () => {
+    setDismissedMobileBanner(true);
+    try {
+      localStorage.setItem('install_banner_dismissed', '1');
+    } catch {
+      // no-op
+    }
+  };
+
   // Don't show anything if already installed
   if (isInstalled) {
     return null;
@@ -198,31 +217,61 @@ function InstallButton() {
       );
     }
 
-    return (
-      <button
-        onClick={handleIOSInstallClick}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
-        style={{
-          background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
-          boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
-        }}
-        aria-label="Install App"
-      >
-        <svg className="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-        <span className="hidden sm:inline">Install App</span>
-        <span className="sm:hidden">Install</span>
-      </button>
+    return dismissedMobileBanner ? null : (
+      <>
+        <button
+          onClick={handleIOSInstallClick}
+          className="hidden sm:flex fixed bottom-4 right-4 z-50 items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
+          style={{
+            background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+            boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
+          }}
+          aria-label="Install App"
+        >
+          <svg className="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span className="hidden sm:inline">Install App</span>
+          <span className="sm:hidden">Install</span>
+        </button>
+
+        <div className="fixed left-3 right-3 bottom-[76px] z-50 sm:hidden">
+          <div
+            className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-white shadow-xl"
+            style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+          >
+            <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center">
+              <span className="text-xl">📱</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold leading-none uppercase tracking-wide text-white/80">Install App</p>
+              <p className="text-sm font-medium truncate">For better experience</p>
+            </div>
+            <button
+              onClick={handleIOSInstallClick}
+              className="px-4 py-2 text-sm font-semibold text-slate-900 bg-white rounded-full"
+            >
+              Install
+            </button>
+            <button
+              onClick={dismissMobileBanner}
+              className="w-7 h-7 rounded-full text-white/90 hover:bg-white/10"
+              aria-label="Close install bar"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
   // Show install button for Android/Chrome/Edge (when deferredPrompt is available)
   if (deferredPrompt || promptRef.current) {
-    return (
+    return dismissedMobileBanner ? (
       <button
         onClick={handleInstallClick}
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
+        className="hidden sm:flex fixed bottom-4 right-4 z-50 items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
         style={{
           background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
           boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
@@ -235,6 +284,52 @@ function InstallButton() {
         <span className="hidden sm:inline">Install App Now</span>
         <span className="sm:hidden">Install Now</span>
       </button>
+    ) : (
+      <>
+        <button
+          onClick={handleInstallClick}
+          className="hidden sm:flex fixed bottom-4 right-4 z-50 items-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl text-white font-semibold text-sm shadow-lg transition-all duration-200 animate-pulse hover:animate-none hover:opacity-90"
+          style={{
+            background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+            boxShadow: '0 10px 30px rgba(var(--theme-primary-rgb), 0.4)'
+          }}
+          aria-label="Install App"
+        >
+          <svg className="flex-shrink-0 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          <span className="hidden sm:inline">Install App Now</span>
+          <span className="sm:hidden">Install Now</span>
+        </button>
+
+        <div className="fixed left-3 right-3 bottom-[76px] z-50 sm:hidden">
+          <div
+            className="flex items-center gap-3 px-3 py-2.5 rounded-2xl text-white shadow-xl"
+            style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
+          >
+            <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center">
+              <span className="text-xl">📱</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold leading-none uppercase tracking-wide text-white/80">Install App</p>
+              <p className="text-sm font-medium truncate">For better experience</p>
+            </div>
+            <button
+              onClick={handleInstallClick}
+              className="px-4 py-2 text-sm font-semibold text-slate-900 bg-white rounded-full"
+            >
+              Install
+            </button>
+            <button
+              onClick={dismissMobileBanner}
+              className="w-7 h-7 rounded-full text-white/90 hover:bg-white/10"
+              aria-label="Close install bar"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 

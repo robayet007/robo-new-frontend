@@ -1,8 +1,14 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { BackendSubscriptionProduct } from '../types';
+import InlinePurchasePanel from './InlinePurchasePanel';
 
 function SubscriptionGrid({ products, badgeText, headingText }: { products: BackendSubscriptionProduct[]; badgeText?: string; headingText?: string }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const [selectedProduct, setSelectedProduct] = useState<BackendSubscriptionProduct | null>(null);
+  const panelAnchorRef = useRef<HTMLDivElement | null>(null);
 
   // Helper function to get product image
   const getProductImage = (product: BackendSubscriptionProduct): string => {
@@ -14,6 +20,19 @@ function SubscriptionGrid({ products, badgeText, headingText }: { products: Back
 
   // Filter active products
   const activeProducts = products.filter(p => p.isActive);
+
+  useEffect(() => {
+    if (location.pathname !== '/') return;
+    const status = searchParams.get('status');
+    const mode = searchParams.get('mode');
+    const productIdFromUrl = searchParams.get('productId');
+    if (!status || !productIdFromUrl || (mode && mode !== 'subscription')) return;
+    const matched = activeProducts.find((product) => product.id === productIdFromUrl);
+    if (matched) {
+      setSelectedProduct(matched);
+      setTimeout(() => panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [searchParams, activeProducts, location.pathname]);
 
   if (activeProducts.length === 0) {
     return null; // Don't show section if no products
@@ -110,7 +129,14 @@ function SubscriptionGrid({ products, badgeText, headingText }: { products: Back
                     (e.currentTarget as HTMLButtonElement).style.background =
                       'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))';
                   }}
-                  onClick={() => navigate('/checkout', { state: { subscriptionProductId: product.id } })}
+                  onClick={() => {
+                    if (location.pathname !== '/') {
+                      navigate('/');
+                      return;
+                    }
+                    setSelectedProduct(product);
+                    setTimeout(() => panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+                  }}
                 >
                   Subscribe
                 </button>
@@ -127,6 +153,15 @@ function SubscriptionGrid({ products, badgeText, headingText }: { products: Back
           </div>
         )}
       </div>
+      <div ref={panelAnchorRef} />
+      {selectedProduct && (
+        <InlinePurchasePanel
+          mode="subscription"
+          selectedProduct={selectedProduct}
+          originPath="/"
+          onClose={() => setSelectedProduct(null)}
+        />
+      )}
     </section>
   );
 }

@@ -13,6 +13,7 @@ export interface BackendProduct {
   categoryName: string;
   name: string;
   diamonds: string;
+  ucCategory?: string;
   price: number;
   resellerPrice?: number;
   bonus?: string;
@@ -36,6 +37,7 @@ export interface BackendPurchase {
   userId: string;
   userEmail: string;
   userName?: string;
+  userPhotoURL?: string;
   transactionId: string;
   amount: number;
   price?: number;
@@ -44,7 +46,7 @@ export interface BackendPurchase {
   diamonds?: string;
   playerId?: string;
   paymentMethod: 'bkash' | 'robo' | 'uddokta';
-  status: 'pending' | 'verified' | 'rejected' | 'failed' | 'completed';
+  status: 'pending' | 'verified' | 'processing' | 'rejected' | 'failed' | 'completed';
   updatedBalance?: number;
   createdAt: string;
   verifiedAt?: string;
@@ -151,6 +153,7 @@ export type Product = {
   categoryId: string;
   name: string;
   diamonds: string;
+  ucCategory?: string;
   price: number;
   resellerPrice?: number;
   originalPrice?: number; // For resellers, original price is kept here

@@ -14,6 +14,7 @@ import {
 import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { userProfileApi } from '../services/api';
 
 // Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
 // These are browser security warnings and Firebase permission errors that don't affect functionality
@@ -105,7 +106,15 @@ function useAuth() {
               setUser(prev => prev ? { ...prev, token } : prev);
             }).catch(_err => {/* console.error('Error getting token:', _err) */}),
             addUserToFirestore(authUser).catch(_err => {/* console.error('Error adding to Firestore:', _err) */}),
-            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(_err => {/* console.error('Error updating lastLogin:', _err) */}) : Promise.resolve()
+            firebaseUser.uid && firebaseUser.email ? updateDoc(doc(db, 'users', firebaseUser.uid), { lastLogin: Date.now() }).catch(_err => {/* console.error('Error updating lastLogin:', _err) */}) : Promise.resolve(),
+            firebaseUser.uid && firebaseUser.email
+              ? userProfileApi.profileSync({
+                  uid: firebaseUser.uid,
+                  email: firebaseUser.email,
+                  displayName: firebaseUser.displayName || '',
+                  photoURL: firebaseUser.photoURL || '',
+                }).catch((_err) => Promise.resolve())
+              : Promise.resolve(),
           ]).catch(_err => {/* console.error('Background auth update error:', _err) */});
         } catch (error) {
           // console.error('Error in auth state change:', error);
@@ -300,6 +309,47 @@ function useAuth() {
     }
   };
 
+  const updateUserProfile = async (
+    profile: { displayName?: string; photoURL?: string }
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null);
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        return { success: false, error: 'No authenticated user' };
+      }
+
+      const nextDisplayName = profile.displayName?.trim() ?? currentUser.displayName ?? '';
+      const nextPhotoURL = profile.photoURL?.trim() ?? currentUser.photoURL ?? '';
+
+      await updateProfile(currentUser, {
+        displayName: nextDisplayName,
+        photoURL: nextPhotoURL,
+      });
+
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        displayName: nextDisplayName,
+        photoURL: nextPhotoURL,
+      }).catch(() => Promise.resolve());
+
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              displayName: nextDisplayName || null,
+              photoURL: nextPhotoURL || null,
+            }
+          : prev
+      );
+
+      return { success: true };
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to update profile';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  };
+
   return {
     user,
     loading,
@@ -311,6 +361,7 @@ function useAuth() {
     getToken,
     changePassword,
     resetPassword,
+    updateUserProfile,
   };
 }
 

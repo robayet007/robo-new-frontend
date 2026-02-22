@@ -4,10 +4,17 @@ import { balanceApi } from '../services/api';
 import useAuth from './useAuth';
 import { io, Socket } from "socket.io-client";
 
+export type UcTopupStatus = {
+  status: 'processing' | 'completed' | 'failed';
+  transactionId: string;
+  message: string;
+};
+
 export default function useRoboBalance() {
   const { user } = useAuth();
   const [backendBalance, setBackendBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [ucTopupStatus, setUcTopupStatus] = useState<UcTopupStatus | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // ✅ 添加缺失的 socketRef 定义
@@ -113,6 +120,25 @@ export default function useRoboBalance() {
         }
       });
 
+      // Listen for UC top-up status updates
+      socket.on('uc-topup-processing', (data: { transactionId: string; status: string; message: string }) => {
+        if (data.transactionId) {
+          setUcTopupStatus({ status: 'processing', transactionId: data.transactionId, message: data.message || 'UC top-up is being processed.' });
+        }
+      });
+      socket.on('uc-topup-completed', (data: { transactionId: string; status: string; message: string }) => {
+        if (data.transactionId) {
+          setUcTopupStatus({ status: 'completed', transactionId: data.transactionId, message: data.message || 'UC top-up completed successfully.' });
+          fetchBalance(); // Refresh balance
+        }
+      });
+      socket.on('uc-topup-failed', (data: { transactionId: string; status: string; message: string }) => {
+        if (data.transactionId) {
+          setUcTopupStatus({ status: 'failed', transactionId: data.transactionId, message: data.message || 'UC top-up failed.' });
+          fetchBalance(); // Refresh balance
+        }
+      });
+
       socketRef.current = socket;
 
       // Fallback: Still poll every 10 seconds as backup (reduced frequency)
@@ -171,6 +197,8 @@ export default function useRoboBalance() {
     }
   }, []);
 
+  const clearUcTopupStatus = useCallback(() => setUcTopupStatus(null), []);
+
   return {
     // Original API
     backendBalance: balance,
@@ -187,5 +215,9 @@ export default function useRoboBalance() {
     
     // Optimistic update for instant UI feedback
     updateBalanceOptimistically,
+
+    // UC top-up real-time status (processing/completed/failed)
+    ucTopupStatus,
+    clearUcTopupStatus,
   };
 }

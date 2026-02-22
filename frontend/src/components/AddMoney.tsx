@@ -190,7 +190,7 @@ function AddMoney() {
     backendBalance !== null && backendBalance !== undefined ? backendBalance : 0;
   // console.log('💰 Current balance value:', currentBalance);
 
-  const predefinedAmounts = [100, 200, 500, 1000, 2000, 5000];
+  const predefinedAmounts = [100, 500, 1000, 5000];
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -275,77 +275,44 @@ function AddMoney() {
     );
   }
 
-  // console.log('🎨 Rendering AddMoney component');
   return (
-    <div className="max-w-md p-4 mx-auto mt-4 bg-white border shadow-xl sm:mt-6 md:mt-8 sm:p-5 md:p-6 rounded-xl sm:rounded-2xl border-slate-200">
-      <div className="mb-6 text-center">
-        <p className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-400/14 text-green-700 border border-green-400/35 font-semibold text-sm mb-4">
-          💰 Add Money
-        </p>
-        <h2 className="mb-2 text-2xl font-bold text-slate-900">Add Money to Robo Balance</h2>
-        <div className="p-4 mt-4 border border-green-200 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-sm font-semibold text-slate-700">Current Balance</p>
-            <button
-              type="button"
-              onClick={refreshBalance}
-              disabled={balanceLoading}
-              className="text-xs font-semibold text-purple-600 hover:text-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {balanceLoading ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-          {balanceLoading ? (
-            <div className="flex items-center justify-center h-12">
-              <div className="w-8 h-8 border-2 border-purple-600 rounded-full border-t-transparent animate-spin"></div>
-            </div>
-          ) : (
-            <>
-              <p className="text-3xl font-bold text-green-600">
-                ৳{currentBalance.toFixed(2)}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Balance for {user.email}
-              </p>
-              <p className="mt-1 text-xs text-slate-400">
-                User ID: {user.uid?.substring(0, 8)}...
-              </p>
-            </>
-          )}
-        </div>
+    <div className="max-w-lg p-4 mx-auto mt-4 bg-white border shadow-md sm:p-4.5 md:p-5 rounded-2xl border-slate-200">
+      <div className="mb-4 text-center">
+        <h2 className="text-3xl font-bold text-slate-900">Add Money to Wallet</h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-4.5">
         {error && (
-          <div className="p-3 text-sm text-red-700 bg-red-100 border border-red-300 rounded-xl">
+          <div className="p-3 text-sm text-red-700 border border-red-200 rounded-xl bg-red-50">
             {error}
           </div>
         )}
 
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-slate-800">
-            Enter Amount (৳)
+        <div className="space-y-2.5">
+          <label className="block text-xl font-semibold text-slate-900">
+            Amount (BDT)
           </label>
           <input
             type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             disabled={processing}
-            className="w-full px-4 py-3 text-lg font-semibold text-center border-2 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-            placeholder="0.00"
+            className="w-full px-3.5 py-2.5 text-xl font-semibold border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:border-transparent"
+            style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+            placeholder="Enter amount"
             min="10"
             step="0.01"
             required
           />
           
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             {predefinedAmounts.map((quickAmount) => (
               <button
                 key={quickAmount}
                 type="button"
                 onClick={() => handleQuickAmount(quickAmount)}
                 disabled={processing}
-                className="py-3 font-semibold text-purple-700 transition-all rounded-xl bg-gradient-to-r from-purple-100 to-violet-100 hover:from-purple-200 hover:to-violet-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="py-2 text-2xl font-semibold transition-all border rounded-xl border-slate-300 text-slate-900 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 ৳{quickAmount}
               </button>
@@ -356,7 +323,7 @@ function AddMoney() {
 
         {/* Payment Status Messages */}
         {verifyingPayment && (
-          <div className={`p-4 mb-4 rounded-xl ${
+          <div className={`p-3 mb-3 rounded-xl ${
             verifyingPayment.status === "verified" 
               ? "bg-green-50 border border-green-200" 
               : verifyingPayment.status === "failed"
@@ -377,49 +344,29 @@ function AddMoney() {
           </div>
         )}
 
-        <div className="p-4 border border-blue-200 rounded-xl bg-gradient-to-r from-blue-50 to-sky-50">
-          <h3 className="flex items-center gap-2 mb-2 font-bold text-blue-800">
-            <span className="text-lg">💡</span> Payment Method
-          </h3>
-          <p className="mb-2 text-sm text-blue-700">
-            We use <strong>Uddokta Pay</strong> for secure online payments. Your balance will be updated automatically after payment.
-          </p>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="flex-1 px-4 py-3 font-semibold border text-slate-700 bg-slate-100 border-slate-300 rounded-xl hover:bg-slate-200"
-          >
-            Go Back
-          </button>
-          <button
-            type="submit"
-            disabled={processing || !amount.trim() || !user}
-            className="flex-1 px-4 py-3 font-semibold text-white shadow-md rounded-xl bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processing ? 'Processing...' : !user ? 'Please Login' : 'Add Money with Uddokta Pay'}
-          </button>
-        </div>
-
-        <div className="pt-4 mt-4 border-t border-slate-200">
-          <div className="text-xs text-slate-500">
-            <p className="font-semibold text-slate-700">📢 Important:</p>
-            <ul className="mt-1 space-y-1">
-              <li>• Minimum deposit: ৳10</li>
-              <li>• Secure payment via bKash</li>
-              <li>• Balance updates automatically after payment</li>
-              <li>• Multiple payment methods supported</li>
-              <li>• If you need help, contact support</li>
-            </ul>
-            <div className="p-2 mt-3 rounded-lg bg-slate-100">
-              <p className="text-xs text-slate-600">
-                Debug: Balance = {currentBalance}, User = {user.email}
-              </p>
+        <div>
+          <h3 className="mb-2.5 text-xl font-semibold text-slate-900">Select Payment Method</h3>
+          <div className="p-3 border rounded-2xl border-pink-500 bg-rose-50">
+            <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-center w-9 h-9 text-xl rounded-full bg-rose-200 text-rose-600">
+                $
+              </div>
+              <div>
+                <p className="text-base font-bold text-slate-900">bKash / Nagad / Rocket</p>
+                <p className="mt-0.5 text-xs text-pink-600">Instant Payment</p>
+              </div>
             </div>
           </div>
         </div>
+
+        <button
+          type="submit"
+          disabled={processing || !amount.trim() || !user}
+          className="w-full py-3 text-xl font-bold text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: 'linear-gradient(to right, #f48fb1, #ec407a)' }}
+        >
+          {processing ? 'Processing...' : 'Proceed to Pay'}
+        </button>
       </form>
     </div>
   );

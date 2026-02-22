@@ -95,10 +95,10 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
         <div className="flex-1">
           <div className="inline-block">
             <h2
-              className="text-xl sm:text-2xl font-semibold text-slate-900"
+              className="text-xl font-semibold sm:text-2xl text-slate-900"
               style={{ fontFamily: 'var(--theme-font-family)' }}
             >
-              {badgeText || 'Top-up categories'}
+              {headingText || badgeText || 'Top-up Categories'}
             </h2>
             <div className="mt-1.5 space-y-1">
               <div
@@ -112,89 +112,23 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
             </div>
           </div>
         </div>
+
         {/* Render categories grouped by deals */}
         {categoriesByDeal
           .filter(({ categories: dealCategories }) => dealCategories.length > 0)
           .map(({ deal, categories: dealCategories }) => (
             <div key={deal.id} className="w-full">
               <h3
-                className="text-center text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
+                className="mb-3 text-lg font-bold text-center sm:text-xl md:text-2xl sm:mb-4"
                 style={{ color: 'var(--theme-primary)' }}
               >
                 {deal.name}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
                 {dealCategories.map((cat) => (
-                  <div key={cat.id} className="flex justify-center">
-                    <button
-                      className="flex flex-col w-[80%] max-w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
-                      style={{
-                        borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
-                      }}
-                      onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor =
-                          'rgba(var(--theme-primary-rgb), 0.45)';
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow =
-                          '0 10px 25px rgba(var(--theme-primary-rgb), 0.25)';
-                      }}
-                      onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor =
-                          'rgba(var(--theme-primary-rgb), 0.25)';
-                        (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
-                      }}
-                      onClick={() => {
-                        window.scrollTo(0, 0);
-                        navigate(`/category/${cat.id}`);
-                      }}
-                    >
-                      <div className="w-full aspect-[1.25] overflow-hidden">
-                        <img
-                          src={getCategoryImage(cat)}
-                          alt={cat.name}
-                          loading="lazy"
-                          className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/diamond-top-up.png';
-                          }}
-                        />
-                      </div>
-                      <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1.5 py-1.5 sm:py-2">
-                        <span className="font-medium text-center text-[9px] sm:text-[10px] md:text-xs leading-tight text-slate-900">
-                          {cat.name}
-                        </span>
-                        {cat.badge ? (
-                          <span
-                            className="px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-medium"
-                            style={{
-                              backgroundColor: 'var(--theme-primary-light)',
-                              color: 'var(--theme-primary)',
-                            }}
-                          >
-                            {cat.badge}
-                          </span>
-                        ) : null}
-                      </div>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-        {/* Categories without a deal */}
-        {categoriesWithoutDeal.length > 0 && (
-          <div className="w-full mt-6 sm:mt-8">
-            <h3
-              className="text-center text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
-              style={{ color: 'var(--theme-primary)' }}
-            >
-              Other Categories
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
-              {categoriesWithoutDeal.map((cat) => (
-                <div key={cat.id} className="flex justify-center">
                   <button
-                    className="flex flex-col w-[80%] max-w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
+                    key={cat.id}
+                    className="flex flex-col w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
                     style={{
                       borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
                     }}
@@ -214,7 +148,7 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
                       navigate(`/category/${cat.id}`);
                     }}
                   >
-                    <div className="w-full aspect-[1.25] overflow-hidden">
+                    <div className="w-full aspect-[1.15] overflow-hidden">
                       <img
                         src={getCategoryImage(cat)}
                         alt={cat.name}
@@ -225,7 +159,7 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
                         }}
                       />
                     </div>
-                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-1.5 py-1.5 sm:py-2">
+                    <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-2 py-2 sm:py-2.5">
                       <span className="font-medium text-center text-[9px] sm:text-[10px] md:text-xs leading-tight text-slate-900">
                         {cat.name}
                       </span>
@@ -242,7 +176,72 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
                       ) : null}
                     </div>
                   </button>
-                </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+        {/* Categories without a deal */}
+        {categoriesWithoutDeal.length > 0 && (
+          <div className="w-full mt-6 sm:mt-8">
+            <h3
+              className="mb-3 text-lg font-bold text-center sm:text-xl md:text-2xl sm:mb-4"
+              style={{ color: 'var(--theme-primary)' }}
+            >
+              Other Categories
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 bg-slate-50/80 rounded-xl p-2.5 sm:p-3 md:p-4">
+              {categoriesWithoutDeal.map((cat) => (
+                <button
+                  key={cat.id}
+                  className="flex flex-col w-full rounded-lg cursor-pointer transition-all duration-150 border-[2px] bg-white text-slate-900 hover:scale-[1.02] overflow-hidden"
+                  style={{
+                    borderColor: 'rgba(var(--theme-primary-rgb), 0.25)',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor =
+                      'rgba(var(--theme-primary-rgb), 0.45)';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                      '0 10px 25px rgba(var(--theme-primary-rgb), 0.25)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.borderColor =
+                      'rgba(var(--theme-primary-rgb), 0.25)';
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                  }}
+                  onClick={() => {
+                    window.scrollTo(0, 0);
+                    navigate(`/category/${cat.id}`);
+                  }}
+                >
+                  <div className="w-full aspect-[1.15] overflow-hidden">
+                    <img
+                      src={getCategoryImage(cat)}
+                      alt={cat.name}
+                      loading="lazy"
+                      className="object-cover w-full h-full transition-transform duration-150 hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/diamond-top-up.png';
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col items-center gap-0.5 sm:gap-1 w-full px-2 py-2 sm:py-2.5">
+                    <span className="font-medium text-center text-[9px] sm:text-[10px] md:text-xs leading-tight text-slate-900">
+                      {cat.name}
+                    </span>
+                    {cat.badge ? (
+                      <span
+                        className="px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-medium"
+                        style={{
+                          backgroundColor: 'var(--theme-primary-light)',
+                          color: 'var(--theme-primary)',
+                        }}
+                      >
+                        {cat.badge}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
               ))}
             </div>
           </div>
@@ -251,7 +250,7 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
         {/* Show message when search has no results only (no categories case handled by early return) */}
         {q && categoriesByDeal.length === 0 && categoriesWithoutDeal.length === 0 && (
           <div className="w-full mt-6 sm:mt-8">
-            <p className="text-center text-xs sm:text-sm text-slate-500">
+            <p className="text-xs text-center sm:text-sm text-slate-500">
               No categories or deals match &quot;{searchQuery}&quot;
             </p>
           </div>

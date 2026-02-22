@@ -6,14 +6,12 @@ interface ThemeContextType {
   secondaryColor: string;
   livePurchaseStatementEnabled: boolean;
   topUpCategoriesEnabled: boolean;
-  digitalCodesEnabled: boolean;
   topUpCategoriesBadge: string;
   topUpCategoriesHeading: string;
-  digitalCodesBadge: string;
-  digitalCodesHeading: string;
   subscriptionsEnabled: boolean;
   subscriptionsBadge: string;
   subscriptionsHeading: string;
+  reviewSectionEnabled: boolean;
   navbarLogoUrl: string;
   fontFamily: string;
   fontSizeBase: number;
@@ -22,8 +20,16 @@ interface ThemeContextType {
   supportWhatsAppUrl: string;
   supportMessengerUrl: string;
   supportTelegramUrl: string;
+  uddoktaBaseUrl: string;
+  uddoktaConfigured: boolean;
+  uddoktaGatewayConfig: {
+    baseUrl: string;
+    checkoutPath: string;
+    verifyPath: string;
+    apiKeyHeader: string;
+  };
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, digitalCodesBadge?: string, digitalCodesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -33,8 +39,6 @@ const DEFAULT_PRIMARY = '#F05656';
 const DEFAULT_SECONDARY = '#e04a4a';
 const DEFAULT_TOP_UP_BADGE = 'Top-up categories';
 const DEFAULT_TOP_UP_HEADING = 'Browse Categories';
-const DEFAULT_DIGITAL_CODES_BADGE = 'Digital Codes';
-const DEFAULT_DIGITAL_CODES_HEADING = 'Digital Codes Categories';
 const DEFAULT_SUBSCRIPTIONS_BADGE = 'Subscriptions';
 const DEFAULT_SUBSCRIPTIONS_HEADING = 'Subscription Plans';
 const DEFAULT_FONT_FAMILY = 'Plus Jakarta Sans';
@@ -47,14 +51,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [secondaryColor, setSecondaryColor] = useState<string>(DEFAULT_SECONDARY);
   const [livePurchaseStatementEnabled, setLivePurchaseStatementEnabled] = useState<boolean>(true);
   const [topUpCategoriesEnabled, setTopUpCategoriesEnabled] = useState<boolean>(true);
-  const [digitalCodesEnabled, setDigitalCodesEnabled] = useState<boolean>(true);
   const [topUpCategoriesBadge, setTopUpCategoriesBadge] = useState<string>(DEFAULT_TOP_UP_BADGE);
   const [topUpCategoriesHeading, setTopUpCategoriesHeading] = useState<string>(DEFAULT_TOP_UP_HEADING);
-  const [digitalCodesBadge, setDigitalCodesBadge] = useState<string>(DEFAULT_DIGITAL_CODES_BADGE);
-  const [digitalCodesHeading, setDigitalCodesHeading] = useState<string>(DEFAULT_DIGITAL_CODES_HEADING);
   const [subscriptionsEnabled, setSubscriptionsEnabled] = useState<boolean>(true);
   const [subscriptionsBadge, setSubscriptionsBadge] = useState<string>(DEFAULT_SUBSCRIPTIONS_BADGE);
   const [subscriptionsHeading, setSubscriptionsHeading] = useState<string>(DEFAULT_SUBSCRIPTIONS_HEADING);
+  const [reviewSectionEnabled, setReviewSectionEnabled] = useState<boolean>(true);
   const [navbarLogoUrl, setNavbarLogoUrl] = useState<string>('');
   const [fontFamily, setFontFamily] = useState<string>(DEFAULT_FONT_FAMILY);
   const [fontSizeBase, setFontSizeBase] = useState<number>(DEFAULT_FONT_SIZE_BASE);
@@ -63,6 +65,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [supportWhatsAppUrl, setSupportWhatsAppUrl] = useState<string>('');
   const [supportMessengerUrl, setSupportMessengerUrl] = useState<string>('');
   const [supportTelegramUrl, setSupportTelegramUrl] = useState<string>('');
+  const [uddoktaBaseUrl, setUddoktaBaseUrl] = useState<string>('');
+  const [uddoktaConfigured, setUddoktaConfigured] = useState<boolean>(false);
+  const [uddoktaGatewayConfig, setUddoktaGatewayConfig] = useState({
+    baseUrl: '',
+    checkoutPath: '',
+    verifyPath: '',
+    apiKeyHeader: '',
+  });
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element (colors + typography)
@@ -121,6 +131,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load theme from MongoDB backend
   useEffect(() => {
+    const THEME_CHANNEL = 'robo-theme-updated';
+
     const loadTheme = async () => {
       try {
         const response = await themeApi.get();
@@ -129,14 +141,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const secondary = response.data.secondaryColor || DEFAULT_SECONDARY;
           const livePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : true;
           const topUpCategoriesEnabled = response.data.topUpCategoriesEnabled !== undefined ? response.data.topUpCategoriesEnabled : true;
-          const digitalCodesEnabled = response.data.digitalCodesEnabled !== undefined ? response.data.digitalCodesEnabled : true;
           const topUpBadge = response.data.topUpCategoriesBadge || DEFAULT_TOP_UP_BADGE;
           const topUpHeading = response.data.topUpCategoriesHeading || DEFAULT_TOP_UP_HEADING;
-          const digitalCodesBadgeValue = response.data.digitalCodesBadge || DEFAULT_DIGITAL_CODES_BADGE;
-          const digitalCodesHeadingValue = response.data.digitalCodesHeading || DEFAULT_DIGITAL_CODES_HEADING;
           const subscriptionsEnabledValue = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : true;
           const subscriptionsBadgeValue = response.data.subscriptionsBadge || DEFAULT_SUBSCRIPTIONS_BADGE;
           const subscriptionsHeadingValue = response.data.subscriptionsHeading || DEFAULT_SUBSCRIPTIONS_HEADING;
+          const reviewSectionEnabledValue = response.data.reviewSectionEnabled !== undefined ? response.data.reviewSectionEnabled : true;
           const navbarLogoUrlValue = response.data.navbarLogoUrl || '';
           const fontFamilyValue = response.data.fontFamily ?? DEFAULT_FONT_FAMILY;
           const fontSizeBaseValue = response.data.fontSizeBase ?? DEFAULT_FONT_SIZE_BASE;
@@ -145,19 +155,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const supportWhatsAppUrlValue = response.data.supportWhatsAppUrl ?? '';
           const supportMessengerUrlValue = response.data.supportMessengerUrl ?? '';
           const supportTelegramUrlValue = response.data.supportTelegramUrl ?? '';
+          const uddoktaBaseUrlValue = response.data.uddoktaBaseUrl ?? '';
+          const uddoktaConfiguredValue = response.data.uddoktaConfigured ?? false;
+          const uddoktaGatewayConfigValue = {
+            baseUrl: response.data.uddoktaGatewayConfig?.baseUrl ?? '',
+            checkoutPath: response.data.uddoktaGatewayConfig?.checkoutPath ?? '',
+            verifyPath: response.data.uddoktaGatewayConfig?.verifyPath ?? '',
+            apiKeyHeader: response.data.uddoktaGatewayConfig?.apiKeyHeader ?? '',
+          };
 
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
           setLivePurchaseStatementEnabled(livePurchaseEnabled);
           setTopUpCategoriesEnabled(topUpCategoriesEnabled);
-          setDigitalCodesEnabled(digitalCodesEnabled);
           setTopUpCategoriesBadge(topUpBadge);
           setTopUpCategoriesHeading(topUpHeading);
-          setDigitalCodesBadge(digitalCodesBadgeValue);
-          setDigitalCodesHeading(digitalCodesHeadingValue);
           setSubscriptionsEnabled(subscriptionsEnabledValue);
           setSubscriptionsBadge(subscriptionsBadgeValue);
           setSubscriptionsHeading(subscriptionsHeadingValue);
+          setReviewSectionEnabled(reviewSectionEnabledValue);
           setNavbarLogoUrl(navbarLogoUrlValue);
           setFontFamily(fontFamilyValue);
           setFontSizeBase(fontSizeBaseValue);
@@ -166,6 +182,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setSupportWhatsAppUrl(supportWhatsAppUrlValue);
           setSupportMessengerUrl(supportMessengerUrlValue);
           setSupportTelegramUrl(supportTelegramUrlValue);
+          setUddoktaBaseUrl(uddoktaBaseUrlValue);
+          setUddoktaConfigured(uddoktaConfiguredValue);
+          setUddoktaGatewayConfig(uddoktaGatewayConfigValue);
           applyTheme(primary, secondary, fontFamilyValue, fontSizeBaseValue);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
@@ -191,30 +210,43 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Load theme immediately
     loadTheme();
 
-    // Poll for theme changes every 30 seconds (since we don't have real-time updates)
-    const pollInterval = setInterval(() => {
-      loadTheme();
-    }, 30000);
+    // Listen for theme updates from other tabs (e.g. admin saved in another tab)
+    let channel: BroadcastChannel | null = null;
+    if (typeof BroadcastChannel !== 'undefined') {
+      channel = new BroadcastChannel(THEME_CHANNEL);
+      channel.onmessage = () => loadTheme();
+    }
 
-    return () => clearInterval(pollInterval);
+    // Poll when tab becomes visible (instant refresh when switching tabs)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') loadTheme();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    // Poll every 5 seconds as fallback (faster than 30s for cross-tab sync)
+    const pollInterval = setInterval(loadTheme, 5000);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      channel?.close();
+    };
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, digitalCodesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, digitalCodesBadgeValue?: string, digitalCodesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }) => {
     try {
       const response = await themeApi.update({
         primaryColor: primary,
         secondaryColor: secondary,
         livePurchaseStatementEnabled: livePurchaseEnabled,
         topUpCategoriesEnabled: topUpCategoriesEnabled,
-        digitalCodesEnabled: digitalCodesEnabled,
         topUpCategoriesBadge: topUpCategoriesBadgeValue,
         topUpCategoriesHeading: topUpCategoriesHeadingValue,
-        digitalCodesBadge: digitalCodesBadgeValue,
-        digitalCodesHeading: digitalCodesHeadingValue,
         subscriptionsEnabled: subscriptionsEnabledValue,
         subscriptionsBadge: subscriptionsBadgeValue,
         subscriptionsHeading: subscriptionsHeadingValue,
+        reviewSectionEnabled: reviewSectionEnabledValue,
         navbarLogoUrl: navbarLogoUrlValue,
         fontFamily: fontFamilyValue,
         fontSizeBase: fontSizeBaseValue,
@@ -223,6 +255,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         supportWhatsAppUrl: supportWhatsAppUrlValue,
         supportMessengerUrl: supportMessengerUrlValue,
         supportTelegramUrl: supportTelegramUrlValue,
+        uddoktaBaseUrl: uddoktaBaseUrlValue,
+        uddoktaApiKey: uddoktaApiKeyValue,
+        uddoktaGatewayConfig: uddoktaGatewayConfigValue,
         updatedBy: updatedBy || 'admin'
       });
 
@@ -231,14 +266,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedSecondary = response.data.secondaryColor || secondary;
         const savedLivePurchaseEnabled = response.data.livePurchaseStatementEnabled !== undefined ? response.data.livePurchaseStatementEnabled : (livePurchaseEnabled !== undefined ? livePurchaseEnabled : true);
         const savedTopUpCategoriesEnabled = response.data.topUpCategoriesEnabled !== undefined ? response.data.topUpCategoriesEnabled : (topUpCategoriesEnabled !== undefined ? topUpCategoriesEnabled : true);
-        const savedDigitalCodesEnabled = response.data.digitalCodesEnabled !== undefined ? response.data.digitalCodesEnabled : (digitalCodesEnabled !== undefined ? digitalCodesEnabled : true);
         const savedTopUpBadge = response.data.topUpCategoriesBadge || topUpCategoriesBadgeValue || DEFAULT_TOP_UP_BADGE;
         const savedTopUpHeading = response.data.topUpCategoriesHeading || topUpCategoriesHeadingValue || DEFAULT_TOP_UP_HEADING;
-        const savedDigitalCodesBadge = response.data.digitalCodesBadge || digitalCodesBadgeValue || DEFAULT_DIGITAL_CODES_BADGE;
-        const savedDigitalCodesHeading = response.data.digitalCodesHeading || digitalCodesHeadingValue || DEFAULT_DIGITAL_CODES_HEADING;
         const savedSubscriptionsEnabled = response.data.subscriptionsEnabled !== undefined ? response.data.subscriptionsEnabled : (subscriptionsEnabledValue !== undefined ? subscriptionsEnabledValue : true);
         const savedSubscriptionsBadge = response.data.subscriptionsBadge || subscriptionsBadgeValue || DEFAULT_SUBSCRIPTIONS_BADGE;
         const savedSubscriptionsHeading = response.data.subscriptionsHeading || subscriptionsHeadingValue || DEFAULT_SUBSCRIPTIONS_HEADING;
+        const savedReviewSectionEnabled = response.data.reviewSectionEnabled !== undefined ? response.data.reviewSectionEnabled : (reviewSectionEnabledValue !== undefined ? reviewSectionEnabledValue : true);
         const savedNavbarLogoUrl = response.data.navbarLogoUrl ?? navbarLogoUrlValue ?? '';
         const savedFontFamily = response.data.fontFamily ?? fontFamilyValue ?? fontFamily;
         const savedFontSizeBase = response.data.fontSizeBase ?? fontSizeBaseValue ?? fontSizeBase;
@@ -247,19 +280,25 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedSupportWhatsAppUrl = response.data.supportWhatsAppUrl ?? supportWhatsAppUrlValue ?? supportWhatsAppUrl;
         const savedSupportMessengerUrl = response.data.supportMessengerUrl ?? supportMessengerUrlValue ?? supportMessengerUrl;
         const savedSupportTelegramUrl = response.data.supportTelegramUrl ?? supportTelegramUrlValue ?? supportTelegramUrl;
+        const savedUddoktaBaseUrl = response.data.uddoktaBaseUrl ?? uddoktaBaseUrlValue ?? uddoktaBaseUrl;
+        const savedUddoktaConfigured = response.data.uddoktaConfigured ?? uddoktaConfigured;
+        const savedUddoktaGatewayConfig = {
+          baseUrl: response.data.uddoktaGatewayConfig?.baseUrl ?? uddoktaGatewayConfigValue?.baseUrl ?? uddoktaGatewayConfig.baseUrl,
+          checkoutPath: response.data.uddoktaGatewayConfig?.checkoutPath ?? uddoktaGatewayConfigValue?.checkoutPath ?? uddoktaGatewayConfig.checkoutPath,
+          verifyPath: response.data.uddoktaGatewayConfig?.verifyPath ?? uddoktaGatewayConfigValue?.verifyPath ?? uddoktaGatewayConfig.verifyPath,
+          apiKeyHeader: response.data.uddoktaGatewayConfig?.apiKeyHeader ?? uddoktaGatewayConfigValue?.apiKeyHeader ?? uddoktaGatewayConfig.apiKeyHeader,
+        };
 
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
         setLivePurchaseStatementEnabled(savedLivePurchaseEnabled);
         setTopUpCategoriesEnabled(savedTopUpCategoriesEnabled);
-        setDigitalCodesEnabled(savedDigitalCodesEnabled);
         setTopUpCategoriesBadge(savedTopUpBadge);
         setTopUpCategoriesHeading(savedTopUpHeading);
-        setDigitalCodesBadge(savedDigitalCodesBadge);
-        setDigitalCodesHeading(savedDigitalCodesHeading);
         setSubscriptionsEnabled(savedSubscriptionsEnabled);
         setSubscriptionsBadge(savedSubscriptionsBadge);
         setSubscriptionsHeading(savedSubscriptionsHeading);
+        setReviewSectionEnabled(savedReviewSectionEnabled);
         setNavbarLogoUrl(savedNavbarLogoUrl);
         setFontFamily(savedFontFamily);
         setFontSizeBase(savedFontSizeBase);
@@ -268,7 +307,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setSupportWhatsAppUrl(savedSupportWhatsAppUrl);
         setSupportMessengerUrl(savedSupportMessengerUrl);
         setSupportTelegramUrl(savedSupportTelegramUrl);
+        setUddoktaBaseUrl(savedUddoktaBaseUrl);
+        setUddoktaConfigured(savedUddoktaConfigured);
+        setUddoktaGatewayConfig(savedUddoktaGatewayConfig);
         applyTheme(savedPrimary, savedSecondary, savedFontFamily, savedFontSizeBase);
+
+        // Notify other tabs to refresh theme immediately
+        if (typeof BroadcastChannel !== 'undefined') {
+          new BroadcastChannel('robo-theme-updated').postMessage('updated');
+        }
       } else {
         const errorMessage = response.message || 'Failed to update theme';
         console.error('❌ Theme update failed:', errorMessage);
@@ -290,14 +337,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         secondaryColor,
         livePurchaseStatementEnabled,
         topUpCategoriesEnabled,
-        digitalCodesEnabled,
         topUpCategoriesBadge,
         topUpCategoriesHeading,
-        digitalCodesBadge,
-        digitalCodesHeading,
         subscriptionsEnabled,
         subscriptionsBadge,
         subscriptionsHeading,
+        reviewSectionEnabled,
         navbarLogoUrl,
         fontFamily,
         fontSizeBase,
@@ -306,6 +351,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         supportWhatsAppUrl,
         supportMessengerUrl,
         supportTelegramUrl,
+        uddoktaBaseUrl,
+        uddoktaConfigured,
+        uddoktaGatewayConfig,
         isLoaded,
         updateTheme,
       }}

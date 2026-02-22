@@ -7,7 +7,14 @@ const Footer = () => {
           href="https://www.facebook.com/robayet02"
           target="_blank"
           rel="noopener noreferrer"
-          className="font-semibold text-purple-600 transition-colors hover:text-purple-700 hover:underline"
+          className="font-semibold transition-colors hover:underline"
+          style={{ color: 'var(--theme-primary)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--theme-primary-hover)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--theme-primary)';
+          }}
         >
           Robayet
         </a>

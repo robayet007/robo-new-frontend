@@ -94,9 +94,15 @@ function AdminOrders() {
                 : 'Unknown date';
 
               const amount = (order.price ?? order.amount ?? 0);
-              const status = order.status || 'pending';
-              const isComplete = status === 'completed' || status === 'verified' || order.verifiedAt;
-              const statusText = isComplete ? 'complete' : 'pending';
+              const rawStatus = String(order.status || '').toLowerCase();
+              const normalizedStatus =
+                rawStatus === 'processing' ? 'processing' :
+                rawStatus === 'failed' || rawStatus === 'cancelled' || rawStatus === 'rejected' ? 'failed' :
+                rawStatus === 'completed' || rawStatus === 'verified' || !!order.verifiedAt ? 'completed' :
+                'pending';
+              const statusText = normalizedStatus === 'processing' ? 'Processing' :
+                normalizedStatus === 'failed' ? 'Failed' :
+                normalizedStatus === 'completed' ? 'Complete' : 'Pending';
 
               // Extract serial number from transaction ID
               const serialNo = order.transactionId?.slice(-5) || String(10000 + filtered.length - index);
@@ -163,7 +169,9 @@ function AdminOrders() {
                     <div className="sm:col-span-1">
                       <p className="mb-1 text-xs text-slate-500">Status</p>
                       <p className={`text-sm font-semibold ${
-                        isComplete ? 'text-green-600' : 'text-red-600'
+                        normalizedStatus === 'completed' ? 'text-green-600' :
+                        normalizedStatus === 'processing' ? 'text-amber-600' :
+                        normalizedStatus === 'failed' ? 'text-red-600' : 'text-slate-600'
                       }`}>
                         {statusText}
                       </p>

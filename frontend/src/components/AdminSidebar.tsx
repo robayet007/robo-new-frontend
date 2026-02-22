@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaGamepad, FaPalette, FaKey, FaCalendarAlt, FaStore, FaCrown } from 'react-icons/fa';
+import { FaHome, FaBox, FaUsers, FaHistory, FaSignOutAlt, FaChartLine, FaGamepad, FaPalette, FaCalendarAlt, FaStore, FaCrown, FaTicketAlt } from 'react-icons/fa';
 import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'digitalCodes' | 'subscriptions' | 'reseller' | 'membership') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher') => void;
   onLogout: () => void;
 };
 
@@ -16,7 +16,6 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
   const allMenuItems = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: FaHome, permission: 'canAccessDashboard', adminOnly: false },
     { id: 'products' as const, label: 'Products & Categories', icon: FaBox, permission: 'canManageProducts', adminOnly: false },
-    { id: 'digitalCodes' as const, label: 'Digital Codes', icon: FaKey, permission: 'canManageDigitalCodes', adminOnly: false },
     { id: 'subscriptions' as const, label: 'Subscriptions', icon: FaCalendarAlt, permission: 'canManageSubscriptions', adminOnly: false },
     { id: 'theme' as const, label: 'Store Customize & Logo', icon: FaPalette, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'gamePackages' as const, label: 'Game Packages', icon: FaGamepad, permission: 'canManageGamePackages', adminOnly: false },
@@ -24,6 +23,7 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
     { id: 'orders' as const, label: 'Order History', icon: FaHistory, permission: 'canManageOrders', adminOnly: false },
     { id: 'reseller' as const, label: 'Reseller Management', icon: FaStore, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'membership' as const, label: 'Membership Packages', icon: FaCrown, permission: 'canAccessDashboard', adminOnly: true },
+    { id: 'voucher' as const, label: 'Voucher', icon: FaTicketAlt, permission: 'canAccessDashboard', adminOnly: true },
   ];
 
   // Filter menu items based on permissions

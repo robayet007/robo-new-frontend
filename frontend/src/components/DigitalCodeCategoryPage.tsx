@@ -1,7 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState, useLayoutEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { digitalCodeApi } from '../services/api';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct } from '../types';
+import InlinePurchasePanel from './InlinePurchasePanel';
 
 function DigitalCodeCategoryPage({ 
   categories, 
@@ -12,8 +13,10 @@ function DigitalCodeCategoryPage({
 }) {
   const { categoryId } = useParams<{ categoryId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [category, setCategory] = useState<BackendDigitalCodeCategory | null>(null);
   const [products, setProducts] = useState<BackendDigitalCodeProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<BackendDigitalCodeProduct | null>(null);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [loadingStock, setLoadingStock] = useState(false);
   const [stockChecked, setStockChecked] = useState(false);
@@ -22,6 +25,7 @@ function DigitalCodeCategoryPage({
     // If props are available, we can find category instantly, so no loading needed
     return categories.length === 0 || allProducts.length === 0;
   });
+  const panelAnchorRef = useRef<HTMLDivElement | null>(null);
 
   // Helper function to get category image
   const getCategoryImage = (category: BackendDigitalCodeCategory): string => {
@@ -149,6 +153,17 @@ function DigitalCodeCategoryPage({
     }
   }, [products, stockChecked]);
 
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const productIdFromUrl = searchParams.get('productId');
+    if (!status || !productIdFromUrl) return;
+    const matched = products.find((item) => item.id === productIdFromUrl);
+    if (matched) {
+      setSelectedProduct(matched);
+      setTimeout(() => panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    }
+  }, [searchParams, products]);
+
   if (loading || !category) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -261,7 +276,8 @@ function DigitalCodeCategoryPage({
                 onClick={() => {
                   // Only navigate if stock is loaded and > 0
                   if (!loadingStock && productStock[item.id] !== undefined && productStock[item.id] > 0) {
-                    navigate('/checkout', { state: { productId: item.id, isDigitalCode: true } });
+                    setSelectedProduct(item);
+                    setTimeout(() => panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
                   }
                 }}
               >
@@ -298,6 +314,16 @@ function DigitalCodeCategoryPage({
             Browse All Categories
           </button>
         </div>
+      )}
+
+      <div ref={panelAnchorRef} />
+      {selectedProduct && categoryId && (
+        <InlinePurchasePanel
+          mode="digital"
+          selectedProduct={selectedProduct}
+          originPath={`/digital-codes/category/${categoryId}`}
+          onClose={() => setSelectedProduct(null)}
+        />
       )}
     </section>
   );

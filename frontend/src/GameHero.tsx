@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"
 import { bannerApi } from "./services/api"
@@ -125,7 +125,7 @@ export default function GameHero() {
     margin: "0 auto",
     overflow: "hidden",
     borderRadius: "8px",
-    minHeight: "200px",
+    minHeight: isMobile ? "150px" : "200px",
   }
 
   const titleStyle: React.CSSProperties = {
@@ -283,9 +283,11 @@ export default function GameHero() {
           style={{
             position: "relative",
             width: "100%",
-            height: containerWidth ? `${containerWidth * 0.4}px` : "auto", // এখানে height সেট করা হচ্ছে
-            minHeight: "300px",
-            maxHeight: "600px",
+            // Use fixed aspect ratios per breakpoint to avoid extra blank area on mobile.
+            aspectRatio: isMobile ? "16 / 9" : isTablet ? "16 / 7.2" : "16 / 6.4",
+            height: containerWidth && !isMobile ? `${containerWidth * 0.4}px` : "auto",
+            minHeight: isMobile ? "0" : "260px",
+            maxHeight: isMobile ? "none" : "600px",
             cursor: currentSlide.link?.trim() ? "pointer" : "default",
           }}
           onClick={() => handleBannerClick(currentSlide)}

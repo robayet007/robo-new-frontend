@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 
 function Login() {
@@ -10,7 +10,9 @@ function Login() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loginWithGoogle, resetPassword } = useAuth();
+  const from = (location.state as { from?: string } | null)?.from || '/';
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -22,8 +24,8 @@ function Login() {
     setLoading(false);
 
     if (result.success) {
-      // Redirect to home route
-      navigate('/');
+      // Redirect back to originally requested page if present
+      navigate(from, { replace: true });
     } else {
       setError(result.error || 'Failed to login');
     }
@@ -37,8 +39,8 @@ function Login() {
     setLoading(false);
 
     if (result.success) {
-      // Redirect to home route
-      navigate('/');
+      // Redirect back to originally requested page if present
+      navigate(from, { replace: true });
     } else {
       setError(result.error || 'Failed to login with Google');
     }

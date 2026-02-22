@@ -104,7 +104,8 @@ function useCatalog() {
             id: p.id,
             categoryId: p.categoryId,
             name: p.name,
-            diamonds: p.diamonds,
+            diamonds: p.diamonds ?? '',
+            ucCategory: p.ucCategory,
             price: p.price,
             resellerPrice: p.resellerPrice,
             bonus: p.bonus,
@@ -246,6 +247,8 @@ function useCatalog() {
         name: newCategory.name,
         description: newCategory.description || '',
         badge: newCategory.badge || '',
+        image: newCategory.image || '',
+        dealId: newCategory.dealId || null,
         isActive: true
       });
       
@@ -298,6 +301,7 @@ function useCatalog() {
         categoryId: newProduct.categoryId,
         name: newProduct.name,
         diamonds: newProduct.diamonds,
+        ucCategory: newProduct.ucCategory,
         price: newProduct.price,
         bonus: newProduct.bonus || '',
         tag: newProduct.tag || '',
@@ -335,6 +339,7 @@ function useCatalog() {
         categoryId: productData.categoryId || existingProduct.categoryId,
         name: productData.name || existingProduct.name,
         diamonds: productData.diamonds !== undefined ? productData.diamonds : existingProduct.diamonds,
+        ucCategory: productData.ucCategory !== undefined ? productData.ucCategory : existingProduct.ucCategory,
         price: productData.price !== undefined ? productData.price : existingProduct.price,
         bonus: productData.bonus !== undefined ? productData.bonus : existingProduct.bonus || '',
         tag: productData.tag !== undefined ? productData.tag : existingProduct.tag || '',

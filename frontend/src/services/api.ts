@@ -440,6 +440,28 @@ export const userSyncApi = {
   },
 };
 
+export const userProfileApi = {
+  profileSync: async (payload: {
+    uid: string;
+    email: string;
+    displayName?: string;
+    photoURL?: string;
+  }): Promise<ApiResponse<{
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL: string;
+    currentBalance: number;
+    lastLoginAt?: string;
+  }>> => {
+    const response = await SmartAPIManager.smartFetch('/users/profile-sync', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+};
+
 // Payments API with smart fetch
 export const paymentApi = {
   verify: async (paymentData: {
@@ -456,6 +478,7 @@ export const paymentApi = {
     userName?: string; // User name for database tracking
     userId?: string; // User ID for database tracking
     timestamp?: string; // Timestamp for tracking
+    inputFieldValues?: Record<string, string>;
   }, options: RequestInit = {}): Promise<ApiResponse> => {
     try {
       // const baseURL = await SmartAPIManager.getBaseURL();
@@ -552,6 +575,7 @@ export const paymentApi = {
     email?: string;
     redirectUrl?: string;
     cancelUrl?: string;
+    inputFieldValues?: Record<string, string>;
   }): Promise<ApiResponse<{
     invoiceId: string;
     paymentUrl: string;
@@ -851,7 +875,7 @@ export const gamePackageApi = {
 
 // Theme Settings API (using MongoDB backend)
 export const themeApi = {
-  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedAt?: string; updatedBy?: string }>> => {
+  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme');
       return response.json();
@@ -864,7 +888,7 @@ export const themeApi = {
     }
   },
   
-  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; digitalCodesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; digitalCodesBadge?: string; digitalCodesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; updatedAt?: string; updatedBy?: string }>> => {
+  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaApiKey?: string; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme', {
         method: 'PUT',
@@ -879,6 +903,107 @@ export const themeApi = {
       };
     }
   }
+};
+
+export interface VoucherCodeRow {
+  _id?: string;
+  serialNumber: string;
+  code: string;
+  ucCategory: string;
+  sourcePrefix: string;
+  status: 'active' | 'used';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface VoucherBulkUploadSummary {
+  detected?: number;
+  inserted: number;
+  skipped: number;
+  insertedRows?: VoucherCodeRow[];
+  invalidLines: Array<{ lineNumber: number; line: string; reason: string }>;
+  duplicateLines: Array<{ lineNumber: number; line: string; code?: string; reason: string }>;
+  byCategory: Record<string, number>;
+}
+
+export const voucherApi = {
+  bulkUpload: async (bulkText: string): Promise<ApiResponse<VoucherBulkUploadSummary>> => {
+    const response = await SmartAPIManager.smartFetch('/vouchers/bulk-upload', {
+      method: 'POST',
+      body: JSON.stringify({ bulkText }),
+    });
+    return response.json();
+  },
+
+  getAll: async (params?: {
+    status?: 'active' | 'used';
+    ucCategory?: string;
+    limit?: number;
+  }): Promise<ApiResponse<VoucherCodeRow[]>> => {
+    const search = new URLSearchParams();
+    if (params?.status) search.append('status', params.status);
+    if (params?.ucCategory) search.append('ucCategory', params.ucCategory);
+    if (params?.limit) search.append('limit', String(params.limit));
+
+    const response = await SmartAPIManager.smartFetch(
+      `/vouchers${search.toString() ? `?${search.toString()}` : ''}`
+    );
+    return response.json();
+  },
+
+  getStats: async (): Promise<
+    ApiResponse<{
+      categories: string[];
+      byCategory: Record<string, { active: number; used: number; total: number }>;
+      totals: { active: number; used: number; total: number };
+    }>
+  > => {
+    const response = await SmartAPIManager.smartFetch('/vouchers/stats');
+    return response.json();
+  },
+
+  delete: async (serialNumber: string): Promise<ApiResponse> => {
+    const response = await SmartAPIManager.smartFetch(`/vouchers/${encodeURIComponent(serialNumber)}`, {
+      method: 'DELETE',
+    });
+    return response.json();
+  },
+};
+
+export interface BackendReview {
+  _id?: string;
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  userPhotoURL?: string;
+  rating: number;
+  comment: string;
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const reviewApi = {
+  getAll: async (limit: number = 20): Promise<ApiResponse<BackendReview[]>> => {
+    const response = await SmartAPIManager.smartFetch(`/reviews?limit=${limit}`);
+    return response.json();
+  },
+
+  create: async (payload: {
+    userId: string;
+    userEmail: string;
+    userName: string;
+    userPhotoURL?: string;
+    rating: number;
+    comment: string;
+  }): Promise<ApiResponse<BackendReview>> => {
+    const response = await SmartAPIManager.smartFetch('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
 };
 
 // Digital Codes API

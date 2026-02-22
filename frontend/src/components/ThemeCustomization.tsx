@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { FaPalette, FaImage, FaList, FaPlug, FaBullhorn } from 'react-icons/fa';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import useAuth from '../hooks/useAuth';
@@ -6,22 +7,26 @@ import ImageUpload from './ImageUpload';
 import { bannerApi, noticeApi } from '../services/api';
 import type { BackendBanner, BackendNotice } from '../types';
 
+type ThemeTab = 'brand' | 'content' | 'integrations' | 'banners' | 'notices';
+
+const themeBtnStyle = {
+  background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
+};
+
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, subscriptionsEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, isLoaded, updateTheme } = useTheme();
   const { showToast } = useToast();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
   const [localSecondary, setLocalSecondary] = useState<string>('#8b5cf6');
   const [localLivePurchaseEnabled, setLocalLivePurchaseEnabled] = useState<boolean>(true);
   const [localTopUpCategoriesEnabled, setLocalTopUpCategoriesEnabled] = useState<boolean>(true);
-  const [localDigitalCodesEnabled, setLocalDigitalCodesEnabled] = useState<boolean>(true);
   const [localTopUpCategoriesBadge, setLocalTopUpCategoriesBadge] = useState<string>('Top-up categories');
   const [localTopUpCategoriesHeading, setLocalTopUpCategoriesHeading] = useState<string>('Browse Categories');
-  const [localDigitalCodesBadge, setLocalDigitalCodesBadge] = useState<string>('Digital Codes');
-  const [localDigitalCodesHeading, setLocalDigitalCodesHeading] = useState<string>('Digital Codes Categories');
   const [localSubscriptionsEnabled, setLocalSubscriptionsEnabled] = useState<boolean>(true);
   const [localSubscriptionsBadge, setLocalSubscriptionsBadge] = useState<string>('Subscriptions');
   const [localSubscriptionsHeading, setLocalSubscriptionsHeading] = useState<string>('Subscription Plans');
+  const [localReviewSectionEnabled, setLocalReviewSectionEnabled] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [savingLogo, setSavingLogo] = useState<boolean>(false);
   const [previewMode, setPreviewMode] = useState<boolean>(false);
@@ -33,6 +38,10 @@ function ThemeCustomization() {
   const [localSupportWhatsAppUrl, setLocalSupportWhatsAppUrl] = useState<string>('');
   const [localSupportMessengerUrl, setLocalSupportMessengerUrl] = useState<string>('');
   const [localSupportTelegramUrl, setLocalSupportTelegramUrl] = useState<string>('');
+  const [localUddoktaBaseUrl, setLocalUddoktaBaseUrl] = useState<string>('');
+  const [localUddoktaApiKey, setLocalUddoktaApiKey] = useState<string>('');
+  const [localUddoktaCheckoutPath, setLocalUddoktaCheckoutPath] = useState<string>('');
+  const [localUddoktaVerifyPath, setLocalUddoktaVerifyPath] = useState<string>('');
 
   // Banners (image-only)
   const [banners, setBanners] = useState<BackendBanner[]>([]);
@@ -50,6 +59,16 @@ function ThemeCustomization() {
   const [newFeatureText, setNewFeatureText] = useState('');
   const [newFeatureIcon, setNewFeatureIcon] = useState('FaShieldAlt');
 
+  const [activeTab, setActiveTab] = useState<ThemeTab>('brand');
+
+  const themeTabs: { id: ThemeTab; label: string; icon: typeof FaPalette }[] = [
+    { id: 'brand', label: 'Brand & Logo', icon: FaPalette },
+    { id: 'content', label: 'Content Sections', icon: FaList },
+    { id: 'integrations', label: 'Integrations', icon: FaPlug },
+    { id: 'banners', label: 'Banners', icon: FaImage },
+    { id: 'notices', label: 'Notices', icon: FaBullhorn },
+  ];
+
   // Initialize local state from theme context
   useEffect(() => {
     if (isLoaded) {
@@ -57,14 +76,12 @@ function ThemeCustomization() {
       setLocalSecondary(secondaryColor);
       setLocalLivePurchaseEnabled(livePurchaseStatementEnabled);
       setLocalTopUpCategoriesEnabled(topUpCategoriesEnabled);
-      setLocalDigitalCodesEnabled(digitalCodesEnabled);
       setLocalTopUpCategoriesBadge(topUpCategoriesBadge);
       setLocalTopUpCategoriesHeading(topUpCategoriesHeading);
-      setLocalDigitalCodesBadge(digitalCodesBadge);
-      setLocalDigitalCodesHeading(digitalCodesHeading);
       setLocalSubscriptionsEnabled(subscriptionsEnabled);
       setLocalSubscriptionsBadge(subscriptionsBadge);
       setLocalSubscriptionsHeading(subscriptionsHeading);
+      setLocalReviewSectionEnabled(reviewSectionEnabled);
       setLocalNavbarLogoUrl(navbarLogoUrl || '');
       setLocalFontFamily(fontFamily || 'Plus Jakarta Sans');
       setLocalFontSizeBase(fontSizeBase ?? 16);
@@ -73,8 +90,12 @@ function ThemeCustomization() {
       setLocalSupportWhatsAppUrl(supportWhatsAppUrl ?? '');
       setLocalSupportMessengerUrl(supportMessengerUrl ?? '');
       setLocalSupportTelegramUrl(supportTelegramUrl ?? '');
+      setLocalUddoktaBaseUrl(uddoktaBaseUrl ?? '');
+      setLocalUddoktaApiKey('');
+      setLocalUddoktaCheckoutPath(uddoktaGatewayConfig?.checkoutPath ?? '');
+      setLocalUddoktaVerifyPath(uddoktaGatewayConfig?.verifyPath ?? '');
     }
-  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, subscriptionsEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl]);
+  }, [isLoaded, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig]);
 
   // Apply preview colors
   useEffect(() => {
@@ -357,7 +378,7 @@ function ThemeCustomization() {
   const handleSaveLogo = async () => {
     setSavingLogo(true);
     try {
-      await updateTheme(primaryColor, secondaryColor, user?.email || 'admin', livePurchaseStatementEnabled, topUpCategoriesEnabled, digitalCodesEnabled, topUpCategoriesBadge, topUpCategoriesHeading, digitalCodesBadge, digitalCodesHeading, subscriptionsEnabled, subscriptionsBadge, subscriptionsHeading, localNavbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl);
+      await updateTheme(primaryColor, secondaryColor, user?.email || 'admin', livePurchaseStatementEnabled, topUpCategoriesEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsEnabled, subscriptionsBadge, subscriptionsHeading, reviewSectionEnabled, localNavbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl);
       showToast({ type: 'success', text: 'Logo saved.' });
     } catch (error: any) {
       showToast({ type: 'error', text: error?.message || 'Failed to save logo.' });
@@ -382,7 +403,12 @@ function ThemeCustomization() {
 
     setIsSaving(true);
     try {
-      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled, localTopUpCategoriesEnabled, localDigitalCodesEnabled, localTopUpCategoriesBadge, localTopUpCategoriesHeading, localDigitalCodesBadge, localDigitalCodesHeading, localSubscriptionsEnabled, localSubscriptionsBadge, localSubscriptionsHeading, localNavbarLogoUrl, localFontFamily, localFontSizeBase, localNavbarSearchPlaceholder, localNavbarSearchEnabled, localSupportWhatsAppUrl, localSupportMessengerUrl, localSupportTelegramUrl);
+      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled, localTopUpCategoriesEnabled, localTopUpCategoriesBadge, localTopUpCategoriesHeading, localSubscriptionsEnabled, localSubscriptionsBadge, localSubscriptionsHeading, localReviewSectionEnabled, localNavbarLogoUrl, localFontFamily, localFontSizeBase, localNavbarSearchPlaceholder, localNavbarSearchEnabled, localSupportWhatsAppUrl, localSupportMessengerUrl, localSupportTelegramUrl, localUddoktaBaseUrl, localUddoktaApiKey.trim() || undefined, {
+        baseUrl: localUddoktaBaseUrl.trim(),
+        checkoutPath: localUddoktaCheckoutPath.trim(),
+        verifyPath: localUddoktaVerifyPath.trim(),
+      });
+      setLocalUddoktaApiKey('');
       showToast({ 
         type: 'success', 
         text: 'Theme updated successfully! Changes are live now and saved to MongoDB.' 
@@ -458,35 +484,93 @@ function ThemeCustomization() {
     { name: 'Red', primary: '#ef4444', secondary: '#dc2626' },
   ];
 
+  const inputRingStyle = { '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties;
+
   return (
     <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-        <h3 className="mb-4 text-lg font-bold text-slate-900">Store Theme Customization</h3>
-        <p className="mb-6 text-sm text-slate-600">
-          Upload your navbar logo below and set theme colors. Choose colors that work well with white backgrounds.
-          Changes will be applied site-wide and visible to all users.
-        </p>
-
-        {previewMode && (
-          <div className="p-4 mb-6 rounded-xl bg-blue-50 border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-blue-900">Preview Mode Active</p>
-                <p className="text-sm text-blue-700">You are previewing theme changes. Click "Save Theme" to apply or "Cancel Preview" to revert.</p>
-              </div>
-              <button
-                onClick={handleCancelPreview}
-                className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-all"
-              >
-                Cancel Preview
-              </button>
+      {/* Summary bar */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-8 h-8 rounded-lg border border-slate-300 shadow-sm" style={{ backgroundColor: primaryColor }} />
+              <div className="w-8 h-8 rounded-lg border border-slate-300 shadow-sm" style={{ backgroundColor: secondaryColor }} />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-slate-500">Current Theme</p>
+              <p className="text-sm font-semibold text-slate-700">Primary · Secondary</p>
             </div>
           </div>
-        )}
+          <div className="flex items-center gap-3">
+            {navbarLogoUrl ? (
+              <img src={navbarLogoUrl} alt="Logo" className="h-10 w-auto object-contain rounded" />
+            ) : (
+              <div className="h-10 w-20 rounded bg-slate-100 flex items-center justify-center">
+                <span className="text-xs text-slate-400">No logo</span>
+              </div>
+            )}
+            <div>
+              <p className="text-xs font-medium text-slate-500">Navbar Logo</p>
+              <p className="text-sm font-semibold text-slate-700">{navbarLogoUrl ? 'Set' : 'Not set'}</p>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Banners</p>
+            <p className="text-xl font-bold text-slate-900">{banners.length}</p>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-slate-500">Notices</p>
+            <p className="text-xl font-bold text-slate-900">{notices.length}</p>
+          </div>
+        </div>
+        <div className="flex rounded-lg border border-slate-200 overflow-hidden">
+          {themeTabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setActiveTab(t.id)}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${
+                activeTab === t.id ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+              style={activeTab === t.id ? themeBtnStyle : undefined}
+            >
+              <t.icon className="w-4 h-4 shrink-0" />
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* Store logo (navbar) */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+      {previewMode && (
+        <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-blue-900">Preview Mode Active</p>
+              <p className="text-sm text-blue-700">You are previewing theme changes. Click "Save Theme" to apply or "Cancel Preview" to revert.</p>
+            </div>
+            <button
+              onClick={handleCancelPreview}
+              className="px-4 py-2 text-sm font-semibold text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200 transition-all"
+            >
+              Cancel Preview
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200 shadow-sm">
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-slate-900">Store Theme Customization</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Customize your store brand, colors, content sections, and integrations. Changes apply site-wide.
+          </p>
+        </div>
+
+        {['brand', 'content', 'integrations'].includes(activeTab) && (
+          <form id="theme-form" onSubmit={handleSave} className="space-y-6">
+            {/* Brand & Logo tab */}
+            <div className={activeTab !== 'brand' ? 'hidden' : 'space-y-6'}>
+              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Store logo (navbar)</span>
             <p className="mb-4 text-xs text-slate-500">Upload an image to show in the navbar instead of text. Recommended size: height 40–48px. Display size is fixed in the navbar.</p>
             <div className="max-w-xs">
@@ -512,51 +596,9 @@ function ThemeCustomization() {
             </div>
           </div>
 
-          {/* Support links */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Support links</span>
-            <p className="mb-4 text-xs text-slate-500">URLs for the Support section on the landing page (WhatsApp, Messenger, Telegram). Leave empty to hide that card.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">WhatsApp URL</label>
-                <input
-                  type="url"
-                  value={localSupportWhatsAppUrl}
-                  onChange={(e) => setLocalSupportWhatsAppUrl(e.target.value)}
-                  placeholder="https://wa.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Messenger (Facebook) URL</label>
-                <input
-                  type="url"
-                  value={localSupportMessengerUrl}
-                  onChange={(e) => setLocalSupportMessengerUrl(e.target.value)}
-                  placeholder="https://m.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Telegram URL</label>
-                <input
-                  type="url"
-                  value={localSupportTelegramUrl}
-                  onChange={(e) => setLocalSupportTelegramUrl(e.target.value)}
-                  placeholder="https://t.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Color Pickers */}
+          {/* Color Pickers - Brand tab */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Primary Color */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
               <label className="block mb-3">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Primary Color *</span>
                 <div className="flex items-center gap-4">
@@ -566,7 +608,6 @@ function ThemeCustomization() {
                     onChange={(e) => {
                       setLocalPrimary(e.target.value);
                       if (previewMode) {
-                        // Trigger preview update
                         setPreviewMode(false);
                         setTimeout(() => setPreviewMode(true), 10);
                       }
@@ -589,18 +630,14 @@ function ThemeCustomization() {
                       }}
                       placeholder="#a855f7"
                       className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 font-mono"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
+                      style={inputRingStyle}
                     />
                     <p className="mt-1 text-xs text-slate-500">Used for buttons, links, and primary accents</p>
                   </div>
                 </div>
               </label>
             </div>
-
-            {/* Secondary Color */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
               <label className="block mb-3">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Secondary Color *</span>
                 <div className="flex items-center gap-4">
@@ -632,9 +669,7 @@ function ThemeCustomization() {
                       }}
                       placeholder="#8b5cf6"
                       className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 font-mono"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
+                      style={inputRingStyle}
                     />
                     <p className="mt-1 text-xs text-slate-500">Used for gradients and secondary accents</p>
                   </div>
@@ -643,8 +678,8 @@ function ThemeCustomization() {
             </div>
           </div>
 
-          {/* Color Preview */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+          {/* Color Preview - Brand tab */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Color Preview</span>
             <div className="flex flex-wrap gap-4">
               <div className="flex flex-col items-center gap-2">
@@ -681,8 +716,8 @@ function ThemeCustomization() {
             </div>
           </div>
 
-          {/* Typography & Navbar */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+          {/* Typography & Navbar - Brand tab */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Typography & Navbar</span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -691,7 +726,7 @@ function ThemeCustomization() {
                   value={localFontFamily}
                   onChange={(e) => setLocalFontFamily(e.target.value)}
                   className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                  style={inputRingStyle}
                 >
                   <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
                   <option value="Inter">Inter</option>
@@ -712,7 +747,7 @@ function ThemeCustomization() {
                     if (!Number.isNaN(n) && n >= 14 && n <= 20) setLocalFontSizeBase(n);
                   }}
                   className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                  style={inputRingStyle}
                 />
                 <p className="mt-1 text-xs text-slate-500">14–20 px, applied site-wide</p>
               </div>
@@ -747,252 +782,14 @@ function ThemeCustomization() {
                   onChange={(e) => setLocalNavbarSearchPlaceholder(e.target.value)}
                   placeholder="Search games..."
                   className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                  style={inputRingStyle}
                 />
               </div>
             </div>
           </div>
 
-          {/* Section Visibility Toggles */}
-          <div className="space-y-4">
-            {/* Live Purchase Statement Toggle */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
-                  <p className="text-xs text-slate-500">
-                    Show or hide the live purchase statement section on the home page
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    checked={localLivePurchaseEnabled}
-                    onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    } mt-0.5`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Top-up Categories Toggle */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="block mb-1 text-sm font-semibold text-slate-700">Top-up Categories</span>
-                  <p className="text-xs text-slate-500">
-                    Show or hide the top-up categories section on the home page
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    checked={localTopUpCategoriesEnabled}
-                    onChange={(e) => setLocalTopUpCategoriesEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    localTopUpCategoriesEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      localTopUpCategoriesEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    } mt-0.5`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Digital Code Toggle */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="block mb-1 text-sm font-semibold text-slate-700">Digital Code</span>
-                  <p className="text-xs text-slate-500">
-                    Show or hide the digital code section on the home page
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    checked={localDigitalCodesEnabled}
-                    onChange={(e) => setLocalDigitalCodesEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    localDigitalCodesEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      localDigitalCodesEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    } mt-0.5`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Subscriptions Toggle */}
-            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="block mb-1 text-sm font-semibold text-slate-700">Subscriptions</span>
-                  <p className="text-xs text-slate-500">
-                    Show or hide the subscriptions section on the home page
-                  </p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer ml-4">
-                  <input
-                    type="checkbox"
-                    checked={localSubscriptionsEnabled}
-                    onChange={(e) => setLocalSubscriptionsEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    localSubscriptionsEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      localSubscriptionsEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    } mt-0.5`}></div>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Section Titles Customization */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
-            <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
-            <p className="mb-6 text-sm text-slate-600">
-              Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
-            </p>
-            
-            <div className="space-y-6">
-              {/* Top-up Categories Titles */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Badge Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localTopUpCategoriesBadge}
-                      onChange={(e) => setLocalTopUpCategoriesBadge(e.target.value)}
-                      placeholder="Top-up categories"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Heading Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localTopUpCategoriesHeading}
-                      onChange={(e) => setLocalTopUpCategoriesHeading(e.target.value)}
-                      placeholder="Browse Categories"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Digital Codes Titles */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-700">Digital Codes Section</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Badge Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localDigitalCodesBadge}
-                      onChange={(e) => setLocalDigitalCodesBadge(e.target.value)}
-                      placeholder="Digital Codes"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Heading Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localDigitalCodesHeading}
-                      onChange={(e) => setLocalDigitalCodesHeading(e.target.value)}
-                      placeholder="Digital Codes Categories"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Subscriptions Titles */}
-              <div className="space-y-4">
-                <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Badge Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localSubscriptionsBadge}
-                      onChange={(e) => setLocalSubscriptionsBadge(e.target.value)}
-                      placeholder="Subscriptions"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
-                  </div>
-                  <div>
-                    <label className="block mb-2 text-sm font-semibold text-slate-700">
-                      Heading Text
-                    </label>
-                    <input
-                      type="text"
-                      value={localSubscriptionsHeading}
-                      onChange={(e) => setLocalSubscriptionsHeading(e.target.value)}
-                      placeholder="Subscription Plans"
-                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={{
-                        '--tw-ring-color': 'var(--theme-primary)'
-                      } as React.CSSProperties}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Preset Colors */}
-          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200">
+          {/* Quick Presets - Brand tab */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
             <span className="block mb-3 text-sm font-semibold text-slate-700">Quick Presets</span>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {presetColors.map((preset) => (
@@ -1007,7 +804,7 @@ function ThemeCustomization() {
                       setTimeout(() => setPreviewMode(true), 10);
                     }
                   }}
-                  className="p-3 border rounded-lg bg-white border-slate-200 hover:border-slate-300 transition-all text-left"
+                  className="p-3 border rounded-lg bg-white border-slate-200 hover:border-slate-300 transition-all text-left shadow-sm"
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <div
@@ -1030,9 +827,278 @@ function ThemeCustomization() {
               ))}
             </div>
           </div>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap gap-3">
+            {/* Content Sections tab */}
+            <div className={activeTab !== 'content' ? 'hidden' : 'space-y-6'}>
+            {/* Section Visibility Toggles */}
+            <div className="space-y-4">
+              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
+                    <p className="text-xs text-slate-500">Show or hide the live purchase statement section on the home page</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={localLivePurchaseEnabled}
+                      onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                      localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                    }`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      } mt-0.5`}></div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="block mb-1 text-sm font-semibold text-slate-700">Top-up Categories</span>
+                    <p className="text-xs text-slate-500">Show or hide the top-up categories section on the home page</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={localTopUpCategoriesEnabled}
+                      onChange={(e) => setLocalTopUpCategoriesEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                      localTopUpCategoriesEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                    }`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        localTopUpCategoriesEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      } mt-0.5`}></div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="block mb-1 text-sm font-semibold text-slate-700">Subscriptions</span>
+                    <p className="text-xs text-slate-500">Show or hide the subscriptions section on the home page</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={localSubscriptionsEnabled}
+                      onChange={(e) => setLocalSubscriptionsEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                      localSubscriptionsEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                    }`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        localSubscriptionsEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      } mt-0.5`}></div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="block mb-1 text-sm font-semibold text-slate-700">Review Section</span>
+                    <p className="text-xs text-slate-500">Show or hide the customer reviews section on the home page</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={localReviewSectionEnabled}
+                      onChange={(e) => setLocalReviewSectionEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                      localReviewSectionEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                    }`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
+                        localReviewSectionEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      } mt-0.5`}></div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+            {/* Section Titles Customization */}
+            <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+              <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
+              <p className="mb-6 text-sm text-slate-600">
+                Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
+              </p>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
+                      <input
+                        type="text"
+                        value={localTopUpCategoriesBadge}
+                        onChange={(e) => setLocalTopUpCategoriesBadge(e.target.value)}
+                        placeholder="Top-up categories"
+                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        style={inputRingStyle}
+                      />
+                      <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                    </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
+                      <input
+                        type="text"
+                        value={localTopUpCategoriesHeading}
+                        onChange={(e) => setLocalTopUpCategoriesHeading(e.target.value)}
+                        placeholder="Browse Categories"
+                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        style={inputRingStyle}
+                      />
+                      <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
+                      <input
+                        type="text"
+                        value={localSubscriptionsBadge}
+                        onChange={(e) => setLocalSubscriptionsBadge(e.target.value)}
+                        placeholder="Subscriptions"
+                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        style={inputRingStyle}
+                      />
+                      <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                    </div>
+                    <div>
+                      <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
+                      <input
+                        type="text"
+                        value={localSubscriptionsHeading}
+                        onChange={(e) => setLocalSubscriptionsHeading(e.target.value)}
+                        placeholder="Subscription Plans"
+                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        style={inputRingStyle}
+                      />
+                      <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+
+            {/* Integrations tab */}
+            <div className={activeTab !== 'integrations' ? 'hidden' : 'space-y-6'}>
+          {/* Support links */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+            <span className="block mb-3 text-sm font-semibold text-slate-700">Support Links</span>
+            <p className="mb-4 text-xs text-slate-500">URLs for the Support section on the landing page (WhatsApp, Messenger, Telegram). Leave empty to hide that card.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">WhatsApp URL</label>
+                <input
+                  type="url"
+                  value={localSupportWhatsAppUrl}
+                  onChange={(e) => setLocalSupportWhatsAppUrl(e.target.value)}
+                  placeholder="https://wa.me/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={inputRingStyle}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Messenger (Facebook) URL</label>
+                <input
+                  type="url"
+                  value={localSupportMessengerUrl}
+                  onChange={(e) => setLocalSupportMessengerUrl(e.target.value)}
+                  placeholder="https://m.me/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={inputRingStyle}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Telegram URL</label>
+                <input
+                  type="url"
+                  value={localSupportTelegramUrl}
+                  onChange={(e) => setLocalSupportTelegramUrl(e.target.value)}
+                  placeholder="https://t.me/..."
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={inputRingStyle}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Gateway (Uddokta Pay) */}
+          <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm">
+            <span className="block mb-3 text-sm font-semibold text-slate-700">Payment Gateway (Uddokta Pay)</span>
+            <p className="mb-4 text-xs text-slate-500">
+              Add gateway base URL and API key from admin panel. After saving, Instant Pay will start using this config dynamically.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway Base URL</label>
+                <input
+                  type="url"
+                  value={localUddoktaBaseUrl}
+                  onChange={(e) => setLocalUddoktaBaseUrl(e.target.value)}
+                  placeholder="https://robotopupzone.paymently.io/api"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout Path</label>
+                <input
+                  type="text"
+                  value={localUddoktaCheckoutPath}
+                  onChange={(e) => setLocalUddoktaCheckoutPath(e.target.value)}
+                  placeholder="https://.../checkout-v2 or /checkout-v2"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Verify Path</label>
+                <input
+                  type="text"
+                  value={localUddoktaVerifyPath}
+                  onChange={(e) => setLocalUddoktaVerifyPath(e.target.value)}
+                  placeholder="https://.../verify-payment or /verify-payment"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway API Key</label>
+                <input
+                  type="password"
+                  value={localUddoktaApiKey}
+                  onChange={(e) => setLocalUddoktaApiKey(e.target.value)}
+                  placeholder="Paste new API key"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  {uddoktaConfigured ? 'API key is configured. Leave empty to keep current key.' : 'No API key configured yet.'}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-500">Header key used: RT-UDDOKTAPAY-API-KEY</p>
+              </div>
+            </div>
+          </div>
+            </div>
+
+            {/* Sticky action bar */}
+            <div className="sticky top-4 z-10 flex flex-wrap gap-3 pt-4 pb-2 bg-white/95 backdrop-blur-sm -mx-1 px-1 rounded-lg">
             <button
               type="submit"
               disabled={isSaving}
@@ -1071,9 +1137,10 @@ function ThemeCustomization() {
             </button>
           </div>
         </form>
+        )}
 
-        {/* Banner Management */}
-        <div className="mt-6 p-4 border rounded-xl bg-white border-slate-200 sm:p-5 md:p-6">
+        {activeTab === 'banners' && (
+        <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm sm:p-5 md:p-6">
           <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
           <form
             className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
@@ -1185,9 +1252,10 @@ function ThemeCustomization() {
             </div>
           </div>
         </div>
+        )}
 
-        {/* Notice Management */}
-        <div className="mt-6 p-4 border rounded-xl bg-white border-slate-200 sm:p-5 md:p-6">
+        {activeTab === 'notices' && (
+        <div className="p-4 border rounded-xl bg-slate-50 border-slate-200 shadow-sm sm:p-5 md:p-6">
           <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
           <form
             className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
@@ -1389,27 +1457,7 @@ function ThemeCustomization() {
             </div>
           </div>
         </div>
-
-        {/* Current Theme Info */}
-        <div className="mt-6 p-4 border rounded-xl bg-slate-50 border-slate-200">
-          <span className="block mb-2 text-sm font-semibold text-slate-700">Current Active Theme</span>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded border border-slate-300"
-                style={{ backgroundColor: primaryColor }}
-              />
-              <span className="text-sm text-slate-600">Primary: <code className="font-mono">{primaryColor}</code></span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div
-                className="w-8 h-8 rounded border border-slate-300"
-                style={{ backgroundColor: secondaryColor }}
-              />
-              <span className="text-sm text-slate-600">Secondary: <code className="font-mono">{secondaryColor}</code></span>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
