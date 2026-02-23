@@ -61,10 +61,10 @@ function Navbar() {
       >
         {navbarLogoUrl ? (
   <img
-    src={navbarLogoUrl}
+    src={getImageUrl(navbarLogoUrl)}
     alt="Logo"
     style={{ 
-      height: '40px', 
+      height: '50px', 
       width: 'auto', 
       maxWidth: '130px',
       objectFit: 'contain'

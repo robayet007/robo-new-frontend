@@ -39,8 +39,8 @@ function SendMoney() {
     const searchEmails = async () => {
       const emailInput = transferEmail.trim();
       
-      // Show suggestions only if user has typed at least 5 characters
-      if (emailInput.length < 5) {
+      // Show suggestions when user has typed at least 2 characters
+      if (emailInput.length < 2) {
         setEmailSuggestions([]);
         setShowSuggestions(false);
         setIsEmailValid(false);
@@ -393,7 +393,7 @@ function SendMoney() {
                       e.currentTarget.style.borderColor = 'rgba(var(--theme-primary-rgb), 0.4)';
                       e.currentTarget.style.backgroundColor = 'rgba(var(--theme-primary-rgb), 0.04)';
                       // Don't show suggestions if email is already valid (selected from suggestions)
-                      if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 5) {
+                      if (!isEmailValid && emailSuggestions.length > 0 && transferEmail.trim().length >= 2) {
                         setShowSuggestions(true);
                       }
                     }}

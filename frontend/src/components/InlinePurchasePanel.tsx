@@ -27,6 +27,7 @@ type PaymentResult = {
   productName?: string;
   paymentMethod?: string;
   playerId?: string;
+  ucCode?: string;
 };
 
 interface InlinePurchasePanelProps {
@@ -177,13 +178,14 @@ function InlinePurchasePanel({
         if (cancelled) return true;
         if (res.success && res.data?.status) {
           const s = res.data.status as string;
+          const ucCode = res.data?.ucCode as string | undefined;
           if (s === "completed") {
-            setUcTopupStatusFromPoll("completed", tid, "UC top-up completed successfully.");
+            setUcTopupStatusFromPoll("completed", tid, "UC top-up completed successfully.", ucCode);
             refresh?.();
             return true;
           }
           if (s === "failed") {
-            setUcTopupStatusFromPoll("failed", tid, "UC top-up failed.");
+            setUcTopupStatusFromPoll("failed", tid, "UC top-up failed.", ucCode);
             refresh?.();
             return true;
           }
@@ -493,6 +495,7 @@ function InlinePurchasePanel({
           productName: product.name,
           paymentMethod: "Wallet Pay",
           playerId: mode === "regular" ? uid.trim() : "",
+          ucCode: response.data?.ucCode,
         });
       } else {
         setPaymentResult({
@@ -649,11 +652,11 @@ function InlinePurchasePanel({
                   </span>
                 </>
               )}
-              {product.diamonds && ucTopupStatus?.transactionId === paymentResult.transactionId && ucTopupStatus?.ucCode && (
+              {product.diamonds && (ucTopupStatus?.transactionId === paymentResult.transactionId ? ucTopupStatus?.ucCode : paymentResult?.ucCode) && (
                 <>
                   <span className="text-slate-600">UC Code</span>
-                  <span className="font-mono text-xs text-slate-700 break-all min-w-0 overflow-hidden" title={ucTopupStatus.ucCode}>
-                    {ucTopupStatus.ucCode}
+                  <span className="font-mono text-xs text-slate-700 break-all min-w-0 overflow-hidden" title={ucTopupStatus?.transactionId === paymentResult.transactionId ? ucTopupStatus?.ucCode : paymentResult?.ucCode || ''}>
+                    {ucTopupStatus?.transactionId === paymentResult.transactionId ? ucTopupStatus?.ucCode : paymentResult?.ucCode}
                   </span>
                 </>
               )}

@@ -15,6 +15,7 @@ import { auth, googleProvider } from '../config/firebase';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { userProfileApi } from '../services/api';
+import { getImageUrl } from '../utils/imageUrl';
 
 // Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
 // These are browser security warnings and Firebase permission errors that don't affect functionality
@@ -320,16 +321,26 @@ function useAuth() {
       }
 
       const nextDisplayName = profile.displayName?.trim() ?? currentUser.displayName ?? '';
-      const nextPhotoURL = profile.photoURL?.trim() ?? currentUser.photoURL ?? '';
+      const rawPhotoURL = profile.photoURL?.trim() ?? currentUser.photoURL ?? '';
+      // Firebase Auth photoURL must be a full URL. Resolve /uploads/... to backend URL.
+      const nextPhotoURL = rawPhotoURL ? (rawPhotoURL.startsWith('http') ? rawPhotoURL : getImageUrl(rawPhotoURL) || rawPhotoURL) : '';
 
       await updateProfile(currentUser, {
         displayName: nextDisplayName,
-        photoURL: nextPhotoURL,
+        photoURL: nextPhotoURL || null,
       });
 
       await updateDoc(doc(db, 'users', currentUser.uid), {
         displayName: nextDisplayName,
-        photoURL: nextPhotoURL,
+        photoURL: rawPhotoURL || nextPhotoURL,
+      }).catch(() => Promise.resolve());
+
+      // Sync to backend MongoDB UserProfile so profile image appears in order history, live purchase, etc.
+      await userProfileApi.profileSync({
+        uid: currentUser.uid,
+        email: currentUser.email || '',
+        displayName: nextDisplayName,
+        photoURL: rawPhotoURL || nextPhotoURL,
       }).catch(() => Promise.resolve());
 
       setUser((prev) =>
@@ -337,7 +348,7 @@ function useAuth() {
           ? {
               ...prev,
               displayName: nextDisplayName || null,
-              photoURL: nextPhotoURL || null,
+              photoURL: (nextPhotoURL || rawPhotoURL) || null,
             }
           : prev
       );

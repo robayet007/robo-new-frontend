@@ -1,6 +1,8 @@
+import { SmartAPIManager } from '../services/api';
+
 /**
  * Resolves image path to full URL for display.
- * - Paths starting with /uploads: prepend backend base URL
+ * - Paths starting with /uploads: prepend backend base URL (from SmartAPIManager)
  * - Full URLs (http/https): use as-is
  * - Other paths (e.g. /diamond-top-up.png): use as-is (frontend public)
  */
@@ -9,13 +11,7 @@ export function getImageUrl(path: string | null | undefined): string {
   const p = path.trim();
   if (p.startsWith('http://') || p.startsWith('https://')) return p;
   if (p.startsWith('/uploads')) {
-    const base = (
-      import.meta.env.VITE_BACKEND_URL ||
-      import.meta.env.VITE_API_URL ||
-      (import.meta.env.DEV ? 'http://localhost:5000' : '')
-    )
-      .toString()
-      .replace(/\/$/, '');
+    const base = SmartAPIManager.getBackendBaseURL();
     return base ? `${base}${p}` : p;
   }
   return p;

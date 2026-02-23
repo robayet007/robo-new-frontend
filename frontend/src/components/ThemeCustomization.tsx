@@ -508,7 +508,7 @@ function ThemeCustomization() {
           </div>
           <div className="flex items-center gap-3">
             {navbarLogoUrl ? (
-              <img src={navbarLogoUrl} alt="Logo" className="object-contain w-auto h-10 rounded" />
+              <img src={getImageUrl(navbarLogoUrl)} alt="Logo" className="object-contain w-auto h-10 rounded" />
             ) : (
               <div className="flex items-center justify-center w-20 h-10 rounded bg-slate-100">
                 <span className="text-xs text-slate-400">No logo</span>

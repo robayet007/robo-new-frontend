@@ -2,26 +2,24 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 
 // ==================== API MANAGER - Smart URL Detection ====================
 export class SmartAPIManager {
-  // Get API base URL - uses environment variable for configuration
-  static getBaseURL(): string {
-    // In dev mode (npm run dev), always use localhost so admin + home both use same backend
-    if (import.meta.env.DEV) {
-      const devUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      const clean = String(devUrl).replace(/\/$/, '');
-      return `${clean}/api`;
-    }
-    // Production: use env vars (Vercel/Fly deploy)
+  // Get backend base URL (without /api) - for image URLs, uploads, etc.
+  static getBackendBaseURL(): string {
     const backendUrl =
       import.meta.env.VITE_BACKEND_URL ||
       import.meta.env.VITE_API_URL ||
-      '';
+      (import.meta.env.DEV ? 'http://localhost:5000' : '');
+    const clean = String(backendUrl || '').replace(/\/$/, '');
+    return clean;
+  }
 
-    if (!backendUrl) {
+  // Get API base URL - uses environment variable for configuration
+  static getBaseURL(): string {
+    const base = this.getBackendBaseURL();
+    if (!base) {
+      if (import.meta.env.DEV) return 'http://localhost:5000/api';
       throw new Error('VITE_BACKEND_URL or VITE_API_URL environment variable is not set');
     }
-
-    const cleanUrl = String(backendUrl).replace(/\/$/, '');
-    return `${cleanUrl}/api`;
+    return `${base}/api`;
   }
   
   // Get API base URL (async for compatibility)

@@ -4,6 +4,7 @@ import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { paymentApi } from '../services/api';
 import type { BackendPurchase } from '../types';
+import { getImageUrl } from '../utils/imageUrl';
 import { FaSearch, FaRedo, FaBoxOpen } from 'react-icons/fa';
 
 function OrderHistory() {
@@ -15,6 +16,7 @@ function OrderHistory() {
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'processing' | 'failed'>('all');
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   const fetchOrders = useCallback(async () => {
     if (!user?.uid) return;
@@ -173,12 +175,55 @@ function OrderHistory() {
               // Extract serial number from transaction ID (last 5 digits or use index)
               const serialNo = order.transactionId?.slice(-5) || String(10000 + filteredOrders.length - index);
 
+              const userPhotoKey = `${order._id}-user`;
+              const productImgKey = `${order._id}-product`;
+              const displayName = order.userName || order.userEmail?.split('@')[0] || 'User';
+              const initial = displayName.charAt(0).toUpperCase();
+
               return (
                 <div
                   key={order._id || order.transactionId}
                   className="p-4 transition-colors sm:p-5 hover:bg-slate-50/50"
                 >
-                  <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-6 sm:gap-4">
+                  <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-8 sm:gap-4">
+                    {/* User photo + Product image */}
+                    <div className="flex items-center gap-2 sm:col-span-1">
+                      <div className="relative flex-shrink-0 flex items-center gap-2">
+                        <div className="relative w-8 h-8 sm:w-9 sm:h-9">
+                          {order.userPhotoURL && !imageErrors.has(userPhotoKey) ? (
+                            <img
+                              src={getImageUrl(order.userPhotoURL)}
+                              alt={displayName}
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-slate-200"
+                              onError={() => setImageErrors((prev) => new Set(prev).add(userPhotoKey))}
+                            />
+                          ) : (
+                            <div
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold border border-slate-200"
+                              style={{ backgroundColor: 'var(--theme-primary)', color: 'white', opacity: 0.9 }}
+                            >
+                              {initial}
+                            </div>
+                          )}
+                        </div>
+                        {order.productImage && !imageErrors.has(productImgKey) ? (
+                          <img
+                            src={getImageUrl(order.productImage)}
+                            alt={order.productName || 'Product'}
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                            onError={() => setImageErrors((prev) => new Set(prev).add(productImgKey))}
+                          />
+                        ) : (
+                          <div
+                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0"
+                            title={order.productName || 'Product'}
+                          >
+                            <FaBoxOpen className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Serial NO */}
                     <div className="sm:col-span-1">
                       <p className="mb-1 text-xs text-slate-500">Serial NO</p>
@@ -198,9 +243,6 @@ function OrderHistory() {
                         <p className="text-sm font-medium text-slate-900">
                           {order.diamonds ? `${order.productName}` : order.productName || 'Top-up'}
                         </p>
-                        {/* {order.diamonds && (
-                          <span className="text-blue-400"></span>
-                        )} */}
                       </div>
                     </div>
 
@@ -215,6 +257,14 @@ function OrderHistory() {
                       <p className="mb-1 text-xs text-slate-500">Player ID</p>
                       <p className="font-mono text-sm break-all text-slate-900">
                         {order.playerId || '-'}
+                      </p>
+                    </div>
+
+                    {/* UC Code - for diamond/UC orders */}
+                    <div className="sm:col-span-1">
+                      <p className="mb-1 text-xs text-slate-500">UC Code</p>
+                      <p className="font-mono text-sm break-all text-slate-900">
+                        {order.diamonds ? (order.ucCode || '-') : '-'}
                       </p>
                     </div>
 

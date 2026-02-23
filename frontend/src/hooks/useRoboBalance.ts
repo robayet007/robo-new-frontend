@@ -219,8 +219,8 @@ export default function useRoboBalance() {
 
   const clearUcTopupStatus = useCallback(() => setUcTopupStatus(null), []);
 
-  const setUcTopupStatusFromPoll = useCallback((status: 'processing' | 'completed' | 'failed', transactionId: string, message: string) => {
-    setUcTopupStatus({ status, transactionId, message });
+  const setUcTopupStatusFromPoll = useCallback((status: 'processing' | 'completed' | 'failed', transactionId: string, message: string, ucCode?: string) => {
+    setUcTopupStatus({ status, transactionId, message, ucCode });
   }, []);
 
   return {

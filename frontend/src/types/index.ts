@@ -44,11 +44,13 @@ export interface BackendPurchase {
   price?: number;
   productId: string;
   productName?: string;
+  productImage?: string;
   diamonds?: string;
   playerId?: string;
   paymentMethod: 'bkash' | 'robo' | 'uddokta';
   status: 'pending' | 'verified' | 'processing' | 'rejected' | 'failed' | 'completed';
   updatedBalance?: number;
+  ucCode?: string;
   createdAt: string;
   verifiedAt?: string;
 }
