@@ -90,10 +90,12 @@ function ThemeCustomization() {
       setLocalFontSizeBase(fontSizeBase ?? 16);
       setLocalNavbarSearchPlaceholder(navbarSearchPlaceholder ?? 'Search games...');
       setLocalNavbarSearchEnabled(navbarSearchEnabled ?? true);
-      setLocalSupportWhatsAppUrl(supportWhatsAppUrl ?? '');
-      setLocalSupportMessengerUrl(supportMessengerUrl ?? '');
-      setLocalSupportTelegramUrl(supportTelegramUrl ?? '');
+      // Skip syncing support links when on Integrations tab - ThemeContext polls every 5s
+      // and would overwrite user input, causing "input vanish" bug (same as Uddokta fields)
       if (activeTab !== 'integrations') {
+        setLocalSupportWhatsAppUrl(supportWhatsAppUrl ?? '');
+        setLocalSupportMessengerUrl(supportMessengerUrl ?? '');
+        setLocalSupportTelegramUrl(supportTelegramUrl ?? '');
         setLocalUddoktaBaseUrl(uddoktaBaseUrl ?? '');
         setLocalUddoktaApiKey('');
         setLocalUddoktaCheckoutPath(uddoktaGatewayConfig?.checkoutPath ?? '');
