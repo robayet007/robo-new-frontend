@@ -4,6 +4,8 @@ import { FaCheck, FaSearch, FaSyncAlt } from "react-icons/fa";
 import { digitalCodeApi, paymentApi, subscriptionApi, SmartAPIManager } from "../services/api";
 import useRoboBalance from "../hooks/useRoboBalance";
 import useAuth from "../hooks/useAuth";
+import { useTheme } from "../contexts/ThemeContext";
+import { getImageUrl } from "../utils/imageUrl";
 import type { BackendDigitalCodeProduct, BackendSubscriptionProduct, Product } from "../types";
 
 type PurchaseMode = "regular" | "digital" | "subscription";
@@ -66,7 +68,8 @@ function InlinePurchasePanel({
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
-  const { balance, hasEnoughBalance, refresh, getCurrentBalance, loading: balanceLoading, ucTopupStatus } = useRoboBalance();
+  const { primaryColor, navbarLogoUrl } = useTheme();
+  const { balance, hasEnoughBalance, refresh, getCurrentBalance, loading: balanceLoading, ucTopupStatus, setUcTopupStatusFromPoll } = useRoboBalance();
 
   const [uid, setUid] = useState("");
   const [playerName, setPlayerName] = useState("");
@@ -102,20 +105,29 @@ function InlinePurchasePanel({
   const normalizedOriginPath = useMemo(() => buildCleanPath(originPath), [originPath]);
 
   const product = useMemo(
-    () => ({
+    () => {
+      const sp = selectedProduct as { ucCategory?: string; diamonds?: string; ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }> };
+      let diamondsDisplay = "";
+      if ("diamonds" in selectedProduct) {
+        if (sp.ucCategoryQuantities?.length) {
+          diamondsDisplay = sp.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(", ");
+        } else {
+          diamondsDisplay = sp.ucCategory || selectedProduct.diamonds || "";
+        }
+      }
+      return {
       id: selectedProduct.id,
       name: selectedProduct.name,
       price: selectedProduct.price,
-      diamonds: "diamonds" in selectedProduct
-        ? ((selectedProduct as { ucCategory?: string; diamonds?: string }).ucCategory || selectedProduct.diamonds || "")
-        : "",
+      diamonds: diamondsDisplay,
       inputFields:
         mode === "regular"
           ? []
           : Array.isArray((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields)
             ? ((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields as ProductInputField[]) || []
             : [],
-    }),
+    };
+    },
     [selectedProduct, mode],
   );
 
@@ -147,6 +159,60 @@ function InlinePurchasePanel({
       setPaymentMethod("uddokta");
     }
   }, [balance, hasEnoughBalance, paymentMethod, product.price]);
+
+  // Polling fallback for UC top-up status (when socket events may be missed)
+  useEffect(() => {
+    const tid = paymentResult?.transactionId;
+    const isUcProduct = !!product.diamonds;
+    const alreadyFinal = ucTopupStatus?.transactionId === tid && (ucTopupStatus?.status === "completed" || ucTopupStatus?.status === "failed");
+    if (!tid || !isUcProduct || paymentResult?.status !== "success" || alreadyFinal) return;
+
+    let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    const poll = async (): Promise<boolean> => {
+      if (cancelled) return true;
+      try {
+        const res = await paymentApi.getStatus(tid);
+        if (cancelled) return true;
+        if (res.success && res.data?.status) {
+          const s = res.data.status as string;
+          if (s === "completed") {
+            setUcTopupStatusFromPoll("completed", tid, "UC top-up completed successfully.");
+            refresh?.();
+            return true;
+          }
+          if (s === "failed") {
+            setUcTopupStatusFromPoll("failed", tid, "UC top-up failed.");
+            refresh?.();
+            return true;
+          }
+        }
+      } catch {
+        // ignore
+      }
+      return false;
+    };
+
+    const run = async () => {
+      const done = await poll();
+      if (!done && !cancelled) {
+        intervalId = setInterval(async () => {
+          const d = await poll();
+          if (d && intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }, 4000);
+      }
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [paymentResult?.transactionId, paymentResult?.status, product.diamonds, ucTopupStatus?.transactionId, ucTopupStatus?.status, setUcTopupStatusFromPoll, refresh]);
 
   const handleCheckPlayerId = async () => {
     const trimmedUid = uid.trim();
@@ -533,15 +599,18 @@ function InlinePurchasePanel({
   const canSubmit = !processing && !!user?.uid && !balanceLoading && validateInputs().isValid;
   const estimatedNewBalance = Math.max((getCurrentBalance?.() ?? balance) - product.price, 0);
 
+  const themeBorderStyle = { borderColor: 'var(--theme-border)' };
+
   return (
-    <div className="relative max-w-2xl px-4 py-6 mx-auto mt-6 border border-slate-200 rounded-2xl bg-white/90">
+    <div className="relative max-w-2xl px-4 py-6 mx-auto mt-6 border rounded-2xl bg-white/90" style={themeBorderStyle}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-slate-900">Complete Purchase</h3>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg border text-slate-700 hover:bg-slate-50"
+            style={themeBorderStyle}
           >
             Close
           </button>
@@ -549,7 +618,7 @@ function InlinePurchasePanel({
       </div>
 
       {verifyingPayment && (
-        <div className="p-3 mb-4 text-sm border rounded-xl bg-slate-50 border-slate-200">
+        <div className="p-3 mb-4 text-sm border rounded-xl bg-slate-50" style={themeBorderStyle}>
           <p className="font-semibold text-slate-800">
             {verifyingPayment.status === "verifying"
               ? "Verifying payment..."
@@ -562,10 +631,10 @@ function InlinePurchasePanel({
       )}
 
       {paymentResult && (
-        <div className="p-4 mb-4 border rounded-xl bg-slate-50 border-slate-200">
+        <div className="p-4 mb-4 border rounded-xl bg-slate-50" style={themeBorderStyle}>
           <div className="space-y-2">
             <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Order Summary</p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
               <span className="text-slate-600">Product</span>
               <span className="font-medium text-slate-900">{paymentResult.productName}</span>
               {paymentResult.playerId && (
@@ -577,7 +646,9 @@ function InlinePurchasePanel({
               <span className="text-slate-600">Amount</span>
               <span className="font-semibold text-rose-600">৳{paymentResult.amount?.toFixed(2)}</span>
               <span className="text-slate-600">Transaction ID</span>
-              <span className="font-mono text-xs text-slate-700">{paymentResult.transactionId}</span>
+              <span className="font-mono text-xs text-slate-700 break-all min-w-0 overflow-hidden" title={paymentResult.transactionId}>
+                {paymentResult.transactionId}
+              </span>
               <span className="text-slate-600">Status</span>
               <span className={`font-semibold ${
                 ucTopupStatus?.transactionId === paymentResult.transactionId
@@ -634,7 +705,7 @@ function InlinePurchasePanel({
 
       {walletInfoPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[2px]">
-          <div className="w-full max-w-sm p-5 bg-white border shadow-2xl rounded-2xl border-slate-100">
+          <div className="w-full max-w-sm p-5 bg-white border shadow-2xl rounded-2xl" style={themeBorderStyle}>
             <div className="flex items-start gap-3">
               <div className="flex items-center justify-center flex-shrink-0 w-10 h-10 text-xl rounded-full bg-amber-100">⚠️</div>
               <div className="flex-1">
@@ -659,7 +730,7 @@ function InlinePurchasePanel({
           <div className="flex items-center justify-center w-7 h-7 text-xs font-bold text-white rounded-full bg-gradient-to-br from-pink-500 to-rose-600">1</div>
           <h4 className="font-semibold text-slate-800">Select Package</h4>
         </div>
-        <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between">
+        <div className="p-3 rounded-lg bg-slate-50 border flex items-center justify-between" style={themeBorderStyle}>
           <div>
             <p className="text-sm font-semibold text-slate-900">{product.name}</p>
             <p className="text-xs text-slate-500">Selected package</p>
@@ -673,7 +744,7 @@ function InlinePurchasePanel({
           <div className="flex items-center justify-center w-7 h-7 text-xs font-bold text-white rounded-full bg-gradient-to-br from-pink-500 to-rose-600">2</div>
           <h4 className="font-semibold text-slate-800">{mode === "subscription" ? "User Details" : "Order Details"}</h4>
         </div>
-        <div className="p-4 bg-white border rounded-xl border-slate-200">
+        <div className="p-4 bg-white border rounded-xl" style={themeBorderStyle}>
           {mode === "regular" ? (
             <>
               <input
@@ -780,8 +851,12 @@ function InlinePurchasePanel({
               setPaymentMethod("robo");
             }}
             className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              paymentMethod === "robo" ? "border-purple-500 shadow-lg shadow-purple-500/20" : "border-slate-200 hover:border-purple-300"
+              paymentMethod === "robo" ? "shadow-lg" : ""
             }`}
+            style={{
+              borderColor: paymentMethod === "robo" ? primaryColor : "var(--theme-border)",
+              boxShadow: paymentMethod === "robo" ? `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.2)` : undefined,
+            }}
           >
             {paymentMethod === "robo" && (
               <div className="absolute flex items-center justify-center w-6 h-6 bg-red-500 rounded-full -top-2 -left-2">
@@ -789,8 +864,12 @@ function InlinePurchasePanel({
               </div>
             )}
             <div className="flex items-center gap-3 mb-2">
-              <div className="flex items-center justify-center w-10 h-10 text-sm font-bold text-white rounded-lg bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600">R</div>
-              <div className="flex-1 text-left">
+              {navbarLogoUrl ? (
+                <img src={getImageUrl(navbarLogoUrl)} alt="Wallet" className="w-10 h-10 object-contain rounded-lg flex-shrink-0" />
+              ) : (
+                <div className="flex items-center justify-center w-10 h-10 text-sm font-bold text-white rounded-lg bg-gradient-to-br from-purple-500 via-violet-600 to-fuchsia-600">R</div>
+              )}
+              <div className="flex-1 text-left min-w-0">
                 <p className="text-sm font-bold text-purple-600">Wallet Pay</p>
                 <p className="text-xs text-slate-500">Wallet Balance</p>
               </div>
@@ -804,8 +883,12 @@ function InlinePurchasePanel({
               setPaymentMethod("uddokta");
             }}
             className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              paymentMethod === "uddokta" ? "border-blue-500 shadow-lg shadow-blue-500/20" : "border-slate-200 hover:border-blue-300"
+              paymentMethod === "uddokta" ? "shadow-lg" : ""
             }`}
+            style={{
+              borderColor: paymentMethod === "uddokta" ? primaryColor : "var(--theme-border)",
+              boxShadow: paymentMethod === "uddokta" ? `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.2)` : undefined,
+            }}
           >
             {paymentMethod === "uddokta" && (
               <div className="absolute flex items-center justify-center w-6 h-6 bg-red-500 rounded-full -top-2 -left-2">
@@ -820,21 +903,22 @@ function InlinePurchasePanel({
                 src={INSTANT_PAY_LOGO}
                 alt="bKash Nagad Rocket"
                 loading="lazy"
-                className="object-contain w-full h-8 p-1 bg-white border rounded-md border-slate-200"
+                className="object-contain w-full h-8 p-1 bg-white border rounded-md"
+                style={themeBorderStyle}
               />
             </div>
           </button>
         </div>
 
         {user && (
-          <div className="p-4 mb-4 border bg-slate-50 rounded-xl border-slate-200">
+          <div className="p-4 mb-4 border bg-slate-50 rounded-xl" style={themeBorderStyle}>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-700">Your Balance</span>
               <button type="button" onClick={handleRefreshBalance} disabled={refreshingBalance} className="text-purple-600 hover:text-purple-700">
                 <FaSyncAlt className={`text-sm ${refreshingBalance ? "animate-spin" : ""}`} />
               </button>
             </div>
-            <p className="mb-2 text-2xl font-bold text-green-600">৳ {balanceLoading ? "Loading..." : balance.toFixed(2)}</p>
+            <p className="mb-2 text-2xl font-bold" style={{ color: primaryColor }}>৳ {balanceLoading ? "Loading..." : balance.toFixed(2)}</p>
             <p className="text-sm text-slate-700">Required amount: ৳{requiredAmount.toFixed(2)}</p>
           </div>
         )}
@@ -870,7 +954,7 @@ function InlinePurchasePanel({
       {showRoboPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md mx-4 overflow-hidden bg-white shadow-2xl rounded-2xl">
-            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+            <div className="flex items-center justify-between p-4 border-b" style={themeBorderStyle}>
               <h2 className="text-lg font-bold text-slate-900">Confirm Wallet Payment</h2>
               <button
                 type="button"
@@ -897,7 +981,7 @@ function InlinePurchasePanel({
                   <span className="text-slate-500">Current balance</span>
                   <span className="font-semibold text-slate-900">৳{balance.toFixed(2)}</span>
                 </div>
-                <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <div className="flex items-center justify-between pt-2 border-t" style={themeBorderStyle}>
                   <span className="font-semibold text-slate-600">New balance</span>
                   <span className="text-base font-bold text-emerald-600">৳{estimatedNewBalance.toFixed(2)}</span>
                 </div>

@@ -2,6 +2,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import type { Category, Product } from '../types';
 import InlinePurchasePanel from './InlinePurchasePanel';
+import { getImageUrl } from '../utils/imageUrl';
 
 function CategoryPage({ 
   categories, 
@@ -19,9 +20,9 @@ function CategoryPage({
 
   // Helper function to get category image - use category.image if available, otherwise fallback to name-based logic
   const getCategoryImage = (category: Category): string => {
-    // If category has an image URL, use it
+    // If category has an image URL, use it (resolve /uploads to full backend URL)
     if (category.image) {
-      return category.image;
+      return getImageUrl(category.image);
     }
     
     // Fallback to name-based logic

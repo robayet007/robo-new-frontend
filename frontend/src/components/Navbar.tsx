@@ -7,6 +7,7 @@ import useReseller from '../hooks/useReseller';
 import useRoboBalance from '../hooks/useRoboBalance';
 import { useTheme } from '../contexts/ThemeContext';
 import { useEffect, useState, useRef } from 'react';
+import { getImageUrl } from '../utils/imageUrl';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -141,7 +142,7 @@ function Navbar() {
               >
                 {user.photoURL && !imageError ? (
                   <img
-                    src={user.photoURL}
+                    src={getImageUrl(user.photoURL)}
                     alt={user.displayName || 'User'}
                     className="w-4 h-4 rounded-full sm:w-5 sm:h-5"
                     onError={() => setImageError(true)}

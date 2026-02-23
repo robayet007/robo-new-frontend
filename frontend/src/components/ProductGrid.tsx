@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { dealApi } from '../services/api';
 import type { Category, Deal } from '../types';
+import { getImageUrl } from '../utils/imageUrl';
 
 function ProductGrid({ categories, badgeText, headingText, searchQuery }: { categories: Category[]; badgeText?: string; headingText?: string; searchQuery?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -37,9 +38,9 @@ function ProductGrid({ categories, badgeText, headingText, searchQuery }: { cate
       return '/diamond-top-up.png';
     }
     
-    // If category has an image URL, use it
+    // If category has an image URL, use it (resolve /uploads to full backend URL)
     if (category.image) {
-      return category.image;
+      return getImageUrl(category.image);
     }
     
     // Fallback to name-based logic

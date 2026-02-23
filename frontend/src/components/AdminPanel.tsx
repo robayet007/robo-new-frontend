@@ -17,6 +17,7 @@ import AdminProducts from './AdminProducts';
 import ImageUpload from './ImageUpload';
 import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
 import { useToast } from '../contexts/ToastContext';
+import { getImageUrl } from '../utils/imageUrl';
 
 // Helper function to convert UTC to Bangladesh time (GMT+6) for datetime-local input
 function utcToBDTimeForInput(utcDateString: string): string {
@@ -546,7 +547,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                   </div>
                                   <div className="mb-2">
                                     <img 
-                                      src={pkg.image} 
+                                      src={getImageUrl(pkg.image)} 
                                       alt={pkg.title}
                                       className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
                                       onError={(e) => {

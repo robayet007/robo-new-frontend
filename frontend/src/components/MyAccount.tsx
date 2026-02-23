@@ -13,6 +13,7 @@ import {
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import ImageUpload from './ImageUpload';
+import { getImageUrl } from '../utils/imageUrl';
 
 type SectionKey = 'account' | 'wallet' | 'settings';
 
@@ -167,7 +168,7 @@ function MyAccount() {
           <div className="flex items-center gap-4">
             {user?.photoURL ? (
               <img
-                src={user.photoURL}
+                src={getImageUrl(user.photoURL)}
                 alt={user.displayName || 'User'}
                 className="object-cover w-16 h-16 rounded-full border-2 border-slate-200"
               />

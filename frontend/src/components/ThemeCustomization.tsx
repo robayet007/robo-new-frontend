@@ -6,6 +6,7 @@ import useAuth from '../hooks/useAuth';
 import ImageUpload from './ImageUpload';
 import { bannerApi, noticeApi } from '../services/api';
 import type { BackendBanner, BackendNotice } from '../types';
+import { getImageUrl } from '../utils/imageUrl';
 
 type ThemeTab = 'brand' | 'content' | 'integrations' | 'banners' | 'notices';
 
@@ -1206,7 +1207,7 @@ function ThemeCustomization() {
                           )}
                           <div className="mb-2">
                             <img
-                              src={banner.image}
+                              src={getImageUrl(banner.image)}
                               alt="Banner"
                               className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
                               onError={(e) => {

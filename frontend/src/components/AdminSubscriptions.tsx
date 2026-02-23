@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import type { BackendSubscriptionProduct } from '../types';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import ImageUpload from './ImageUpload';
+import { getImageUrl } from '../utils/imageUrl';
 
 function AdminSubscriptions() {
   const { showToast } = useToast();
@@ -392,7 +393,7 @@ function AdminSubscriptions() {
                 <div key={product.id} className="p-4 flex items-center justify-between">
                   <div className="flex-1 flex items-center gap-4">
                     {product.image && (
-                      <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                      <img src={getImageUrl(product.image)} alt={product.name} className="w-16 h-16 object-cover rounded border" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
                     <div>
                       <div className="flex items-center gap-2">

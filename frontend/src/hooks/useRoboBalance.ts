@@ -199,6 +199,10 @@ export default function useRoboBalance() {
 
   const clearUcTopupStatus = useCallback(() => setUcTopupStatus(null), []);
 
+  const setUcTopupStatusFromPoll = useCallback((status: 'processing' | 'completed' | 'failed', transactionId: string, message: string) => {
+    setUcTopupStatus({ status, transactionId, message });
+  }, []);
+
   return {
     // Original API
     backendBalance: balance,
@@ -219,5 +223,6 @@ export default function useRoboBalance() {
     // UC top-up real-time status (processing/completed/failed)
     ucTopupStatus,
     clearUcTopupStatus,
+    setUcTopupStatusFromPoll,
   };
 }

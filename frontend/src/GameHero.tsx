@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa"
 import { bannerApi } from "./services/api"
 import type { BackendBanner } from "./types"
+import { getImageUrl } from "./utils/imageUrl"
 
 interface Slide {
   id: string
@@ -294,7 +295,7 @@ export default function GameHero() {
         >
           {/* ইমেজ */}
           <img
-            src={currentSlide.image}
+            src={getImageUrl(currentSlide.image)}
             alt=""
             style={imageStyle}
             onError={(e) => {

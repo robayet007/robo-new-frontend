@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useUsersQuery, usersQueryKeys } from '../hooks/useUsersQuery';
 import { useBalancesQuery, balancesQueryKeys } from '../hooks/useBalancesQuery';
 import { useQueryClient } from '@tanstack/react-query';
+import { getImageUrl } from '../utils/imageUrl';
 
 function UserManagement() {
   const { users: firestoreUsers, loading: firestoreLoading, updateUserRole, refreshUsers, addUser, syncCurrentUser } = useUsers();
@@ -660,7 +661,7 @@ function UserManagement() {
                 <div className="flex items-center gap-2 sm:gap-3">
                   {user.photoURL && !imageErrors.has(user.uid) ? (
                     <img 
-                      src={user.photoURL} 
+                      src={getImageUrl(user.photoURL)} 
                       alt={user.displayName || 'User'} 
                       className="w-8 h-8 rounded-full sm:w-10 sm:h-10"
                       onError={() => setImageErrors(prev => new Set(prev).add(user.uid))}
@@ -742,7 +743,7 @@ function UserManagement() {
                   <div className="flex items-center gap-2 sm:gap-3">
                     {u.photoURL && !imageErrors.has(u.uid) ? (
                       <img
-                        src={u.photoURL}
+                        src={getImageUrl(u.photoURL)}
                         alt={u.displayName || 'User'}
                         className="w-8 h-8 rounded-full sm:w-10 sm:h-10"
                         onError={() => setImageErrors(prev => new Set(prev).add(u.uid))}

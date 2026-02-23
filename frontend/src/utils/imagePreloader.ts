@@ -1,3 +1,5 @@
+import { getImageUrl } from './imageUrl';
+
 /**
  * Image Preloader Utility
  * Preloads images to improve perceived performance and eliminate loading delays
@@ -5,7 +7,7 @@
 
 /**
  * Preloads a single image
- * @param url - The image URL to preload
+ * @param url - The image URL to preload (relative /uploads paths are resolved to full backend URL)
  * @returns Promise that resolves when image is loaded (or fails gracefully)
  */
 export function preloadImage(url: string): Promise<void> {
@@ -16,21 +18,22 @@ export function preloadImage(url: string): Promise<void> {
       return;
     }
 
+    const resolvedUrl = getImageUrl(url);
     const img = new Image();
-    
+
     img.onload = () => {
       resolve();
     };
-    
+
     img.onerror = () => {
       // Log error in development but don't throw
       if (import.meta.env.DEV) {
-        console.warn(`Failed to preload image: ${url}`);
+        console.warn(`Failed to preload image: ${resolvedUrl}`);
       }
       resolve(); // Resolve anyway to not block other preloads
     };
-    
-    img.src = url;
+
+    img.src = resolvedUrl;
   });
 }
 

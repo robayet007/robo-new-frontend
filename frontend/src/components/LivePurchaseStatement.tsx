@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { paymentApi } from '../services/api';
 import type { BackendPurchase } from '../types';
 import { formatTimeAgo } from '../utils/timeUtils';
+import { getImageUrl } from '../utils/imageUrl';
 
 const normalizedStatus = (order: BackendPurchase): 'completed' | 'pending' | 'processing' | 'failed' => {
   const status = String(order.status || '').toLowerCase();
@@ -371,7 +372,7 @@ function LivePurchaseStatement() {
                     <div className="relative flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10">
                       {purchase.userPhotoURL ? (
                         <img
-                          src={purchase.userPhotoURL}
+                          src={getImageUrl(purchase.userPhotoURL)}
                           alt={displayName}
                           className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200"
                           onError={(e) => {

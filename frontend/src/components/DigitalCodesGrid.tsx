@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { dealApi } from '../services/api';
 import type { Deal } from '../types';
 import type { BackendDigitalCodeCategory } from '../types';
+import { getImageUrl } from '../utils/imageUrl';
 
 function DigitalCodesGrid({ categories, badgeText, headingText }: { categories: BackendDigitalCodeCategory[]; badgeText?: string; headingText?: string }) {
   const [deals, setDeals] = useState<Deal[]>([]);
@@ -38,7 +39,7 @@ function DigitalCodesGrid({ categories, badgeText, headingText }: { categories: 
     }
     
     if (category.image) {
-      return category.image;
+      return getImageUrl(category.image);
     }
     
     const nameLower = category.name.toLowerCase();

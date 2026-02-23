@@ -3,6 +3,7 @@ import { productApi, categoryApi } from '../services/api';
 import type { ApiResponse, BackendCategory } from '../types';
 import type { Category, Product } from '../types';
 import { preloadImages } from '../utils/imagePreloader';
+import { getImageUrl } from '../utils/imageUrl';
 import useAuth from './useAuth';
 import useReseller from './useReseller';
 
@@ -15,9 +16,9 @@ const getCategoryImageUrl = (category: Category): string => {
     return '/diamond-top-up.png';
   }
   
-  // If category has an image URL, use it
+  // If category has an image URL, use it (resolve /uploads to full backend URL)
   if (category.image) {
-    return category.image;
+    return getImageUrl(category.image);
   }
   
   // Fallback to name-based logic
@@ -106,6 +107,7 @@ function useCatalog() {
             name: p.name,
             diamonds: p.diamonds ?? '',
             ucCategory: p.ucCategory,
+            ucCategoryQuantities: p.ucCategoryQuantities,
             price: p.price,
             resellerPrice: p.resellerPrice,
             bonus: p.bonus,
@@ -302,7 +304,9 @@ function useCatalog() {
         name: newProduct.name,
         diamonds: newProduct.diamonds,
         ucCategory: newProduct.ucCategory,
+        ucCategoryQuantities: newProduct.ucCategoryQuantities,
         price: newProduct.price,
+        resellerPrice: newProduct.resellerPrice,
         bonus: newProduct.bonus || '',
         tag: newProduct.tag || '',
         categoryName: category?.name || 'Unknown',
@@ -340,7 +344,9 @@ function useCatalog() {
         name: productData.name || existingProduct.name,
         diamonds: productData.diamonds !== undefined ? productData.diamonds : existingProduct.diamonds,
         ucCategory: productData.ucCategory !== undefined ? productData.ucCategory : existingProduct.ucCategory,
+        ucCategoryQuantities: productData.ucCategoryQuantities !== undefined ? productData.ucCategoryQuantities : existingProduct.ucCategoryQuantities,
         price: productData.price !== undefined ? productData.price : existingProduct.price,
+        resellerPrice: productData.resellerPrice !== undefined ? productData.resellerPrice : existingProduct.resellerPrice,
         bonus: productData.bonus !== undefined ? productData.bonus : existingProduct.bonus || '',
         tag: productData.tag !== undefined ? productData.tag : existingProduct.tag || '',
         categoryName: category?.name || 'Unknown',

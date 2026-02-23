@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { BackendSubscriptionProduct } from '../types';
 import InlinePurchasePanel from './InlinePurchasePanel';
+import { getImageUrl } from '../utils/imageUrl';
 
 function SubscriptionGrid({ products, badgeText, headingText }: { products: BackendSubscriptionProduct[]; badgeText?: string; headingText?: string }) {
   const navigate = useNavigate();
@@ -13,7 +14,7 @@ function SubscriptionGrid({ products, badgeText, headingText }: { products: Back
   // Helper function to get product image
   const getProductImage = (product: BackendSubscriptionProduct): string => {
     if (product.image) {
-      return product.image;
+      return getImageUrl(product.image);
     }
     return '/diamond-top-up.png';
   };

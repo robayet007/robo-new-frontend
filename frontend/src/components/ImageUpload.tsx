@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { getImageUrl } from '../utils/imageUrl';
 
 // Get API base URL (same logic as SmartAPIManager)
 const getApiBaseURL = (): string => {
@@ -12,20 +13,6 @@ const getApiBaseURL = (): string => {
   }
   
   return `${backendUrl}/api`;
-};
-
-// Get backend base URL (without /api)
-const getBackendBaseURL = (): string => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  
-  if (!backendUrl) {
-    throw new Error(
-      'VITE_BACKEND_URL environment variable is not set. ' +
-      'Please set it in your .env file or Vercel environment variables.'
-    );
-  }
-  
-  return backendUrl;
 };
 
 // Get API key for authentication (optional – backend may allow requests without it)
@@ -60,10 +47,8 @@ function ImageUpload({
   // Update preview when value changes (for existing images from database)
   useEffect(() => {
     if (value && value.trim()) {
-      // If value is a URL (starts with http or /), show it as preview
-      if (value.startsWith('http') || value.startsWith('/')) {
-        setPreview(value);
-      }
+      // Use getImageUrl so /uploads paths resolve to backend URL for preview
+      setPreview(getImageUrl(value));
     } else if (!value || !value.trim()) {
       // Only clear preview if value is truly empty AND preview is not a data URL (file preview)
       // Don't clear if user is uploading (preview is data URL)
@@ -125,22 +110,10 @@ function ImageUpload({
       const result = await response.json();
 
       if (result.success && result.data?.url) {
-        let uploadedUrl = result.data.url;
-        
-        // Ensure URL is absolute if it's a relative path
-        // If URL starts with /uploads, prepend backend base URL
-        if (uploadedUrl.startsWith('/uploads')) {
-          const backendBaseURL = getBackendBaseURL();
-          uploadedUrl = `${backendBaseURL}${uploadedUrl}`;
-        }
-        
-        // Debug log
-        // console.log('Image uploaded successfully, URL:', uploadedUrl);
-        // console.log('Calling onChange with URL:', uploadedUrl);
-        
-        // Set preview to uploaded URL (not data URL)
-        setPreview(uploadedUrl);
-        onChange(uploadedUrl);
+        const relativePath = result.data.url;
+        // Store relative path in DB for portability; use getImageUrl for display
+        setPreview(getImageUrl(relativePath));
+        onChange(relativePath);
         onFileSelect?.(file);
         setError(null);
       } else {

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useLayoutEffect } from 'react';
 import { digitalCodeApi } from '../services/api';
 import type { BackendDigitalCodeCategory, BackendDigitalCodeProduct } from '../types';
 import InlinePurchasePanel from './InlinePurchasePanel';
+import { getImageUrl } from '../utils/imageUrl';
 
 function DigitalCodeCategoryPage({ 
   categories, 
@@ -34,7 +35,7 @@ function DigitalCodeCategoryPage({
     }
     
     if (category.image) {
-      return category.image;
+      return getImageUrl(category.image);
     }
     
     const nameLower = category.name.toLowerCase();

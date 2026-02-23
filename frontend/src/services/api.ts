@@ -4,17 +4,23 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 export class SmartAPIManager {
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    const backendUrl = import.meta.env.VITE_BACKEND_URL
-      || import.meta.env.VITE_API_URL
-      || (import.meta.env.DEV ? 'http://localhost:5000' : '');
+    // In dev mode (npm run dev), always use localhost so admin + home both use same backend
+    if (import.meta.env.DEV) {
+      const devUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const clean = String(devUrl).replace(/\/$/, '');
+      return `${clean}/api`;
+    }
+    // Production: use env vars (Vercel/Fly deploy)
+    const backendUrl =
+      import.meta.env.VITE_BACKEND_URL ||
+      import.meta.env.VITE_API_URL ||
+      '';
 
     if (!backendUrl) {
       throw new Error('VITE_BACKEND_URL or VITE_API_URL environment variable is not set');
     }
 
-    // Remove trailing slash if present
-    const cleanUrl = backendUrl.replace(/\/$/, '');
-
+    const cleanUrl = String(backendUrl).replace(/\/$/, '');
     return `${cleanUrl}/api`;
   }
   

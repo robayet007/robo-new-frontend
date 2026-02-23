@@ -14,6 +14,7 @@ export interface BackendProduct {
   name: string;
   diamonds: string;
   ucCategory?: string;
+  ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
   price: number;
   resellerPrice?: number;
   bonus?: string;
@@ -154,6 +155,7 @@ export type Product = {
   name: string;
   diamonds: string;
   ucCategory?: string;
+  ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
   price: number;
   resellerPrice?: number;
   originalPrice?: number; // For resellers, original price is kept here

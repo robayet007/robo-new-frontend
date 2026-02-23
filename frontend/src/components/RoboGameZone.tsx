@@ -4,6 +4,7 @@ import { gamePackageApi } from '../services/api';
 import type { BackendGamePackage, BackendGamePackagePurchase } from '../types';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
+import { getImageUrl } from '../utils/imageUrl';
 
 // Helper function to calculate time remaining
 const getTimeRemaining = (expiresAt: string | undefined): { minutes: number; seconds: number; expired: boolean } => {
@@ -329,7 +330,7 @@ function RoboGameZone() {
                   return (
                     <div key={purchase._id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       <img 
-                        src={purchase.image || '/placeholder.jpg'} 
+                        src={getImageUrl(purchase.image) || '/placeholder.jpg'} 
                         alt={purchase.title}
                         className="w-full h-48 object-cover"
                         onError={(e) => {
@@ -410,7 +411,7 @@ function RoboGameZone() {
                   return (
                     <div key={pkg.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                       <img 
-                        src={pkg.image} 
+                        src={getImageUrl(pkg.image)} 
                         alt={pkg.title}
                         className="w-full h-48 object-cover"
                         onError={(e) => {

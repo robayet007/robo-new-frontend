@@ -5,6 +5,7 @@ import { categoryApi, dealApi, voucherApi } from '../services/api';
 import type { BackendDeal } from '../types';
 import ImageUpload from './ImageUpload';
 import { useToast } from '../contexts/ToastContext';
+import { getImageUrl } from '../utils/imageUrl';
 
 type SubTab = 'deals' | 'categories' | 'products';
 
@@ -42,7 +43,7 @@ export default function AdminProducts() {
 
   // Product form
   const [name, setName] = useState('');
-  const [ucCategory, setUcCategory] = useState('');
+  const [ucCategoryQuantities, setUcCategoryQuantities] = useState<Array<{ ucCategory: string; quantity: number }>>([{ ucCategory: '', quantity: 1 }]);
   const [price, setPrice] = useState('');
   const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
@@ -60,11 +61,19 @@ export default function AdminProducts() {
   const [dealOrder, setDealOrder] = useState('0');
   const [editingDeal, setEditingDeal] = useState<string | null>(null);
 
+  const addUcCategoryRow = () => setUcCategoryQuantities((prev) => [...prev, { ucCategory: '', quantity: 1 }]);
+  const removeUcCategoryRow = (idx: number) =>
+    setUcCategoryQuantities((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
+  const updateUcCategoryRow = (idx: number, field: 'ucCategory' | 'quantity', value: string | number) =>
+    setUcCategoryQuantities((prev) =>
+      prev.map((r, i) => (i === idx ? { ...r, [field]: field === 'quantity' ? Math.max(1, Number(value) || 1) : value } : r))
+    );
+
   const sortedProducts = useMemo(
     () =>
       [...products].sort((a, b) => {
-        const aVal = a.ucCategory || a.diamonds || '';
-        const bVal = b.ucCategory || b.diamonds || '';
+        const aVal = (a.ucCategoryQuantities?.length ? a.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? a.ucCategory ?? a.diamonds ?? '';
+        const bVal = (b.ucCategoryQuantities?.length ? b.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? b.ucCategory ?? b.diamonds ?? '';
         const aNum = Number(aVal);
         const bNum = Number(bVal);
         if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
@@ -267,11 +276,12 @@ export default function AdminProducts() {
       showToast({ type: 'error', text: 'Name, price and category required' });
       return;
     }
+    const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
     const result = await addProduct({
       name: name.trim(),
       categoryId,
-      diamonds: ucCategory ? ucCategory : '',
-      ucCategory: ucCategory.trim() || undefined,
+      diamonds: validRows.length ? validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ') : '',
+      ucCategoryQuantities: validRows.length ? validRows : [],
       price: Number(price),
       resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
@@ -280,7 +290,7 @@ export default function AdminProducts() {
     if (result.success) {
       showToast({ type: 'success', text: 'Product added!' });
       setName('');
-      setUcCategory('');
+      setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
       setPrice('');
       setResellerPrice('');
       setBonus('');
@@ -291,11 +301,12 @@ export default function AdminProducts() {
   const handleUpdateProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !name || !price || !categoryId) return;
+    const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
     const result = await updateProduct(editingProduct, {
       name: name.trim(),
       categoryId,
-      diamonds: ucCategory ? ucCategory : '',
-      ucCategory: ucCategory.trim() || undefined,
+      diamonds: validRows.length ? validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ') : '',
+      ucCategoryQuantities: validRows.length ? validRows : [],
       price: Number(price),
       resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
@@ -305,7 +316,7 @@ export default function AdminProducts() {
       showToast({ type: 'success', text: 'Product updated!' });
       setEditingProduct(null);
       setName('');
-      setUcCategory('');
+      setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
       setPrice('');
       setResellerPrice('');
       setBonus('');
@@ -596,7 +607,7 @@ export default function AdminProducts() {
                           <p className="text-sm text-slate-600 truncate">{cat.description || 'No description'}</p>
                           {cat.image && (
                             <img
-                              src={cat.image}
+                              src={getImageUrl(cat.image)}
                               alt={cat.name}
                               className="mt-2 object-cover w-12 h-12 rounded-lg border border-slate-200"
                               onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}}
@@ -676,7 +687,7 @@ export default function AdminProducts() {
                   onClick={() => {
                     setEditingProduct(null);
                     setName('');
-                    setUcCategory('');
+                    setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
                     setPrice('');
                     setResellerPrice('');
                     setBonus('');
@@ -714,20 +725,48 @@ export default function AdminProducts() {
                   className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                 />
               </label>
-              <label className="block">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">UC Category</span>
-                <select
-                  value={ucCategory}
-                  onChange={(e) => setUcCategory(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                >
-                  <option value="">Select UC category</option>
-                  {ucCategories.map((cat) => (
-                    <option key={cat} value={cat}>{cat} UC</option>
+              <div className="block sm:col-span-2 lg:col-span-3">
+                <span className="block mb-2 text-sm font-semibold text-slate-700">UC Categories & Quantities</span>
+                <p className="mb-2 text-xs text-slate-500">Add rows for each UC category and quantity. Product will use codes from these categories for auto top-up.</p>
+                <div className="space-y-2">
+                  {ucCategoryQuantities.map((row, idx) => (
+                    <div key={idx} className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={row.ucCategory}
+                        onChange={(e) => updateUcCategoryRow(idx, 'ucCategory', e.target.value)}
+                        className="flex-1 min-w-[120px] px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      >
+                        <option value="">Select UC category</option>
+                        {ucCategories.map((cat) => (
+                          <option key={cat} value={cat}>{cat} UC</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        value={row.quantity}
+                        onChange={(e) => updateUcCategoryRow(idx, 'quantity', e.target.value)}
+                        className="w-20 px-3 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        placeholder="Qty"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeUcCategoryRow(idx)}
+                        className="px-3 py-2 text-sm font-semibold rounded-xl bg-red-100 text-red-700 hover:bg-red-200"
+                      >
+                        Remove
+                      </button>
+                    </div>
                   ))}
-                </select>
-                <p className="mt-1 text-xs text-slate-500">Voucher section UC categories. Product will use codes from this category for auto top-up.</p>
-              </label>
+                  <button
+                    type="button"
+                    onClick={addUcCategoryRow}
+                    className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300"
+                  >
+                    + Add row
+                  </button>
+                </div>
+              </div>
               <label className="block">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Price (৳) *</span>
                 <input
@@ -804,7 +843,13 @@ export default function AdminProducts() {
                       </div>
                       <div className="flex flex-wrap gap-2 text-sm text-slate-600">
                         <span>{categories.find((c) => c.id === item.categoryId)?.name || '-'}</span>
-                        <span>{item.ucCategory ? `UC: ${item.ucCategory}` : `Diamonds: ${item.diamonds || 'Special'}`}</span>
+                        <span>
+                          {item.ucCategoryQuantities?.length
+                            ? `UC: ${item.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(', ')}`
+                            : item.ucCategory
+                              ? `UC: ${item.ucCategory}`
+                              : `Diamonds: ${item.diamonds || 'Special'}`}
+                        </span>
                         <span className="font-bold text-slate-900">৳{item.price}</span>
                       </div>
                     </div>
@@ -814,7 +859,13 @@ export default function AdminProducts() {
                         onClick={() => {
                           setEditingProduct(item.id);
                           setName(item.name);
-                          setUcCategory(item.ucCategory || '');
+                          setUcCategoryQuantities(
+                            item.ucCategoryQuantities?.length
+                              ? item.ucCategoryQuantities.map((x) => ({ ucCategory: x.ucCategory, quantity: x.quantity >= 1 ? x.quantity : 1 }))
+                              : item.ucCategory
+                                ? [{ ucCategory: item.ucCategory, quantity: 1 }]
+                                : [{ ucCategory: '', quantity: 1 }]
+                          );
                           setPrice(String(item.price));
                           setResellerPrice(item.resellerPrice?.toString() || '');
                           setBonus(item.bonus || '');
