@@ -641,6 +641,20 @@ function InlinePurchasePanel({
                 <>
                   <span className="text-slate-600">Player ID</span>
                   <span className="font-mono text-slate-900">{paymentResult.playerId}</span>
+                  <span className="text-slate-600">Player Nick Name</span>
+                  <span className="text-slate-900">
+                    {ucTopupStatus?.transactionId === paymentResult.transactionId && ucTopupStatus?.playerName
+                      ? ucTopupStatus.playerName
+                      : playerName || '—'}
+                  </span>
+                </>
+              )}
+              {product.diamonds && ucTopupStatus?.transactionId === paymentResult.transactionId && ucTopupStatus?.ucCode && (
+                <>
+                  <span className="text-slate-600">UC Code</span>
+                  <span className="font-mono text-xs text-slate-700 break-all min-w-0 overflow-hidden" title={ucTopupStatus.ucCode}>
+                    {ucTopupStatus.ucCode}
+                  </span>
                 </>
               )}
               <span className="text-slate-600">Amount</span>

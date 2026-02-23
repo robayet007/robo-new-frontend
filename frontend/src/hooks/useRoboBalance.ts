@@ -8,6 +8,8 @@ export type UcTopupStatus = {
   status: 'processing' | 'completed' | 'failed';
   transactionId: string;
   message: string;
+  ucCode?: string;
+  playerName?: string;
 };
 
 export default function useRoboBalance() {
@@ -121,20 +123,38 @@ export default function useRoboBalance() {
       });
 
       // Listen for UC top-up status updates
-      socket.on('uc-topup-processing', (data: { transactionId: string; status: string; message: string }) => {
+      socket.on('uc-topup-processing', (data: { transactionId: string; status: string; message: string; ucCode?: string; playerName?: string }) => {
         if (data.transactionId) {
-          setUcTopupStatus({ status: 'processing', transactionId: data.transactionId, message: data.message || 'UC top-up is being processed.' });
+          setUcTopupStatus({
+            status: 'processing',
+            transactionId: data.transactionId,
+            message: data.message || 'UC top-up is being processed.',
+            ucCode: data.ucCode,
+            playerName: data.playerName,
+          });
         }
       });
-      socket.on('uc-topup-completed', (data: { transactionId: string; status: string; message: string }) => {
+      socket.on('uc-topup-completed', (data: { transactionId: string; status: string; message: string; ucCode?: string; playerName?: string }) => {
         if (data.transactionId) {
-          setUcTopupStatus({ status: 'completed', transactionId: data.transactionId, message: data.message || 'UC top-up completed successfully.' });
+          setUcTopupStatus({
+            status: 'completed',
+            transactionId: data.transactionId,
+            message: data.message || 'UC top-up completed successfully.',
+            ucCode: data.ucCode,
+            playerName: data.playerName,
+          });
           fetchBalance(); // Refresh balance
         }
       });
-      socket.on('uc-topup-failed', (data: { transactionId: string; status: string; message: string }) => {
+      socket.on('uc-topup-failed', (data: { transactionId: string; status: string; message: string; ucCode?: string; playerName?: string }) => {
         if (data.transactionId) {
-          setUcTopupStatus({ status: 'failed', transactionId: data.transactionId, message: data.message || 'UC top-up failed.' });
+          setUcTopupStatus({
+            status: 'failed',
+            transactionId: data.transactionId,
+            message: data.message || 'UC top-up failed.',
+            ucCode: data.ucCode,
+            playerName: data.playerName,
+          });
           fetchBalance(); // Refresh balance
         }
       });
