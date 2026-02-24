@@ -15,7 +15,7 @@ const themeBtnStyle = {
 };
 
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl, shellUsername, shellPassword, shellAutocode, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl, shellUsername, shellPassword, shellAutocode, pwaAppName, isLoaded, updateTheme } = useTheme();
   const { showToast } = useToast();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
@@ -48,6 +48,7 @@ function ThemeCustomization() {
   const [localShellUsername, setLocalShellUsername] = useState<string>('');
   const [localShellPassword, setLocalShellPassword] = useState<string>('');
   const [localShellAutocode, setLocalShellAutocode] = useState<string>('');
+  const [localPwaAppName, setLocalPwaAppName] = useState<string>('Robo Top Up Zone');
 
   // Banners (image-only)
   const [banners, setBanners] = useState<BackendBanner[]>([]);
@@ -105,6 +106,7 @@ function ThemeCustomization() {
       setLocalFontSizeBase(fontSizeBase ?? 16);
       setLocalNavbarSearchPlaceholder(navbarSearchPlaceholder ?? 'Search games...');
       setLocalNavbarSearchEnabled(navbarSearchEnabled ?? true);
+      setLocalPwaAppName(pwaAppName || 'Robo Top Up Zone');
       // Skip syncing support links when on Integrations tab - ThemeContext polls every 5s
       // and would overwrite user input, causing "input vanish" bug (same as Uddokta fields)
       if (activeTab !== 'integrations') {
@@ -130,7 +132,7 @@ function ThemeCustomization() {
         setLocalSweetnoteButtonUrl(sweetnoteButtonUrl ?? '');
       }
     }
-  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig, shellUsername, shellPassword, shellAutocode, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl]);
+  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig, shellUsername, shellPassword, shellAutocode, pwaAppName, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl]);
 
   // Apply preview colors
   useEffect(() => {
@@ -413,7 +415,40 @@ function ThemeCustomization() {
   const handleSaveLogo = async () => {
     setSavingLogo(true);
     try {
-      await updateTheme(primaryColor, secondaryColor, user?.email || 'admin', livePurchaseStatementEnabled, topUpCategoriesEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsEnabled, subscriptionsBadge, subscriptionsHeading, reviewSectionEnabled, localNavbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl);
+      await updateTheme(
+        primaryColor,
+        secondaryColor,
+        user?.email || 'admin',
+        livePurchaseStatementEnabled,
+        topUpCategoriesEnabled,
+        topUpCategoriesBadge,
+        topUpCategoriesHeading,
+        subscriptionsEnabled,
+        subscriptionsBadge,
+        subscriptionsHeading,
+        reviewSectionEnabled,
+        localNavbarLogoUrl,
+        fontFamily,
+        fontSizeBase,
+        navbarSearchPlaceholder,
+        navbarSearchEnabled,
+        supportWhatsAppUrl,
+        supportMessengerUrl,
+        supportTelegramUrl,
+        uddoktaBaseUrl,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        shellUsername,
+        shellPassword,
+        shellAutocode,
+        localPwaAppName
+      );
       showToast({ type: 'success', text: 'Logo saved.' });
     } catch (error: any) {
       showToast({ type: 'error', text: error?.message || 'Failed to save logo.' });
@@ -485,7 +520,7 @@ function ThemeCustomization() {
         checkoutV2Path: localUddoktaCheckoutV2Path.trim(),
         verifyPath: localUddoktaVerifyPath.trim(),
         refundPath: localUddoktaRefundPath.trim(),
-      }, undefined, undefined, undefined, undefined, undefined, undefined, localShellUsername, localShellPassword, localShellAutocode);
+      }, undefined, undefined, undefined, undefined, undefined, undefined, localShellUsername, localShellPassword, localShellAutocode, localPwaAppName);
       setLocalUddoktaApiKey('');
       showToast({ 
         type: 'success', 
@@ -672,6 +707,21 @@ function ThemeCustomization() {
                 {savingLogo ? 'Saving…' : 'Save logo'}
               </button>
             </div>
+          </div>
+
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+            <label className="block mb-2 text-sm font-semibold text-slate-700">PWA App Name</label>
+            <input
+              type="text"
+              value={localPwaAppName}
+              onChange={(e) => setLocalPwaAppName(e.target.value)}
+              placeholder="Robo Top Up Zone"
+              className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+              style={inputRingStyle}
+            />
+            <p className="mt-1 text-xs text-slate-500">
+              This name is used for installed app title (PWA) and iOS web app title.
+            </p>
           </div>
 
           {/* Color Pickers - Brand tab */}

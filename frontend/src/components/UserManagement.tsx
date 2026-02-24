@@ -27,6 +27,7 @@ function UserManagement() {
   const [balanceValue, setBalanceValue] = useState<string>('');
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [syncFromAuthLoading, setSyncFromAuthLoading] = useState(false);
+  const [roleMap, setRoleMap] = useState<Map<string, Role>>(new Map());
 
   type ModerationPermissions = AdminModerationPermissions;
 
@@ -64,26 +65,58 @@ function UserManagement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.uid, loading]);
 
-  const handleRoleChange = async (userEmail: string, newRole: UserRole) => {
-    if (!userEmail) return;
+  const resolveRole = (u: AppUser): Role => {
+    const byUid = roleMap.get(u.uid);
+    if (byUid) return byUid;
+    const byEmail = u.email ? roleMap.get(u.email.toLowerCase()) : undefined;
+    if (byEmail) return byEmail;
+    return (u.role || 'user') as Role;
+  };
+
+  const usersWithRoles = users.map((u) => ({ ...u, role: resolveRole(u) }));
+
+  const handleRoleChange = async (targetUser: AppUser, newRole: Role) => {
+    if (!targetUser.uid && !targetUser.email) return;
 
     // Prevent changing own role
-    if (userEmail === currentUser?.email) {
+    if (
+      targetUser.uid === currentUser?.uid ||
+      (!!targetUser.email && targetUser.email === currentUser?.email)
+    ) {
       showToast({ type: 'error', text: 'You cannot change your own role' });
       return;
     }
 
-    updateUserRole(userEmail, newRole);
-    showToast({ 
-      type: 'success', 
-      text: `User role updated to ${newRole}` 
-    });
+    try {
+      const resp = await adminRoleApi.upsert({
+        userId: targetUser.uid,
+        userEmail: targetUser.email || '',
+        role: newRole,
+        moderationPermissions: newRole === 'moderator' ? modPerms : {},
+      });
     
-    queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
-    setTimeout(() => refreshUsers(), 300);
+      if (!resp.success) {
+        showToast({ type: 'error', text: resp.message || 'Failed to update role' });
+        return;
+      }
+
+      // Keep Firestore role in sync for legacy views.
+      if (targetUser.email) {
+        await updateUserRole(targetUser.email, newRole as UserRole);
+      }
+
+      showToast({
+        type: 'success',
+        text: `User role updated to ${newRole}`,
+      });
+      queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
+      setTimeout(() => refreshUsers(), 300);
+    } catch (err: any) {
+      showToast({ type: 'error', text: err?.message || 'Failed to update role' });
+    }
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = usersWithRoles.filter(user => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
@@ -199,6 +232,23 @@ function UserManagement() {
       setBalanceLoading(false);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    adminRoleApi.getAll().then((resp) => {
+      if (cancelled || !resp.success || !Array.isArray(resp.data)) return;
+      const nextMap = new Map<string, Role>();
+      for (const entry of resp.data as any[]) {
+        const role = (entry.role || 'user') as Role;
+        if (entry.userId) nextMap.set(String(entry.userId), role);
+        if (entry.userEmail) nextMap.set(String(entry.userEmail).toLowerCase(), role);
+      }
+      if (!cancelled) setRoleMap(nextMap);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.uid, queryClient]);
 
   useEffect(() => {
     if (!selectedModerator) return;
@@ -702,8 +752,8 @@ function UserManagement() {
                 </div>
                 <div>
                   <button
-                    onClick={() => handleRoleChange(user.email || '', 'user')}
-                    disabled={user.email === currentUser?.email}
+                    onClick={() => handleRoleChange(user, 'user')}
+                    disabled={user.uid === currentUser?.uid || user.email === currentUser?.email}
                     className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-100 text-slate-700 text-[10px] sm:text-sm font-semibold hover:bg-slate-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                   >
                     <span className="hidden sm:inline">Make User</span>
@@ -773,15 +823,7 @@ function UserManagement() {
                       value={u.role || 'user'}
                       onChange={async (e) => {
                         const newRole = e.target.value as Role;
-                        await adminRoleApi.upsert({
-                          userId: u.uid,
-                          userEmail: u.email || '',
-                          role: newRole,
-                          moderationPermissions: {},
-                        });
-                        showToast({ type: 'success', text: `Role updated to ${newRole}` });
-                        queryClient.invalidateQueries({ queryKey: usersQueryKeys.list() });
-                        refreshUsers();
+                        await handleRoleChange(u, newRole);
                       }}
                       className="px-2 py-1 rounded-lg border border-slate-300 text-[10px] sm:text-xs bg-white text-slate-700"
                     >

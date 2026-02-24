@@ -8,8 +8,8 @@ const DYNAMIC_CACHE = 'robo-topup-dynamic-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/logo-robo.jpg',
-  '/manifest.json'
+  '/logo-robo.png',
+  '/api/theme/manifest.json'
 ];
 
 // Install event - cache resources

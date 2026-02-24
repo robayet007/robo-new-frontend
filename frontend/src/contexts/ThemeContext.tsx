@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { themeApi } from '../services/api';
+import { getImageUrl } from '../utils/imageUrl';
 
 interface ThemeContextType {
   primaryColor: string;
@@ -39,8 +40,9 @@ interface ThemeContextType {
   shellUsername: string;
   shellPassword: string;
   shellAutocode: string;
+  pwaAppName: string;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabled?: boolean, sweetnoteImageUrl?: string, sweetnoteHeading?: string, sweetnoteText?: string, sweetnoteButtonText?: string, sweetnoteButtonUrl?: string, shellUsername?: string, shellPassword?: string, shellAutocode?: string) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabled?: boolean, sweetnoteImageUrl?: string, sweetnoteHeading?: string, sweetnoteText?: string, sweetnoteButtonText?: string, sweetnoteButtonUrl?: string, shellUsername?: string, shellPassword?: string, shellAutocode?: string, pwaAppName?: string) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -56,6 +58,7 @@ const DEFAULT_FONT_FAMILY = 'Plus Jakarta Sans';
 const DEFAULT_FONT_SIZE_BASE = 16;
 const DEFAULT_NAVBAR_SEARCH_PLACEHOLDER = 'Search games...';
 const DEFAULT_NAVBAR_SEARCH_ENABLED = true;
+const DEFAULT_PWA_APP_NAME = 'Robo Top Up Zone';
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [primaryColor, setPrimaryColor] = useState<string>(DEFAULT_PRIMARY);
@@ -95,6 +98,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [shellUsername, setShellUsername] = useState<string>('');
   const [shellPassword, setShellPassword] = useState<string>('');
   const [shellAutocode, setShellAutocode] = useState<string>('');
+  const [pwaAppName, setPwaAppName] = useState<string>(DEFAULT_PWA_APP_NAME);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element (colors + typography)
@@ -149,6 +153,44 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     root.style.setProperty('--theme-font-size-base', `${fontSizeVal}px`);
   };
 
+  const applyPwaBranding = (logoPath: string, appName: string, versionToken?: string) => {
+    const safeName = (appName || DEFAULT_PWA_APP_NAME).trim() || DEFAULT_PWA_APP_NAME;
+    const iconUrl = getImageUrl(logoPath) || '/logo-robo.png';
+    const cacheBustedIcon = `${iconUrl}${iconUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(versionToken || Date.now().toString())}`;
+    const manifestUrl = `/api/theme/manifest.json?v=${encodeURIComponent(versionToken || Date.now().toString())}`;
+
+    const setLink = (rel: string, href: string, sizes?: string) => {
+      const selector = sizes ? `link[rel="${rel}"][sizes="${sizes}"]` : `link[rel="${rel}"]:not([sizes])`;
+      let link = document.head.querySelector(selector) as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        if (sizes) link.sizes = sizes;
+        document.head.appendChild(link);
+      }
+      link.href = href;
+    };
+
+    setLink('manifest', manifestUrl);
+    setLink('icon', cacheBustedIcon);
+    setLink('icon', cacheBustedIcon, '16x16');
+    setLink('icon', cacheBustedIcon, '32x32');
+    setLink('icon', cacheBustedIcon, '192x192');
+    setLink('icon', cacheBustedIcon, '512x512');
+    setLink('apple-touch-icon', cacheBustedIcon);
+    setLink('apple-touch-icon', cacheBustedIcon, '180x180');
+    setLink('apple-touch-icon', cacheBustedIcon, '192x192');
+    setLink('apple-touch-icon', cacheBustedIcon, '512x512');
+
+    let appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
+    if (!appleTitleMeta) {
+      appleTitleMeta = document.createElement('meta');
+      appleTitleMeta.setAttribute('name', 'apple-mobile-web-app-title');
+      document.head.appendChild(appleTitleMeta);
+    }
+    appleTitleMeta.setAttribute('content', safeName);
+  };
+
   // Apply default theme immediately on mount (before API loads)
   useEffect(() => {
     applyTheme(DEFAULT_PRIMARY, DEFAULT_SECONDARY, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE_BASE);
@@ -199,6 +241,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const shellUsernameValue = response.data.shellUsername ?? '';
           const shellPasswordValue = response.data.shellPassword ?? '';
           const shellAutocodeValue = response.data.shellAutocode ?? '';
+          const pwaAppNameValue = response.data.pwaAppName || DEFAULT_PWA_APP_NAME;
+          const versionToken = response.data.updatedAt || new Date().toISOString();
 
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
@@ -230,7 +274,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setShellUsername(shellUsernameValue);
           setShellPassword(shellPasswordValue);
           setShellAutocode(shellAutocodeValue);
+          setPwaAppName(pwaAppNameValue);
           applyTheme(primary, secondary, fontFamilyValue, fontSizeBaseValue);
+          applyPwaBranding(navbarLogoUrlValue, pwaAppNameValue, versionToken);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
           // No theme settings found, use defaults
@@ -279,7 +325,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabledValue?: boolean, sweetnoteImageUrlValue?: string, sweetnoteHeadingValue?: string, sweetnoteTextValue?: string, sweetnoteButtonTextValue?: string, sweetnoteButtonUrlValue?: string, shellUsernameValue?: string, shellPasswordValue?: string, shellAutocodeValue?: string) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabledValue?: boolean, sweetnoteImageUrlValue?: string, sweetnoteHeadingValue?: string, sweetnoteTextValue?: string, sweetnoteButtonTextValue?: string, sweetnoteButtonUrlValue?: string, shellUsernameValue?: string, shellPasswordValue?: string, shellAutocodeValue?: string, pwaAppNameValue?: string) => {
     try {
       const response = await themeApi.update({
         primaryColor: primary,
@@ -312,6 +358,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         shellUsername: shellUsernameValue,
         shellPassword: shellPasswordValue,
         shellAutocode: shellAutocodeValue,
+        pwaAppName: pwaAppNameValue,
         updatedBy: updatedBy || 'admin'
       });
 
@@ -353,6 +400,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedShellUsername = response.data.shellUsername ?? '';
         const savedShellPassword = response.data.shellPassword ?? '';
         const savedShellAutocode = response.data.shellAutocode ?? '';
+        const savedPwaAppName = response.data.pwaAppName ?? pwaAppNameValue ?? pwaAppName;
+        const versionToken = response.data.updatedAt || new Date().toISOString();
 
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
@@ -384,7 +433,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setShellUsername(savedShellUsername);
         setShellPassword(savedShellPassword);
         setShellAutocode(savedShellAutocode);
+        setPwaAppName(savedPwaAppName);
         applyTheme(savedPrimary, savedSecondary, savedFontFamily, savedFontSizeBase);
+        applyPwaBranding(savedNavbarLogoUrl, savedPwaAppName, versionToken);
 
         // Notify other tabs to refresh theme immediately
         if (typeof BroadcastChannel !== 'undefined') {
@@ -437,6 +488,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         shellUsername,
         shellPassword,
         shellAutocode,
+        pwaAppName,
         isLoaded,
         updateTheme,
       }}
