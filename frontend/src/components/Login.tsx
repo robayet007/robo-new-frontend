@@ -39,6 +39,10 @@ function Login() {
     setLoading(false);
 
     if (result.success) {
+      if (result.pendingRedirect) {
+        setSuccess(result.message || 'Redirecting to Google sign-in...');
+        return;
+      }
       // Redirect back to originally requested page if present
       navigate(from, { replace: true });
     } else {

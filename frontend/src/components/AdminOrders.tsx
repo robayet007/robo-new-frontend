@@ -31,11 +31,12 @@ function AdminOrders() {
   });
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-4 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Header */}
+      <div className="p-4 border shadow-sm rounded-2xl border-slate-200/80 bg-gradient-to-br from-white via-slate-50/80 to-white sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-bold sm:text-xl text-slate-900">Order History (All)</h3>
+          <h3 className="text-lg font-bold tracking-tight sm:text-xl text-slate-900">Order History (All)</h3>
           <p className="text-xs sm:text-sm text-slate-600">
             Total orders: <span className="font-semibold text-slate-900">{orders.length}</span>
             {search && (
@@ -54,6 +55,7 @@ function AdminOrders() {
             className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
           />
         </div>
+      </div>
       </div>
 
       {loading && (
@@ -103,6 +105,7 @@ function AdminOrders() {
               const statusText = normalizedStatus === 'processing' ? 'Processing' :
                 normalizedStatus === 'failed' ? 'Failed' :
                 normalizedStatus === 'completed' ? 'Complete' : 'Pending';
+              const isUcPurchase = Boolean(order.diamonds && String(order.productId || '').toLowerCase() !== 'add_money');
 
               // Extract serial number from transaction ID
               const serialNo = order.transactionId?.slice(-5) || String(10000 + filtered.length - index);
@@ -110,7 +113,7 @@ function AdminOrders() {
               return (
                 <div
                   key={order._id || order.transactionId}
-                  className="p-4 transition-colors sm:p-5 hover:bg-slate-50/50"
+                  className="p-4 transition-all border-l-4 sm:p-5 hover:bg-slate-50/60 border-l-transparent hover:border-l-slate-300"
                 >
                   <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-7 sm:gap-4">
                     {/* Serial NO */}
@@ -168,13 +171,18 @@ function AdminOrders() {
                     {/* Status */}
                     <div className="sm:col-span-1">
                       <p className="mb-1 text-xs text-slate-500">Status</p>
-                      <p className={`text-sm font-semibold ${
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         normalizedStatus === 'completed' ? 'text-green-600' :
                         normalizedStatus === 'processing' ? 'text-amber-600' :
                         normalizedStatus === 'failed' ? 'text-red-600' : 'text-slate-600'
+                      } ${
+                        normalizedStatus === 'completed' ? 'bg-emerald-50 ring-1 ring-emerald-200/70' :
+                        normalizedStatus === 'processing' ? 'bg-amber-50 ring-1 ring-amber-200/70' :
+                        normalizedStatus === 'failed' ? 'bg-red-50 ring-1 ring-red-200/70' :
+                        'bg-slate-50 ring-1 ring-slate-200/70'
                       }`}>
                         {statusText}
-                      </p>
+                      </span>
                       {/* Payment Method */}
                       <p className="text-[10px] text-slate-500 mt-1">
                         {order.paymentMethod === 'robo' ? 'Robo Pay' : 
@@ -183,6 +191,15 @@ function AdminOrders() {
                       </p>
                     </div>
                   </div>
+
+                  {isUcPurchase && (
+                    <div className="pt-3 mt-3 border-t border-slate-100">
+                      <p className="mb-1 text-xs text-slate-500">UC Code</p>
+                      <p className="px-2.5 py-1.5 inline-flex rounded-lg bg-slate-50 ring-1 ring-slate-200 font-mono text-xs sm:text-sm break-all text-slate-800">
+                        {order.ucCode || 'Pending / not generated yet'}
+                      </p>
+                    </div>
+                  )}
 
                   {/* Additional Info - Show on mobile or when expanded */}
                   <div className="pt-3 mt-3 border-t border-slate-100 sm:hidden">

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { productApi, digitalCodeApi, subscriptionApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import type { BackendProduct, BackendDigitalCodeProduct, BackendSubscriptionProduct } from '../types';
-import { FaSave, FaSearch, FaFilter } from 'react-icons/fa';
+import { Save, Search, Filter } from 'lucide-react';
 
 type ProductType = 'regular' | 'digitalCode' | 'subscription';
 
@@ -308,10 +308,10 @@ function AdminReseller() {
   }, [filteredProducts]);
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Header */}
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-        <h3 className="mb-2 text-lg font-bold text-slate-900">Reseller Price Management</h3>
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+        <h3 className="mb-2 text-lg font-bold tracking-tight text-slate-900">Reseller Price Management</h3>
         <p className="text-sm text-slate-600">
           Manage reseller prices for all products. Resellers will see these prices instead of regular prices.
         </p>
@@ -319,11 +319,11 @@ function AdminReseller() {
 
       {/* Message */}
       {/* Filters */}
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Search */}
           <div className="relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={2} />
             <input
               type="text"
               placeholder="Search products by name, category, or ID..."
@@ -335,7 +335,7 @@ function AdminReseller() {
 
           {/* Type Filter */}
           <div className="relative">
-            <FaFilter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <Filter className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" strokeWidth={2} />
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as ProductType | 'all')}
@@ -467,7 +467,7 @@ function AdminReseller() {
                                 </>
                               ) : (
                                 <>
-                                  <FaSave />
+                                  <Save className="h-4 w-4" strokeWidth={2} />
                                   Save
                                 </>
                               )}

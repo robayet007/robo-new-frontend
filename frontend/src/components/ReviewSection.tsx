@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaStar } from 'react-icons/fa';
 import useAuth from '../hooks/useAuth';
 import { reviewApi, type BackendReview } from '../services/api';
+import { getImageUrl } from '../utils/imageUrl';
 
 function StarRow({
   value,
@@ -52,7 +53,7 @@ function ReviewAvatar({ row }: { row: BackendReview }) {
   if (hasImage) {
     return (
       <img
-        src={row.userPhotoURL}
+        src={getImageUrl(row.userPhotoURL)}
         alt={name}
         className="h-11 w-11 rounded-full object-cover border border-slate-200"
         onError={(e) => {

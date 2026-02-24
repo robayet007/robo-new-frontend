@@ -25,11 +25,22 @@ interface ThemeContextType {
   uddoktaGatewayConfig: {
     baseUrl: string;
     checkoutPath: string;
+    checkoutV2Path: string;
     verifyPath: string;
+    refundPath: string;
     apiKeyHeader: string;
   };
+  sweetnoteEnabled: boolean;
+  sweetnoteImageUrl: string;
+  sweetnoteHeading: string;
+  sweetnoteText: string;
+  sweetnoteButtonText: string;
+  sweetnoteButtonUrl: string;
+  shellUsername: string;
+  shellPassword: string;
+  shellAutocode: string;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabled?: boolean, sweetnoteImageUrl?: string, sweetnoteHeading?: string, sweetnoteText?: string, sweetnoteButtonText?: string, sweetnoteButtonUrl?: string, shellUsername?: string, shellPassword?: string, shellAutocode?: string) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -70,9 +81,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [uddoktaGatewayConfig, setUddoktaGatewayConfig] = useState({
     baseUrl: '',
     checkoutPath: '',
+    checkoutV2Path: '',
     verifyPath: '',
+    refundPath: '',
     apiKeyHeader: '',
   });
+  const [sweetnoteEnabled, setSweetnoteEnabled] = useState<boolean>(false);
+  const [sweetnoteImageUrl, setSweetnoteImageUrl] = useState<string>('');
+  const [sweetnoteHeading, setSweetnoteHeading] = useState<string>('');
+  const [sweetnoteText, setSweetnoteText] = useState<string>('');
+  const [sweetnoteButtonText, setSweetnoteButtonText] = useState<string>('Join Now');
+  const [sweetnoteButtonUrl, setSweetnoteButtonUrl] = useState<string>('');
+  const [shellUsername, setShellUsername] = useState<string>('');
+  const [shellPassword, setShellPassword] = useState<string>('');
+  const [shellAutocode, setShellAutocode] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element (colors + typography)
@@ -163,9 +185,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const uddoktaGatewayConfigValue = {
             baseUrl: response.data.uddoktaGatewayConfig?.baseUrl ?? '',
             checkoutPath: response.data.uddoktaGatewayConfig?.checkoutPath ?? '',
+            checkoutV2Path: response.data.uddoktaGatewayConfig?.checkoutV2Path ?? '',
             verifyPath: response.data.uddoktaGatewayConfig?.verifyPath ?? '',
+            refundPath: response.data.uddoktaGatewayConfig?.refundPath ?? '',
             apiKeyHeader: response.data.uddoktaGatewayConfig?.apiKeyHeader ?? '',
           };
+          const sweetnoteEnabledValue = response.data.sweetnoteEnabled === true;
+          const sweetnoteImageUrlValue = response.data.sweetnoteImageUrl ?? '';
+          const sweetnoteHeadingValue = response.data.sweetnoteHeading ?? '';
+          const sweetnoteTextValue = response.data.sweetnoteText ?? '';
+          const sweetnoteButtonTextValue = response.data.sweetnoteButtonText ?? 'Join Now';
+          const sweetnoteButtonUrlValue = response.data.sweetnoteButtonUrl ?? '';
+          const shellUsernameValue = response.data.shellUsername ?? '';
+          const shellPasswordValue = response.data.shellPassword ?? '';
+          const shellAutocodeValue = response.data.shellAutocode ?? '';
 
           setPrimaryColor(primary);
           setSecondaryColor(secondary);
@@ -188,6 +221,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setUddoktaBaseUrl(uddoktaBaseUrlValue);
           setUddoktaConfigured(uddoktaConfiguredValue);
           setUddoktaGatewayConfig(uddoktaGatewayConfigValue);
+          setSweetnoteEnabled(sweetnoteEnabledValue);
+          setSweetnoteImageUrl(sweetnoteImageUrlValue);
+          setSweetnoteHeading(sweetnoteHeadingValue);
+          setSweetnoteText(sweetnoteTextValue);
+          setSweetnoteButtonText(sweetnoteButtonTextValue);
+          setSweetnoteButtonUrl(sweetnoteButtonUrlValue);
+          setShellUsername(shellUsernameValue);
+          setShellPassword(shellPasswordValue);
+          setShellAutocode(shellAutocodeValue);
           applyTheme(primary, secondary, fontFamilyValue, fontSizeBaseValue);
         } else {
           console.warn('⚠️ Theme API returned unsuccessful response, using defaults:', response.message);
@@ -237,7 +279,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabledValue?: boolean, sweetnoteImageUrlValue?: string, sweetnoteHeadingValue?: string, sweetnoteTextValue?: string, sweetnoteButtonTextValue?: string, sweetnoteButtonUrlValue?: string, shellUsernameValue?: string, shellPasswordValue?: string, shellAutocodeValue?: string) => {
     try {
       const response = await themeApi.update({
         primaryColor: primary,
@@ -261,6 +303,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         uddoktaBaseUrl: uddoktaBaseUrlValue,
         uddoktaApiKey: uddoktaApiKeyValue,
         uddoktaGatewayConfig: uddoktaGatewayConfigValue,
+        sweetnoteEnabled: sweetnoteEnabledValue,
+        sweetnoteImageUrl: sweetnoteImageUrlValue,
+        sweetnoteHeading: sweetnoteHeadingValue,
+        sweetnoteText: sweetnoteTextValue,
+        sweetnoteButtonText: sweetnoteButtonTextValue,
+        sweetnoteButtonUrl: sweetnoteButtonUrlValue,
+        shellUsername: shellUsernameValue,
+        shellPassword: shellPasswordValue,
+        shellAutocode: shellAutocodeValue,
         updatedBy: updatedBy || 'admin'
       });
 
@@ -288,9 +339,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedUddoktaGatewayConfig = {
           baseUrl: response.data.uddoktaGatewayConfig?.baseUrl ?? uddoktaGatewayConfigValue?.baseUrl ?? uddoktaGatewayConfig.baseUrl,
           checkoutPath: response.data.uddoktaGatewayConfig?.checkoutPath ?? uddoktaGatewayConfigValue?.checkoutPath ?? uddoktaGatewayConfig.checkoutPath,
+          checkoutV2Path: response.data.uddoktaGatewayConfig?.checkoutV2Path ?? uddoktaGatewayConfigValue?.checkoutV2Path ?? uddoktaGatewayConfig.checkoutV2Path,
           verifyPath: response.data.uddoktaGatewayConfig?.verifyPath ?? uddoktaGatewayConfigValue?.verifyPath ?? uddoktaGatewayConfig.verifyPath,
+          refundPath: response.data.uddoktaGatewayConfig?.refundPath ?? uddoktaGatewayConfigValue?.refundPath ?? uddoktaGatewayConfig.refundPath,
           apiKeyHeader: response.data.uddoktaGatewayConfig?.apiKeyHeader ?? uddoktaGatewayConfigValue?.apiKeyHeader ?? uddoktaGatewayConfig.apiKeyHeader,
         };
+        const savedSweetnoteEnabled = response.data.sweetnoteEnabled === true;
+        const savedSweetnoteImageUrl = response.data.sweetnoteImageUrl ?? '';
+        const savedSweetnoteHeading = response.data.sweetnoteHeading ?? '';
+        const savedSweetnoteText = response.data.sweetnoteText ?? '';
+        const savedSweetnoteButtonText = response.data.sweetnoteButtonText ?? 'Join Now';
+        const savedSweetnoteButtonUrl = response.data.sweetnoteButtonUrl ?? '';
+        const savedShellUsername = response.data.shellUsername ?? '';
+        const savedShellPassword = response.data.shellPassword ?? '';
+        const savedShellAutocode = response.data.shellAutocode ?? '';
 
         setPrimaryColor(savedPrimary);
         setSecondaryColor(savedSecondary);
@@ -313,6 +375,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setUddoktaBaseUrl(savedUddoktaBaseUrl);
         setUddoktaConfigured(savedUddoktaConfigured);
         setUddoktaGatewayConfig(savedUddoktaGatewayConfig);
+        setSweetnoteEnabled(savedSweetnoteEnabled);
+        setSweetnoteImageUrl(savedSweetnoteImageUrl);
+        setSweetnoteHeading(savedSweetnoteHeading);
+        setSweetnoteText(savedSweetnoteText);
+        setSweetnoteButtonText(savedSweetnoteButtonText);
+        setSweetnoteButtonUrl(savedSweetnoteButtonUrl);
+        setShellUsername(savedShellUsername);
+        setShellPassword(savedShellPassword);
+        setShellAutocode(savedShellAutocode);
         applyTheme(savedPrimary, savedSecondary, savedFontFamily, savedFontSizeBase);
 
         // Notify other tabs to refresh theme immediately
@@ -357,6 +428,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         uddoktaBaseUrl,
         uddoktaConfigured,
         uddoktaGatewayConfig,
+        sweetnoteEnabled,
+        sweetnoteImageUrl,
+        sweetnoteHeading,
+        sweetnoteText,
+        sweetnoteButtonText,
+        sweetnoteButtonUrl,
+        shellUsername,
+        shellPassword,
+        shellAutocode,
         isLoaded,
         updateTheme,
       }}

@@ -215,9 +215,9 @@ export default function GameHero() {
   // ইমেজের জন্য CSS স্টাইল - এটাই মূল সমাধান
   const imageStyle: React.CSSProperties = {
     width: "100%",
-    height: "100%",
+    height: isMobile ? "auto" : "100%",
     display: "block",
-    objectFit: "cover", // ইমেজ পুরো কভার করবে
+    objectFit: "contain", // ইমেজ পুরো দেখা যাবে, crop হবে না
     objectPosition: "center", // সেন্টার পজিশন
     filter: "brightness(1.18) saturate(1.1)",
   }
@@ -285,10 +285,11 @@ export default function GameHero() {
             position: "relative",
             width: "100%",
             // Use fixed aspect ratios per breakpoint to avoid extra blank area on mobile.
-            aspectRatio: isMobile ? "16 / 9" : isTablet ? "16 / 7.2" : "16 / 6.4",
+            aspectRatio: isMobile ? undefined : isTablet ? "16 / 7.2" : "16 / 6.4",
             height: containerWidth && !isMobile ? `${containerWidth * 0.4}px` : "auto",
             minHeight: isMobile ? "0" : "260px",
             maxHeight: isMobile ? "none" : "600px",
+            backgroundColor: "#000",
             cursor: currentSlide.link?.trim() ? "pointer" : "default",
           }}
           onClick={() => handleBannerClick(currentSlide)}

@@ -16,7 +16,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { FaDollarSign, FaShoppingCart, FaCheckCircle, FaClock, FaTimesCircle, FaBox } from 'react-icons/fa';
+import { DollarSign, ShoppingCart, CheckCircle, Clock, XCircle, Package } from 'lucide-react';
 
 function AdminDashboard() {
   const { categories, products } = useCatalog();
@@ -110,63 +110,63 @@ function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-12 h-12 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
-        <p className="ml-3 text-slate-600">Loading dashboard...</p>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="h-10 w-10 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin" />
+        <p className="ml-3 text-sm font-medium text-slate-600">Loading dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-6 pt-4 pr-4 pb-4 pl-0 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-6 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <FaDollarSign className="text-2xl opacity-80" />
-            <span className="text-sm opacity-80">Total Revenue</span>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 p-5 text-white shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <DollarSign className="h-6 w-6 opacity-90" strokeWidth={2} />
+            <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Total Revenue</span>
           </div>
-          <p className="text-3xl font-bold">৳{stats.totalRevenue.toFixed(2)}</p>
-          <p className="text-sm opacity-80 mt-1">Weekly: ৳{stats.weeklyRevenue.toFixed(2)}</p>
+          <p className="text-2xl font-bold tracking-tight sm:text-3xl">৳{stats.totalRevenue.toFixed(2)}</p>
+          <p className="mt-1 text-sm opacity-90">Weekly: ৳{stats.weeklyRevenue.toFixed(2)}</p>
         </div>
 
-        <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <FaShoppingCart className="text-2xl opacity-80" />
-            <span className="text-sm opacity-80">Total Orders</span>
+        <div className="rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 p-5 text-white shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <ShoppingCart className="h-6 w-6 opacity-90" strokeWidth={2} />
+            <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Total Orders</span>
           </div>
-          <p className="text-3xl font-bold">{stats.totalOrders}</p>
-          <p className="text-sm opacity-80 mt-1">This week: {stats.weeklyOrders}</p>
+          <p className="text-2xl font-bold tracking-tight sm:text-3xl">{stats.totalOrders}</p>
+          <p className="mt-1 text-sm opacity-90">This week: {stats.weeklyOrders}</p>
         </div>
 
-        <div className="p-6 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <FaCheckCircle className="text-2xl opacity-80" />
-            <span className="text-sm opacity-80">Completed</span>
+        <div className="rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 p-5 text-white shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <CheckCircle className="h-6 w-6 opacity-90" strokeWidth={2} />
+            <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Completed</span>
           </div>
-          <p className="text-3xl font-bold">{stats.completed}</p>
-          <p className="text-sm opacity-80 mt-1">
+          <p className="text-2xl font-bold tracking-tight sm:text-3xl">{stats.completed}</p>
+          <p className="mt-1 text-sm opacity-90">
             {stats.totalOrders > 0 ? ((stats.completed / stats.totalOrders) * 100).toFixed(1) : 0}% success rate
           </p>
         </div>
 
-        <div className="p-6 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg">
-          <div className="flex items-center justify-between mb-2">
-            <FaClock className="text-2xl opacity-80" />
-            <span className="text-sm opacity-80">Pending</span>
+        <div className="rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 p-5 text-white shadow-lg">
+          <div className="mb-2 flex items-center justify-between">
+            <Clock className="h-6 w-6 opacity-90" strokeWidth={2} />
+            <span className="text-xs font-semibold uppercase tracking-wider opacity-90">Pending</span>
           </div>
-          <p className="text-3xl font-bold">{stats.pending}</p>
-          <p className="text-sm opacity-80 mt-1">
+          <p className="text-2xl font-bold tracking-tight sm:text-3xl">{stats.pending}</p>
+          <p className="mt-1 text-sm opacity-90">
             {stats.cancelled > 0 && `${stats.cancelled} cancelled`}
           </p>
         </div>
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
         {/* Weekly Orders & Revenue Line Chart */}
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Weekly Orders & Revenue</h3>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Weekly Orders & Revenue</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -200,8 +200,8 @@ function AdminDashboard() {
         </div>
 
         {/* Order Status Pie Chart */}
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Order Status Distribution</h3>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Order Status Distribution</h3>
           {statusData.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -231,10 +231,10 @@ function AdminDashboard() {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
         {/* Category Revenue Bar Chart */}
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Top Categories by Revenue</h3>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Top Categories by Revenue</h3>
           {categoryStats.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={categoryStats}>
@@ -257,8 +257,8 @@ function AdminDashboard() {
         </div>
 
         {/* Category Orders Bar Chart */}
-        <div className="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <h3 className="text-lg font-bold text-slate-900 mb-4">Top Categories by Orders</h3>
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Top Categories by Orders</h3>
           {categoryStats.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={categoryStats}>
@@ -281,39 +281,39 @@ function AdminDashboard() {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-purple-100">
-              <FaBox className="text-purple-600 text-xl" />
+            <div className="rounded-xl bg-purple-100 p-3">
+              <Package className="h-5 w-5 text-purple-600" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Total Categories</p>
-              <p className="text-2xl font-bold text-slate-900">{categories.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Categories</p>
+              <p className="text-xl font-bold tracking-tight text-slate-900">{categories.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-blue-100">
-              <FaBox className="text-blue-600 text-xl" />
+            <div className="rounded-xl bg-blue-100 p-3">
+              <Package className="h-5 w-5 text-blue-600" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Total Products</p>
-              <p className="text-2xl font-bold text-slate-900">{products.length}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Total Products</p>
+              <p className="text-xl font-bold tracking-tight text-slate-900">{products.length}</p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-lg bg-red-100">
-              <FaTimesCircle className="text-red-600 text-xl" />
+            <div className="rounded-xl bg-red-100 p-3">
+              <XCircle className="h-5 w-5 text-red-600" strokeWidth={2} />
             </div>
             <div>
-              <p className="text-sm text-slate-600">Cancelled Orders</p>
-              <p className="text-2xl font-bold text-slate-900">{stats.cancelled}</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Cancelled Orders</p>
+              <p className="text-xl font-bold tracking-tight text-slate-900">{stats.cancelled}</p>
             </div>
           </div>
         </div>

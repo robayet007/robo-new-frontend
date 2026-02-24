@@ -1,15 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  FaUser,
-  FaBox,
-  FaWallet,
-  FaCog,
-  FaPen,
-  FaLock,
-  FaFileInvoice,
-} from 'react-icons/fa';
+import { User, Package, Wallet, Settings, Pencil, Lock, Banknote } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import useRoboBalance from '../hooks/useRoboBalance';
 import ImageUpload from './ImageUpload';
@@ -116,26 +108,29 @@ function MyAccount() {
   };
 
   const tabClass = (isActive: boolean) =>
-    `inline-flex items-center gap-2 px-2 sm:px-3 py-2 text-sm font-medium border-b-2 ${
+    `inline-flex items-center gap-2 px-3 py-2.5 text-sm font-semibold tracking-tight border-b-2 transition-colors ${
       isActive
         ? 'border-pink-500 text-pink-600'
         : 'border-transparent text-slate-600 hover:text-slate-800'
     }`;
 
   return (
-    <div className="max-w-4xl p-4 mx-auto sm:p-6">
-      <div className="flex items-center gap-4 overflow-x-auto border-b border-slate-200">
+    <div
+      className="mx-auto max-w-4xl p-4 sm:p-6"
+      style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}
+    >
+      <div className="flex gap-4 overflow-x-auto border-b border-slate-200">
         <button className={tabClass(activeSection === 'account')} onClick={() => setActiveSection('account')}>
-          <FaUser className="w-3.5 h-3.5" /> My Account
+          <User className="h-4 w-4" strokeWidth={2} /> My Account
         </button>
         <button className={tabClass(false)} onClick={() => navigate('/orders')}>
-          <FaBox className="w-3.5 h-3.5" /> My Orders
+          <Package className="h-4 w-4" strokeWidth={2} /> My Orders
         </button>
         <button className={tabClass(activeSection === 'wallet')} onClick={() => setActiveSection('wallet')}>
-          <FaWallet className="w-3.5 h-3.5" /> My Wallet
+          <Wallet className="h-4 w-4" strokeWidth={2} /> My Wallet
         </button>
         <button className={tabClass(activeSection === 'settings')} onClick={() => setActiveSection('settings')}>
-          <FaCog className="w-3.5 h-3.5" /> Settings
+          <Settings className="h-4 w-4" strokeWidth={2} /> Settings
         </button>
       </div>
 
@@ -144,12 +139,12 @@ function MyAccount() {
           <div className="p-3.5 bg-white border shadow-sm rounded-2xl border-slate-200">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xl text-slate-600">Wallet Balance</p>
-                <p className="text-4xl font-bold text-slate-900">
+                <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">Wallet Balance</p>
+                <p className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                   {balanceLoading ? '...' : `৳${(backendBalance ?? 0).toFixed(2)}`}
                 </p>
               </div>
-              <FaFileInvoice className="mt-1 text-base text-slate-400" />
+              <Banknote className="mt-1 h-5 w-5 text-slate-400" strokeWidth={2} />
             </div>
             <button
               type="button"
@@ -178,8 +173,8 @@ function MyAccount() {
               </div>
             )}
             <div>
-              <h2 className="text-2xl font-bold text-slate-900">{user?.displayName || 'User'}</h2>
-              <p className="text-sm text-slate-500">{user?.email}</p>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">{user?.displayName || 'User'}</h2>
+              <p className="text-sm font-medium text-slate-500">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -188,9 +183,9 @@ function MyAccount() {
       {activeSection === 'settings' && (
         <div className="max-w-2xl mt-4 space-y-4">
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
-            <div className="flex items-center gap-2 mb-4">
-              <FaPen className="text-slate-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Edit Profile</h3>
+            <div className="mb-4 flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-slate-600" strokeWidth={2} />
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Edit Profile</h3>
             </div>
             <form onSubmit={handleProfileSave} className="space-y-4">
               <input
@@ -220,9 +215,9 @@ function MyAccount() {
           </div>
 
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
-            <div className="flex items-center gap-2 mb-4">
-              <FaLock className="text-slate-600" />
-              <h3 className="text-lg font-semibold text-slate-900">Change Password</h3>
+            <div className="mb-4 flex items-center gap-2">
+              <Lock className="h-5 w-5 text-slate-600" strokeWidth={2} />
+              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Change Password</h3>
             </div>
             <form onSubmit={handlePasswordSubmit} className="space-y-3">
               <input

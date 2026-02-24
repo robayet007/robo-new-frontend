@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaUsers, FaCrown, FaTag, FaShieldAlt, FaSync, FaPlus, FaTimes } from 'react-icons/fa';
+import { Users, Crown, Tag, Shield, RefreshCw, Plus, X } from 'lucide-react';
 import useUsers, { type UserRole, type AppUser } from '../hooks/useUsers';
 import useAuth from '../hooks/useAuth';
 import { balanceApi, adminRoleApi, userSyncApi, type AdminModerationPermissions } from '../services/api';
@@ -232,64 +232,64 @@ function UserManagement() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
-        <p className="ml-3 text-slate-600">Loading users...</p>
+        <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin" />
+        <p className="ml-3 text-sm font-medium text-slate-600">Loading users...</p>
       </div>
     );
   }
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
 
       {/* Role Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 mb-4 sm:grid-cols-4 sm:gap-4">
-        <div className="p-4 border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+        <div className="rounded-xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-blue-100/80 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="mb-1 text-xs font-medium text-blue-700 sm:text-sm">Total Users</p>
-              <p className="text-2xl font-bold text-blue-900 sm:text-3xl">{totalUsers}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-blue-700 sm:text-sm">Total Users</p>
+              <p className="text-xl font-bold tracking-tight text-blue-900 sm:text-2xl">{totalUsers}</p>
             </div>
-            <div className="text-2xl sm:text-3xl text-blue-600"><FaUsers /></div>
+            <Users className="h-8 w-8 text-blue-600 sm:h-9 sm:w-9" strokeWidth={2} />
           </div>
         </div>
-        <div className="p-4 border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+        <div className="rounded-xl border border-purple-200/80 bg-gradient-to-br from-purple-50 to-purple-100/80 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="mb-1 text-xs font-medium text-purple-700 sm:text-sm">Admins</p>
-              <p className="text-2xl font-bold text-purple-900 sm:text-3xl">{adminCount}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-purple-700 sm:text-sm">Admins</p>
+              <p className="text-xl font-bold tracking-tight text-purple-900 sm:text-2xl">{adminCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl text-purple-600"><FaCrown /></div>
+            <Crown className="h-8 w-8 text-purple-600 sm:h-9 sm:w-9" strokeWidth={2} />
           </div>
         </div>
-        <div className="p-4 border-2 border-green-200 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+        <div className="rounded-xl border border-green-200/80 bg-gradient-to-br from-green-50 to-green-100/80 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="mb-1 text-xs font-medium text-green-700 sm:text-sm">Resellers</p>
-              <p className="text-2xl font-bold text-green-900 sm:text-3xl">{resellerCount}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-green-700 sm:text-sm">Resellers</p>
+              <p className="text-xl font-bold tracking-tight text-green-900 sm:text-2xl">{resellerCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl text-green-600"><FaTag /></div>
+            <Tag className="h-8 w-8 text-green-600 sm:h-9 sm:w-9" strokeWidth={2} />
           </div>
         </div>
-        <div className="p-4 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
+        <div className="rounded-xl border border-orange-200/80 bg-gradient-to-br from-orange-50 to-orange-100/80 p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="mb-1 text-xs font-medium text-orange-700 sm:text-sm">Moderators</p>
-              <p className="text-2xl font-bold text-orange-900 sm:text-3xl">{moderatorCount}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-orange-700 sm:text-sm">Moderators</p>
+              <p className="text-xl font-bold tracking-tight text-orange-900 sm:text-2xl">{moderatorCount}</p>
             </div>
-            <div className="text-2xl sm:text-3xl text-orange-600"><FaShieldAlt /></div>
+            <Shield className="h-8 w-8 text-orange-600 sm:h-9 sm:w-9" strokeWidth={2} />
           </div>
         </div>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div>
-          <h3 className="mb-1 text-lg font-bold sm:text-xl text-slate-900">User Management</h3>
-          <p className="text-xs text-slate-600 sm:text-sm">
+          <h3 className="mb-1 text-lg font-bold tracking-tight sm:text-xl text-slate-900">User Management</h3>
+          <p className="text-xs font-medium text-slate-600 sm:text-sm">
             <span className="font-semibold text-slate-900">Total: {users.length} Firestore users</span>
             {' '}({adminUsers.length} admins, {regularUsers.length} regular)
           </p>
           <p className="flex items-center gap-1.5 text-[10px] sm:text-xs text-slate-500 mt-1">
-            <FaSync className="w-3 h-3 shrink-0" />
+            <RefreshCw className="h-3 w-3 shrink-0" strokeWidth={2} />
             Data fetched from Firebase Firestore (Real-time sync)
           </p>
         </div>
@@ -307,7 +307,7 @@ function UserManagement() {
               }}
               className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white transition-all bg-green-500 sm:px-4 rounded-xl sm:text-sm hover:bg-green-600"
             >
-              <FaPlus className="w-3.5 h-3.5 shrink-0" />
+              <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
               Add Current User
             </button>
           )}
@@ -332,7 +332,7 @@ function UserManagement() {
             disabled={syncFromAuthLoading}
             className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white transition-all bg-indigo-600 sm:px-4 rounded-xl sm:text-sm hover:bg-indigo-700 disabled:opacity-50"
           >
-            <FaSync className="w-3.5 h-3.5 shrink-0" />
+            <RefreshCw className={`h-3.5 w-3.5 shrink-0 ${syncFromAuthLoading ? 'animate-spin' : ''}`} strokeWidth={2} />
             {syncFromAuthLoading ? 'Syncing…' : 'Sync from Firebase Auth'}
           </button>
           <button
@@ -342,7 +342,7 @@ function UserManagement() {
             }}
             className="flex items-center gap-2 px-3 py-2 text-xs font-semibold transition-all border sm:px-4 rounded-xl border-slate-300 text-slate-700 sm:text-sm hover:bg-slate-50"
           >
-            <FaSync className="w-3.5 h-3.5 shrink-0" />
+            <RefreshCw className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
             Refresh
           </button>
           <div className="flex-1 sm:max-w-md">
@@ -375,7 +375,7 @@ function UserManagement() {
               onClick={() => setSelectedModerator(null)}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
             >
-              <FaTimes className="w-3.5 h-3.5 shrink-0" />
+              <X className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
               Close
             </button>
           </div>
@@ -558,7 +558,7 @@ function UserManagement() {
                   Admin Only Sections
                 </p>
                 <p className="text-[10px] text-slate-500">
-                  Reseller Management, Membership Packages, and Store Customize are admin-only and cannot be granted to moderators.
+                  Reseller Management, Membership Packages, and Store Customize &amp; Key Integration are admin-only and cannot be granted to moderators.
                 </p>
               </div>
             </div>
@@ -602,7 +602,7 @@ function UserManagement() {
               onClick={() => setSelectedUserForBalance(null)}
               className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700"
             >
-              <FaTimes className="w-3.5 h-3.5 shrink-0" />
+              <X className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
               Close
             </button>
           </div>

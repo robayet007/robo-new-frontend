@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FaCheck, FaSearch, FaSyncAlt } from "react-icons/fa";
+import { FaCheck, FaExclamationTriangle, FaSearch, FaSyncAlt } from "react-icons/fa";
 import { digitalCodeApi, paymentApi, subscriptionApi, SmartAPIManager } from "../services/api";
 import useRoboBalance from "../hooks/useRoboBalance";
 import useAuth from "../hooks/useAuth";
@@ -107,10 +107,12 @@ function InlinePurchasePanel({
 
   const product = useMemo(
     () => {
-      const sp = selectedProduct as { ucCategory?: string; diamonds?: string; ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }> };
+      const sp = selectedProduct as { ucCategory?: string; diamonds?: string; ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>; topupType?: 'voucher' | 'shell'; shellPackage?: string };
       let diamondsDisplay = "";
       if ("diamonds" in selectedProduct) {
-        if (sp.ucCategoryQuantities?.length) {
+        if (sp.topupType === "shell" && sp.shellPackage) {
+          diamondsDisplay = `Shell: ${sp.shellPackage}`;
+        } else if (sp.ucCategoryQuantities?.length) {
           diamondsDisplay = sp.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(", ");
         } else {
           diamondsDisplay = sp.ucCategory || selectedProduct.diamonds || "";
@@ -379,7 +381,8 @@ function InlinePurchasePanel({
           paymentMethod: "Instant Pay",
           playerId: mode === "regular" ? uid.trim() : "",
         });
-        clearUrlParams();
+        // Defer URL cleanup so success state is visible before navigation flash
+        setTimeout(() => clearUrlParams(), 500);
       } catch (error: any) {
         setVerifyingPayment({
           invoiceId,
@@ -621,22 +624,78 @@ function InlinePurchasePanel({
       </div>
 
       {verifyingPayment && (
-        <div className="p-3 mb-4 text-sm border rounded-xl bg-slate-50" style={themeBorderStyle}>
-          <p className="font-semibold text-slate-800">
-            {verifyingPayment.status === "verifying"
-              ? "Verifying payment..."
+        <div
+          className={`mb-4 overflow-hidden rounded-xl border transition-all duration-300 ${
+            verifyingPayment.status === "verifying"
+              ? "p-5 bg-gradient-to-br from-slate-50 to-slate-100/80"
               : verifyingPayment.status === "verified"
-                ? "Payment verified"
-                : "Verification failed"}
-          </p>
-          <p className="mt-1 text-xs text-slate-600">{verifyingPayment.message}</p>
+                ? "p-5 bg-gradient-to-br from-emerald-50 to-teal-50/80"
+                : "p-5 bg-gradient-to-br from-red-50 to-rose-50/80"
+          }`}
+          style={themeBorderStyle}
+        >
+          {verifyingPayment.status === "verifying" && (
+            <div className="flex flex-col items-center gap-3">
+              <div
+                className="w-10 h-10 rounded-full border-2 border-t-transparent animate-spin"
+                style={{ borderColor: "var(--theme-primary)", borderTopColor: "transparent" }}
+              />
+              <div className="text-center">
+                <p className="font-semibold text-slate-800">Verifying your payment...</p>
+                <p className="mt-1 text-xs text-slate-600">{verifyingPayment.message}</p>
+              </div>
+            </div>
+          )}
+          {verifyingPayment.status === "verified" && (
+            <div className="flex flex-col items-center gap-3 animate-fadeIn">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-600 animate-scaleIn">
+                <FaCheck className="w-6 h-6" />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-emerald-800">Payment verified</p>
+                <p className="mt-1 text-sm text-emerald-700/90">{verifyingPayment.message}</p>
+              </div>
+            </div>
+          )}
+          {verifyingPayment.status === "failed" && (
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600">
+                <span className="text-xl">✕</span>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-red-800">Verification failed</p>
+                <p className="mt-1 text-sm text-red-700/90">{verifyingPayment.message}</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {paymentResult && (
-        <div className="p-4 mb-4 border rounded-xl bg-slate-50" style={themeBorderStyle}>
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Order Summary</p>
+        <div
+          className="p-5 mb-4 rounded-xl border shadow-sm animate-slideUpFadeIn bg-gradient-to-br from-white to-slate-50/80"
+          style={{ ...themeBorderStyle, boxShadow: '0 1px 3px rgba(15,23,42,0.06)' }}
+        >
+          <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200/80">
+            <div
+              className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${
+                paymentResult.status === "success" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"
+              }`}
+            >
+              {paymentResult.status === "success" ? (
+                <FaCheck className="w-5 h-5" />
+              ) : (
+                <FaExclamationTriangle className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {paymentResult.status === "success" ? "Order confirmed" : "Payment status"}
+              </p>
+              <p className="text-xs text-slate-500">Order Summary</p>
+            </div>
+          </div>
+          <div className="space-y-2.5">
             <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-sm">
               <span className="text-slate-600">Product</span>
               <span className="font-medium text-slate-900">{paymentResult.productName}</span>

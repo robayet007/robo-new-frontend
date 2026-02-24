@@ -9,6 +9,7 @@ function SignUp() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { signUp, loginWithGoogle } = useAuth();
@@ -46,11 +47,16 @@ function SignUp() {
 
   const handleGoogleSignUp = async () => {
     setError('');
+    setSuccess('');
     setLoading(true);
     const result = await loginWithGoogle();
     setLoading(false);
 
     if (result.success) {
+      if (result.pendingRedirect) {
+        setSuccess(result.message || 'Redirecting to Google sign-in...');
+        return;
+      }
       // Redirect to home route
       navigate('/');
     } else {
@@ -138,9 +144,18 @@ function SignUp() {
           />
         </div>
 
-        {error && (
-          <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-            <p className="text-sm text-red-600">{error}</p>
+        {(error || success) && (
+          <div className="space-y-2">
+            {error && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+            {success && (
+              <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                <p className="text-sm font-medium text-emerald-700">{success}</p>
+              </div>
+            )}
           </div>
         )}
 

@@ -22,6 +22,7 @@ export type AdminOrder = {
   telegramMessageId?: string;
   verifiedAt?: string;
   createdAt?: string;
+  ucCode?: string;
 };
 
 // Query key factory

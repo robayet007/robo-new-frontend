@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
   signOut,
   onAuthStateChanged,
   updateProfile,
@@ -16,39 +17,6 @@ import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { userProfileApi } from '../services/api';
 import { getImageUrl } from '../utils/imageUrl';
-
-// Suppress COOP (Cross-Origin-Opener-Policy) warnings and Firebase permission errors globally
-// These are browser security warnings and Firebase permission errors that don't affect functionality
-// Note: This is a fallback - firebase.ts also handles suppression
-// In development, Firestore errors (FirebaseError, PERMISSION_DENIED) are not suppressed so rules issues are visible
-const originalError = console.error;
-const isProduction = import.meta.env.PROD;
-console.error = (...args: any[]) => {
-  const message = String(args[0] || '');
-  if (!isProduction && (message.includes('FirebaseError') || message.includes('PERMISSION_DENIED'))) {
-    originalError.apply(console, args);
-    return;
-  }
-  // Suppress COOP-related warnings and Firebase permission errors
-  if (
-    message.includes('Cross-Origin-Opener-Policy') ||
-    message.includes('window.closed') ||
-    message.includes('FirebaseError') ||
-    message.includes('Installations') ||
-    message.includes('PERMISSION_DENIED') ||
-    message.includes('installations/request-failed') ||
-    message.includes('analytics') ||
-    message.includes('Cannot read properties of undefined') ||
-    message.includes('replace')
-  ) {
-    return; // Silently ignore these errors
-  }
-  // In production, suppress all errors (they're handled in UI)
-  if (isProduction) {
-    return;
-  }
-  originalError.apply(console, args);
-};
 
 export interface AuthUser {
   uid: string;
@@ -198,6 +166,31 @@ function useAuth() {
       // The onAuthStateChanged handler (line 84-123) will handle Firestore updates in background
       return { success: true, user: result.user };
     } catch (err: any) {
+      const popupFallbackCodes = new Set([
+        'auth/popup-blocked',
+        'auth/popup-closed-by-user',
+        'auth/cancelled-popup-request',
+      ]);
+      const errMessage = String(err?.message || '').toLowerCase();
+      const shouldFallbackToRedirect =
+        popupFallbackCodes.has(err?.code) ||
+        errMessage.includes('cross-origin-opener-policy') ||
+        errMessage.includes('window.closed');
+
+      if (shouldFallbackToRedirect) {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return {
+            success: true,
+            pendingRedirect: true,
+            message: 'Redirecting to Google sign-in...',
+          };
+        } catch (redirectErr: any) {
+          // Continue to standard error mapping below
+          err = redirectErr;
+        }
+      }
+
       // Handle specific error codes
       let errorMessage = 'Failed to login with Google';
       if (err.code === 'auth/popup-closed-by-user') {
@@ -205,7 +198,9 @@ function useAuth() {
       } else if (err.code === 'auth/cancelled-popup-request') {
         errorMessage = 'Only one popup request is allowed at a time';
       } else if (err.code === 'auth/popup-blocked') {
-        errorMessage = 'Popup was blocked by browser. Please allow popups for this site.';
+        errorMessage = 'Popup was blocked. We could not redirect automatically. Please allow popups and try again.';
+      } else if (err.code === 'auth/unauthorized-domain') {
+        errorMessage = 'This domain is not authorized in Firebase. Add this domain in Firebase Authentication settings.';
       } else if (err.code === 'auth/network-request-failed') {
         errorMessage = 'Network error. Please check your connection and try again.';
       } else if (err.message) {

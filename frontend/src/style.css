@@ -869,6 +869,29 @@ input:focus {
   }
 }
 
+/* Premium verification animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+.animate-scaleIn {
+  animation: scaleIn 0.4s ease-out;
+}
+@keyframes slideUpFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideUpFadeIn {
+  animation: slideUpFadeIn 0.35s ease-out;
+}
+
 /* Update notification animation */
 @keyframes slide-down {
   from {

@@ -3,7 +3,7 @@ import type { FormEvent } from 'react';
 import { subscriptionApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import type { BackendSubscriptionProduct } from '../types';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { Pencil, Trash2 } from 'lucide-react';
 import ImageUpload from './ImageUpload';
 import { getImageUrl } from '../utils/imageUrl';
 
@@ -203,16 +203,16 @@ function AdminSubscriptions() {
   };
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-        <h2 className="text-2xl font-bold text-slate-900">Subscriptions Management</h2>
-        <p className="text-sm text-slate-600">Manage subscription products directly</p>
+    <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+        <h2 className="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Subscriptions Management</h2>
+        <p className="text-sm font-medium text-slate-500">Manage subscription products directly</p>
       </div>
 
       {/* Products Section */}
       <div className="space-y-6">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
-          <h3 className="text-lg font-semibold mb-4">
+        <div className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+          <h3 className="mb-4 text-lg font-semibold tracking-tight text-slate-900">
             {editingProduct ? 'Edit Product' : 'Add New Product'}
           </h3>
           <form onSubmit={editingProduct ? handleUpdateProduct : handleAddProduct} className="space-y-4">
@@ -443,13 +443,13 @@ function AdminSubscriptions() {
                       onClick={() => handleEditProduct(product)}
                       className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
                     >
-                      <FaEdit />
+                      <Pencil className="h-4 w-4" strokeWidth={2} />
                     </button>
                     <button
                       onClick={() => handleDeleteProduct(product.id)}
                       className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                     >
-                      <FaTrash />
+                      <Trash2 className="h-4 w-4" strokeWidth={2} />
                     </button>
                   </div>
                 </div>

@@ -4,6 +4,7 @@ import useAuth from '../hooks/useAuth';
 
 function ChangePassword() {
   const { changePassword } = useAuth();
+  const [showForm, setShowForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -52,6 +53,19 @@ function ChangePassword() {
         </p>
       </div>
 
+      {!showForm ? (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="w-full px-4 py-3 font-semibold text-white transition-all duration-200 shadow-lg rounded-xl"
+          style={{
+            background: `linear-gradient(to right, var(--theme-primary), var(--theme-secondary))`,
+            boxShadow: `0 10px 30px rgba(var(--theme-primary-rgb), 0.3)`
+          }}
+        >
+          Show Change Password Form
+        </button>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block mb-2 text-sm font-semibold text-slate-700">
@@ -140,7 +154,15 @@ function ChangePassword() {
         >
           {loading ? 'Updating password...' : 'Change Password'}
         </button>
+        <button
+          type="button"
+          onClick={() => setShowForm(false)}
+          className="w-full px-4 py-3 font-semibold transition-all border rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+        >
+          Hide Form
+        </button>
       </form>
+      )}
     </div>
   );
 }

@@ -287,20 +287,19 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   if (loading || permissionsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
         <div className="text-center">
-          <div 
-            className="w-12 h-12 mx-auto mb-4 border-4 rounded-full border-t-transparent animate-spin"
-            style={{ borderColor: 'var(--theme-primary)' }}
-          ></div>
-          <p className="text-slate-600">Loading admin panel...</p>
+          <div
+            className="mx-auto mb-4 h-10 w-10 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin"
+          />
+          <p className="text-sm font-medium text-slate-600">Loading admin panel...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50/80" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Sidebar */}
       <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={onLogout} />
 
@@ -308,8 +307,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       <div className="flex-1 lg:ml-64">
         <div className="p-0">
           {/* Header */}
-          <div className="pt-4 pb-4 pl-0 pr-4 mb-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-            <h1 className="mb-2 text-2xl font-bold sm:text-3xl text-slate-900">
+          <div className="mb-4 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+            <h1 className="mb-1.5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl md:text-3xl">
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'products' && 'Products & Categories'}
               {activeTab === 'gamePackages' && 'Game Packages'}
@@ -319,9 +318,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'reseller' && 'Reseller Management'}
               {activeTab === 'membership' && 'Membership Packages'}
               {activeTab === 'voucher' && 'Voucher'}
-              {activeTab === 'theme' && 'Store Customize & Logo'}
+              {activeTab === 'theme' && 'Store Customize & Key Integration'}
             </h1>
-            <p className="text-sm text-slate-600">
+            <p className="text-sm font-medium text-slate-500">
               {activeTab === 'dashboard' && 'Overview of your business metrics and analytics'}
               {activeTab === 'products' && 'Manage products and categories'}
               {activeTab === 'gamePackages' && 'Manage RoboGameZone packages and room credentials'}
@@ -334,10 +333,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'theme' && 'Upload navbar logo and customize theme colors and branding'}
             </p>
             {error && (
-              <div className="p-3 mt-3 border border-red-200 rounded-lg bg-red-50">
-                <p className="text-sm text-red-600">{error}</p>
-                <button 
-                  className="px-3 py-1 mt-2 text-sm font-semibold text-red-700 transition-all bg-red-100 rounded-lg hover:bg-red-200" 
+              <div className="mt-3 rounded-xl border border-red-200/80 bg-red-50/80 p-3">
+                <p className="text-sm font-medium text-red-700">{error}</p>
+                <button
+                  className="mt-2 rounded-lg bg-red-100 px-3 py-1.5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-200"
                   onClick={retry}
                 >
                   Retry Connection
@@ -365,10 +364,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             ) : activeTab === 'orders' && hasPermission('canManageOrders') ? (
               <AdminOrders />
             ) : activeTab === 'gamePackages' && hasPermission('canManageGamePackages') ? (
-              <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+              <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
                 {/* Game Package Management Section */}
-                <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-                  <h3 className="mb-4 text-lg font-bold text-slate-900">Game Package Management</h3>
+                <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+                  <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Game Package Management</h3>
                   
                   {/* Add/Edit Package Form */}
                   <form 
@@ -616,9 +615,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               <AdminProducts />
             ) : (
               <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
-                <div className="p-8 text-center bg-white border rounded-xl border-slate-200">
-                  <p className="text-lg font-semibold text-slate-700">Access Denied</p>
-                  <p className="mt-2 text-sm text-slate-500">
+                <div className="rounded-xl border border-slate-200/80 bg-white p-8 text-center shadow-sm">
+                  <p className="text-lg font-semibold tracking-tight text-slate-700">Access Denied</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">
                     You don't have permission to access this section.
                   </p>
                 </div>

@@ -82,7 +82,11 @@ function CategoryPage({
     const matched = filteredProducts.find((item) => item.id === productIdFromUrl);
     if (matched) {
       setSelectedProduct(matched);
-      setTimeout(() => panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      // Delay scroll so layout is fully painted when returning from payment
+      const timeoutId = setTimeout(() => {
+        panelAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+      return () => clearTimeout(timeoutId);
     }
   }, [searchParams, filteredProducts]);
 

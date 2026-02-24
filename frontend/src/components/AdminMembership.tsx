@@ -3,7 +3,7 @@ import useAuth from '../hooks/useAuth';
 import { membershipApi } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import type { BackendMembershipPackage } from '../types';
-import { FaCrown, FaPlus, FaEdit, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
+import { Crown, Plus, Pencil, Trash2, Save, X } from 'lucide-react';
 
 function AdminMembership() {
   const { user } = useAuth();
@@ -173,12 +173,12 @@ function AdminMembership() {
   };
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Header */}
-      <div className="p-4 bg-white border sm:p-5 md:p-6 rounded-xl border-slate-200">
-        <div className="flex items-center justify-between mb-2">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
+        <div className="mb-2 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">Membership Packages</h3>
+            <h3 className="text-lg font-bold tracking-tight text-slate-900">Membership Packages</h3>
             <p className="text-sm text-slate-600">
               Manage membership packages that users can purchase to get Reseller role
             </p>
@@ -194,7 +194,7 @@ function AdminMembership() {
                 background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
               }}
             >
-              <FaPlus />
+              <Plus className="h-4 w-4" strokeWidth={2} />
               Add Package
             </button>
           )}
@@ -213,7 +213,7 @@ function AdminMembership() {
               onClick={resetForm}
               className="p-2 text-slate-600 hover:text-slate-900"
             >
-              <FaTimes />
+              <X className="h-4 w-4" strokeWidth={2} />
             </button>
           </div>
           
@@ -313,7 +313,7 @@ function AdminMembership() {
                   background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
                 }}
               >
-                <FaSave />
+                <Save className="h-4 w-4" strokeWidth={2} />
                 {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
               </button>
               <button
@@ -362,7 +362,7 @@ function AdminMembership() {
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <FaCrown className="text-purple-600" />
+                        <Crown className="h-5 w-5 text-purple-600" strokeWidth={2} />
                         <span className="font-medium text-slate-900">{pkg.name}</span>
                       </div>
                       {pkg.description && (
@@ -396,14 +396,14 @@ function AdminMembership() {
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <FaEdit />
+                          <Pencil className="h-4 w-4" strokeWidth={2} />
                         </button>
                         <button
                           onClick={() => handleDelete(pkg.id)}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                           title="Disable"
                         >
-                          <FaTrash />
+                          <Trash2 className="h-4 w-4" strokeWidth={2} />
                         </button>
                       </div>
                     </td>

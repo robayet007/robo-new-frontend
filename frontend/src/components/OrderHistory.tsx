@@ -5,7 +5,7 @@ import useRoboBalance from '../hooks/useRoboBalance';
 import { paymentApi } from '../services/api';
 import type { BackendPurchase } from '../types';
 import { getImageUrl } from '../utils/imageUrl';
-import { FaSearch, FaRedo, FaBoxOpen } from 'react-icons/fa';
+import { FaSearch, FaRedo, FaBoxOpen, FaCopy, FaCheck } from 'react-icons/fa';
 
 function OrderHistory() {
   const navigate = useNavigate();
@@ -17,6 +17,18 @@ function OrderHistory() {
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'completed' | 'pending' | 'processing' | 'failed'>('all');
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, id: string) => {
+    if (!text || text === '—') return;
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  };
+
+  const isAddMoneyOrTransfer = (order: BackendPurchase) =>
+    ['add_money', 'balance_transfer'].includes(order.productId || '');
 
   const fetchOrders = useCallback(async () => {
     if (!user?.uid) return;
@@ -81,21 +93,21 @@ function OrderHistory() {
   });
 
   return (
-    <div className="max-w-6xl p-4 mx-auto sm:p-6">
+    <div className="mx-auto max-w-6xl p-3 sm:p-5">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="mb-1 text-2xl font-bold sm:text-3xl text-slate-900">My Orders</h2>
-        <p className="text-sm text-slate-500">A list of your recent orders.</p>
+      <div className="mb-4">
+        <h2 className="mb-0.5 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Order History</h2>
+        <p className="text-sm text-slate-500">Track and manage your purchase history.</p>
       </div>
 
-      <div className="p-4 bg-white border shadow-sm rounded-2xl border-slate-200 sm:p-5">
-        <div className="flex flex-col gap-3 mb-5 sm:flex-row">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-3 shadow-sm sm:p-4">
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:gap-3">
           <div className="relative flex-1">
             <FaSearch className="absolute text-slate-400 left-3 top-1/2 -translate-y-1/2" />
             <input
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Search by Order ID..."
+              placeholder="Search by Order ID, product, or player..."
               className="w-full py-2.5 pl-10 pr-4 border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:border-transparent"
               style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
             />
@@ -126,26 +138,27 @@ function OrderHistory() {
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 border-4 border-purple-400 rounded-full border-t-transparent animate-spin"></div>
-            <p className="ml-3 text-sm text-slate-600">Loading orders...</p>
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="h-8 w-8 rounded-full border-2 border-slate-200 border-t-slate-600 animate-spin" />
+            <p className="mt-3 text-sm font-medium text-slate-600">Loading...</p>
           </div>
         )}
 
         {!loading && error && (
-          <div className="p-4 mb-4 text-sm text-red-700 border border-red-200 rounded-lg bg-red-50">
+          <div className="mb-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
             {error}
           </div>
         )}
 
         {!loading && !error && filteredOrders.length === 0 && (
-          <div className="py-16 text-center">
-            <FaBoxOpen className="w-12 h-12 mx-auto mb-3 text-slate-400" />
-            <p className="mb-3 text-2xl text-slate-500">No orders yet.</p>
+          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/50 py-12 text-center">
+            <FaBoxOpen className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+            <p className="mb-1 text-base font-semibold text-slate-600">No orders yet</p>
+            <p className="mb-4 text-sm text-slate-500">Your purchase history will appear here.</p>
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
+              className="rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-md transition-shadow hover:shadow-lg"
               style={{ background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))' }}
             >
               Browse Games
@@ -154,53 +167,92 @@ function OrderHistory() {
         )}
 
         {!loading && filteredOrders.length > 0 && (
-          <div className="overflow-hidden bg-white border rounded-xl border-slate-200">
-            <div className="divide-y divide-slate-200">
+          <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm">
+            <div className="divide-y divide-slate-100">
               {filteredOrders.map((order, index) => {
               const date = order.createdAt ? new Date(order.createdAt) : null;
               const dateLabel = date
                 ? date.toLocaleString('en-US', {
                     day: 'numeric',
-                    month: 'long',
+                    month: 'short',
                     year: 'numeric',
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true,
                   })
-                : 'Unknown date';
+                : '—';
 
               const amount = (order.amount ?? order.price) ?? 0;
               const status = normalizedStatus(order);
-
-              // Extract serial number from transaction ID (last 5 digits or use index)
-              const serialNo = order.transactionId?.slice(-5) || String(10000 + filteredOrders.length - index);
+              const orderUid = order.transactionId || order._id || `ORD-${10000 + filteredOrders.length - index}`;
 
               const userPhotoKey = `${order._id}-user`;
               const productImgKey = `${order._id}-product`;
               const displayName = order.userName || order.userEmail?.split('@')[0] || 'User';
               const initial = displayName.charAt(0).toUpperCase();
+              const isCopied = copiedId === orderUid;
+
+              const showUcCode = order.diamonds && !isAddMoneyOrTransfer(order);
+              const ucCodeVal = order.ucCode || '—';
+              const ucCopyKey = `uc-${orderUid}`;
 
               return (
                 <div
                   key={order._id || order.transactionId}
-                  className="p-4 transition-colors sm:p-5 hover:bg-slate-50/50"
+                  className="group p-3 transition-all duration-200 sm:p-4 hover:bg-gradient-to-r hover:from-slate-50/80 hover:to-transparent"
                 >
-                  <div className="grid items-start grid-cols-1 gap-3 sm:grid-cols-8 sm:gap-4">
-                    {/* User photo + Product image */}
-                    <div className="flex items-center gap-2 sm:col-span-1">
-                      <div className="relative flex-shrink-0 flex items-center gap-2">
-                        <div className="relative w-8 h-8 sm:w-9 sm:h-9">
+                  {/* Order ID + Status - compact */}
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <div className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-gradient-to-br from-slate-50 to-white px-2.5 py-1.5 shadow-sm">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Order ID</span>
+                      <code className="font-mono text-sm font-semibold tracking-tight text-slate-800 sm:text-base">
+                        {orderUid}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(orderUid, orderUid)}
+                        className="rounded p-1 transition-colors hover:bg-slate-200/60"
+                        title="Copy"
+                      >
+                        {isCopied ? (
+                          <FaCheck className="h-3 w-3 text-green-600 sm:h-3.5 sm:w-3.5" />
+                        ) : (
+                          <FaCopy className="h-3 w-3 text-slate-500 sm:h-3.5 sm:w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold sm:text-xs ${
+                        status === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60'
+                          : status === 'failed'
+                          ? 'bg-red-50 text-red-700 ring-1 ring-red-200/60'
+                          : status === 'processing'
+                          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200/60'
+                          : 'bg-amber-50 text-amber-700 ring-1 ring-amber-200/60'
+                      }`}
+                    >
+                      {statusDisplayLabel(status)}
+                    </span>
+                  </div>
+
+                  {/* Mobile: 2-col | Desktop: auto grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4 lg:grid-cols-6 sm:gap-3">
+                    {/* Images - full row on mobile */}
+                    <div className="col-span-2 flex items-center gap-2 sm:col-span-1">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 flex-shrink-0 sm:h-9 sm:w-9">
                           {order.userPhotoURL && !imageErrors.has(userPhotoKey) ? (
                             <img
                               src={getImageUrl(order.userPhotoURL)}
                               alt={displayName}
-                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-slate-200"
+                              className="h-8 w-8 rounded-full border border-slate-200 object-cover sm:h-9 sm:w-9"
                               onError={() => setImageErrors((prev) => new Set(prev).add(userPhotoKey))}
                             />
                           ) : (
                             <div
-                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs font-semibold border border-slate-200"
-                              style={{ backgroundColor: 'var(--theme-primary)', color: 'white', opacity: 0.9 }}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-xs font-semibold sm:h-9 sm:w-9"
+                              style={{ backgroundColor: 'var(--theme-primary)', color: 'white', opacity: 0.95 }}
                             >
                               {initial}
                             </div>
@@ -210,88 +262,80 @@ function OrderHistory() {
                           <img
                             src={getImageUrl(order.productImage)}
                             alt={order.productName || 'Product'}
-                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                            className="h-8 w-8 flex-shrink-0 rounded-lg border border-slate-200 object-cover sm:h-9 sm:w-9"
                             onError={() => setImageErrors((prev) => new Set(prev).add(productImgKey))}
                           />
                         ) : (
-                          <div
-                            className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0"
-                            title={order.productName || 'Product'}
-                          >
-                            <FaBoxOpen className="w-3 h-3 sm:w-4 sm:h-4 text-slate-400" />
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 sm:h-9 sm:w-9">
+                            <FaBoxOpen className="h-3.5 w-3.5 text-slate-400 sm:h-4 sm:w-4" />
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Serial NO */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">Serial NO</p>
-                      <p className="text-sm font-semibold text-slate-900">{serialNo}</p>
-                    </div>
-
                     {/* Date */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">Date</p>
-                      <p className="text-sm text-slate-900">{dateLabel}</p>
+                    <div>
+                      <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Date</p>
+                      <p className="text-sm font-medium text-slate-800 sm:text-base">{dateLabel}</p>
                     </div>
 
                     {/* Package */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">Package</p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm font-medium text-slate-900">
-                          {order.diamonds ? `${order.productName}` : order.productName || 'Top-up'}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Quantity */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">Quantity</p>
-                      <p className="text-sm text-slate-900">1</p>
-                    </div>
-
-                    {/* Player ID */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">Player ID</p>
-                      <p className="font-mono text-sm break-all text-slate-900">
-                        {order.playerId || '-'}
+                    <div>
+                      <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Package</p>
+                      <p className="text-sm font-semibold text-slate-900 sm:text-base">
+                        {order.diamonds ? order.productName : order.productName || 'Top-up'}
                       </p>
                     </div>
 
-                    {/* UC Code - for diamond/UC orders */}
-                    <div className="sm:col-span-1">
-                      <p className="mb-1 text-xs text-slate-500">UC Code</p>
-                      <p className="font-mono text-sm break-all text-slate-900">
-                        {order.diamonds ? (order.ucCode || '-') : '-'}
-                      </p>
-                    </div>
-
-                    {/* Price & Status */}
-                    <div className="flex flex-col sm:col-span-1 sm:items-end">
-                      <div className="mb-2">
-                        <p className="mb-1 text-xs text-slate-500">Price</p>
-                        <p className="text-sm font-bold text-slate-900">
-                          {amount.toFixed(0)} Tk
-                        </p>
-                      </div>
+                    {/* Qty - hide for add/transfer */}
+                    {!isAddMoneyOrTransfer(order) && (
                       <div>
-                        <p className="mb-1 text-xs text-slate-500">Status</p>
-                        <p className={`text-sm font-semibold ${
-                          status === 'completed' ? 'text-green-600' : status === 'failed' ? 'text-red-600' : status === 'processing' ? 'text-blue-600' : 'text-amber-600'
-                        }`}>
-                          {statusDisplayLabel(status)}
+                        <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Qty</p>
+                        <p className="text-sm font-medium text-slate-800 sm:text-base">1</p>
+                      </div>
+                    )}
+
+                    {/* Player ID - hide for add/transfer */}
+                    {!isAddMoneyOrTransfer(order) && (
+                      <div className="col-span-2 sm:col-span-1">
+                        <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Player ID</p>
+                        <p className="font-mono text-sm font-medium text-slate-800 sm:text-base break-all">
+                          {order.playerId || '—'}
                         </p>
                       </div>
-                    </div>
-                  </div>
+                    )}
 
-                  {/* Transaction ID - Show on mobile */}
-                  <div className="pt-3 mt-3 border-t border-slate-100 sm:hidden">
-                    <p className="text-xs text-slate-500">
-                      TrxID: <span className="font-mono text-slate-700">{order.transactionId}</span>
-                    </p>
+                    {/* UC Code - only for diamond/UC, not add_money/transfer, with copy */}
+                    {showUcCode && (
+                      <div className="col-span-2 sm:col-span-1">
+                        <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">UC Code</p>
+                        <div className="inline-flex items-center gap-1">
+                          <code className="font-mono text-sm font-semibold text-slate-800 sm:text-base break-all">
+                            {ucCodeVal}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(ucCodeVal, ucCopyKey)}
+                            className="rounded p-1 transition-colors hover:bg-slate-200/60"
+                            title="Copy UC Code"
+                          >
+                            {copiedId === ucCopyKey ? (
+                              <FaCheck className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <FaCopy className="h-3.5 w-3.5 text-slate-500" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Price - full width on mobile */}
+                    <div className="col-span-2 sm:col-span-1 sm:text-right">
+                      <p className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Price</p>
+                      <p className="text-base font-bold text-slate-900 sm:text-lg">
+                        {amount.toFixed(0)} <span className="text-sm font-medium text-slate-600">৳</span>
+                      </p>
+                    </div>
                   </div>
                 </div>
               );

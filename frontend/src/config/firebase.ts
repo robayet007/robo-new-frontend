@@ -50,9 +50,7 @@ if (typeof window !== 'undefined' && firebaseConfig.measurementId) {
 // Suppress Firebase Analytics and Installations console warnings/errors (they're non-critical)
 if (typeof window !== 'undefined') {
   const originalWarn = console.warn;
-  const originalError = console.error;
   const originalInfo = console.info;
-  const isProduction = import.meta.env.PROD;
   
   // Suppress warnings
   console.warn = (...args: any[]) => {
@@ -63,12 +61,9 @@ if (typeof window !== 'undefined') {
       message.includes('Firebase Analytics') || 
       message.includes('@firebase/analytics') ||
       message.includes('measurement ID') ||
-      message.includes('PERMISSION_DENIED') ||
       message.includes('Installations') ||
       message.includes('analytics/config-fetch-failed') ||
       message.includes('installations/request-failed') ||
-      message.includes('Cross-Origin-Opener-Policy') ||
-      message.includes('window.closed') ||
       fullMessage.includes('Cannot read properties of undefined') ||
       fullMessage.includes('reading \'replace\'') ||
       fullMessage.includes('Theme API returned unsuccessful response') ||
@@ -87,57 +82,7 @@ if (typeof window !== 'undefined') {
     ) {
       return; // Suppress these warnings
     }
-    // In production, suppress all warnings
-    if (isProduction) {
-      return;
-    }
     originalWarn.apply(console, args);
-  };
-  
-  // Suppress errors
-  console.error = (...args: any[]) => {
-    // Filter out Firebase Analytics/Installations permission errors
-    const message = args[0]?.toString() || '';
-    const fullMessage = args.map(a => String(a)).join(' ');
-    // In development, show Firestore errors (e.g. PERMISSION_DENIED) so rules issues are visible
-    const isDev = import.meta.env.DEV;
-    if (isDev && (message.includes('FirebaseError') || fullMessage.includes('PERMISSION_DENIED'))) {
-      originalError.apply(console, args);
-      return;
-    }
-    if (
-      message.includes('FirebaseError') ||
-      message.includes('Installations') ||
-      message.includes('PERMISSION_DENIED') ||
-      message.includes('analytics') ||
-      message.includes('installations/request-failed') ||
-      message.includes('Cross-Origin-Opener-Policy') ||
-      message.includes('window.closed') ||
-      fullMessage.includes('Cannot read properties of undefined') ||
-      fullMessage.includes('reading \'replace\'') ||
-      fullMessage.includes('Failed to load') ||
-      fullMessage.includes('React DevTools') ||
-      fullMessage.includes('Download the React DevTools') ||
-      fullMessage.includes('firebaseinstallations.googleapis.com') ||
-      fullMessage.includes('firebase.googleapis.com') ||
-      fullMessage.includes('403 (Forbidden)') ||
-      fullMessage.includes('429 (Too Many Requests)') ||
-      fullMessage.includes('googleusercontent.com') ||
-      fullMessage.includes('WebSocket') ||
-      fullMessage.includes('socket.io') ||
-      fullMessage.includes('connection') ||
-      fullMessage.includes('closed before') ||
-      fullMessage.includes('[vite]') ||
-      fullMessage.includes('hot updated') ||
-      fullMessage.includes('Violation')
-    ) {
-      return; // Suppress these errors
-    }
-    // In production, suppress all errors (they're already handled in UI)
-    if (isProduction) {
-      return;
-    }
-    originalError.apply(console, args);
   };
   
   // Suppress console.log messages (Vite hot updates, etc.)
@@ -156,10 +101,6 @@ if (typeof window !== 'undefined') {
     ) {
       return; // Suppress these logs
     }
-    // In production, suppress all logs
-    if (isProduction) {
-      return;
-    }
     originalLog.apply(console, args);
   };
   
@@ -176,10 +117,6 @@ if (typeof window !== 'undefined') {
     ) {
       return; // Suppress these info messages
     }
-    // In production, suppress all info
-    if (isProduction) {
-      return;
-    }
     originalInfo.apply(console, args);
   };
 }
@@ -193,7 +130,8 @@ googleProvider.addScope('profile');
 googleProvider.addScope('email');
 // Set language to improve UX
 googleProvider.setCustomParameters({
-  hd: '' // Allow any domain, don't restrict
+  hd: '', // Allow any domain, don't restrict
+  prompt: 'select_account',
 });
 
 export default app;

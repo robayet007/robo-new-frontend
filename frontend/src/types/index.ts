@@ -15,6 +15,8 @@ export interface BackendProduct {
   diamonds: string;
   ucCategory?: string;
   ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
+  topupType?: 'voucher' | 'shell';
+  shellPackage?: string;
   price: number;
   resellerPrice?: number;
   bonus?: string;
@@ -158,6 +160,8 @@ export type Product = {
   diamonds: string;
   ucCategory?: string;
   ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
+  topupType?: 'voucher' | 'shell';
+  shellPackage?: string;
   price: number;
   resellerPrice?: number;
   originalPrice?: number; // For resellers, original price is kept here

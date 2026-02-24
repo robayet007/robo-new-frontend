@@ -2,24 +2,43 @@ import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, Bac
 
 // ==================== API MANAGER - Smart URL Detection ====================
 export class SmartAPIManager {
+  private static hasLoggedMissingBackendUrl = false;
+  private static hasLoggedMissingApiKey = false;
+
+  private static getConfiguredBackendBaseURL(): string {
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_URL || '';
+    const raw = String(backendUrl || '').trim().replace(/\/$/, '');
+    if (!raw) return '';
+    return raw.endsWith('/api') ? raw.slice(0, -4) : raw;
+  }
+
   // Get backend base URL (without /api) - for image URLs, uploads, etc.
   static getBackendBaseURL(): string {
-    const backendUrl =
-      import.meta.env.VITE_BACKEND_URL ||
-      import.meta.env.VITE_API_URL ||
-      (import.meta.env.DEV ? 'http://localhost:5000' : '');
-    const clean = String(backendUrl || '').replace(/\/$/, '');
-    return clean;
+    const configuredBase = this.getConfiguredBackendBaseURL();
+    if (configuredBase) return configuredBase;
+
+    if (import.meta.env.DEV) return 'http://localhost:5000';
+
+    // In production, warn loudly and fall back to current origin
+    // so /uploads paths can still work when backend is reverse-proxied.
+    if (typeof window !== 'undefined') {
+      if (!this.hasLoggedMissingBackendUrl) {
+        console.warn(
+          'VITE_BACKEND_URL or VITE_API_URL is not set. Falling back to current origin for image/api URLs.'
+        );
+        this.hasLoggedMissingBackendUrl = true;
+      }
+      return window.location.origin;
+    }
+    return '';
   }
 
   // Get API base URL - uses environment variable for configuration
   static getBaseURL(): string {
-    const base = this.getBackendBaseURL();
-    if (!base) {
-      if (import.meta.env.DEV) return 'http://localhost:5000/api';
-      throw new Error('VITE_BACKEND_URL or VITE_API_URL environment variable is not set');
-    }
-    return `${base}/api`;
+    const configuredBase = this.getConfiguredBackendBaseURL();
+    if (configuredBase) return `${configuredBase}/api`;
+    if (import.meta.env.DEV) return 'http://localhost:5000/api';
+    throw new Error('VITE_BACKEND_URL (or VITE_API_URL) is not set. Set it in Vercel environment variables.');
   }
   
   // Get API base URL (async for compatibility)
@@ -29,7 +48,11 @@ export class SmartAPIManager {
   
   // Get API key from environment variable (optional for local development)
   static getApiKey(): string | null {
-    const apiKey = import.meta.env.VITE_API_KEY;
+    const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_BACKEND_API_KEY;
+    if (!apiKey && import.meta.env.PROD && !this.hasLoggedMissingApiKey) {
+      console.warn('VITE_API_KEY is missing in production. Protected backend routes may fail with 401.');
+      this.hasLoggedMissingApiKey = true;
+    }
     return apiKey || null;
   }
   
@@ -880,7 +903,7 @@ export const gamePackageApi = {
 
 // Theme Settings API (using MongoDB backend)
 export const themeApi = {
-  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedAt?: string; updatedBy?: string }>> => {
+  get: async (): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }; sweetnoteEnabled?: boolean; sweetnoteImageUrl?: string; sweetnoteHeading?: string; sweetnoteText?: string; sweetnoteButtonText?: string; sweetnoteButtonUrl?: string; shellUsername?: string; shellPassword?: string; shellAutocode?: string; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme');
       return response.json();
@@ -893,7 +916,7 @@ export const themeApi = {
     }
   },
   
-  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaApiKey?: string; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; verifyPath?: string; apiKeyHeader?: string }; updatedAt?: string; updatedBy?: string }>> => {
+  update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaApiKey?: string; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }; sweetnoteEnabled?: boolean; sweetnoteImageUrl?: string; sweetnoteHeading?: string; sweetnoteText?: string; sweetnoteButtonText?: string; sweetnoteButtonUrl?: string; shellUsername?: string; shellPassword?: string; shellAutocode?: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }; sweetnoteEnabled?: boolean; sweetnoteImageUrl?: string; sweetnoteHeading?: string; sweetnoteText?: string; sweetnoteButtonText?: string; sweetnoteButtonUrl?: string; shellUsername?: string; shellPassword?: string; shellAutocode?: string; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme', {
         method: 'PUT',
@@ -919,6 +942,8 @@ export interface VoucherCodeRow {
   status: 'active' | 'used';
   createdAt?: string;
   updatedAt?: string;
+  usedAt?: string | Date;
+  usedBy?: { userId?: string; userEmail?: string; userName?: string };
 }
 
 export interface VoucherBulkUploadSummary {

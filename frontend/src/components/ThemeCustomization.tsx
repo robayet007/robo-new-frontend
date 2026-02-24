@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { FaPalette, FaImage, FaList, FaPlug, FaBullhorn } from 'react-icons/fa';
+import { Palette, Image, List, Plug, Megaphone, Gift } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import useAuth from '../hooks/useAuth';
@@ -8,14 +8,14 @@ import { bannerApi, noticeApi } from '../services/api';
 import type { BackendBanner, BackendNotice } from '../types';
 import { getImageUrl } from '../utils/imageUrl';
 
-type ThemeTab = 'brand' | 'content' | 'integrations' | 'banners' | 'notices';
+type ThemeTab = 'brand' | 'content' | 'integrations' | 'sweetnote' | 'banners' | 'notices';
 
 const themeBtnStyle = {
   background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
 };
 
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl, shellUsername, shellPassword, shellAutocode, isLoaded, updateTheme } = useTheme();
   const { showToast } = useToast();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
@@ -42,7 +42,12 @@ function ThemeCustomization() {
   const [localUddoktaBaseUrl, setLocalUddoktaBaseUrl] = useState<string>('');
   const [localUddoktaApiKey, setLocalUddoktaApiKey] = useState<string>('');
   const [localUddoktaCheckoutPath, setLocalUddoktaCheckoutPath] = useState<string>('');
+  const [localUddoktaCheckoutV2Path, setLocalUddoktaCheckoutV2Path] = useState<string>('');
   const [localUddoktaVerifyPath, setLocalUddoktaVerifyPath] = useState<string>('');
+  const [localUddoktaRefundPath, setLocalUddoktaRefundPath] = useState<string>('');
+  const [localShellUsername, setLocalShellUsername] = useState<string>('');
+  const [localShellPassword, setLocalShellPassword] = useState<string>('');
+  const [localShellAutocode, setLocalShellAutocode] = useState<string>('');
 
   // Banners (image-only)
   const [banners, setBanners] = useState<BackendBanner[]>([]);
@@ -60,14 +65,24 @@ function ThemeCustomization() {
   const [newFeatureText, setNewFeatureText] = useState('');
   const [newFeatureIcon, setNewFeatureIcon] = useState('FaShieldAlt');
 
+  // Sweetnote (first-visit popup)
+  const [localSweetnoteEnabled, setLocalSweetnoteEnabled] = useState<boolean>(false);
+  const [localSweetnoteImageUrl, setLocalSweetnoteImageUrl] = useState<string>('');
+  const [localSweetnoteHeading, setLocalSweetnoteHeading] = useState<string>('');
+  const [localSweetnoteText, setLocalSweetnoteText] = useState<string>('');
+  const [localSweetnoteButtonText, setLocalSweetnoteButtonText] = useState<string>('Join Now');
+  const [localSweetnoteButtonUrl, setLocalSweetnoteButtonUrl] = useState<string>('');
+  const [savingSweetnote, setSavingSweetnote] = useState<boolean>(false);
+
   const [activeTab, setActiveTab] = useState<ThemeTab>('brand');
 
-  const themeTabs: { id: ThemeTab; label: string; icon: typeof FaPalette }[] = [
-    { id: 'brand', label: 'Brand & Logo', icon: FaPalette },
-    { id: 'content', label: 'Content Sections', icon: FaList },
-    { id: 'integrations', label: 'Integrations', icon: FaPlug },
-    { id: 'banners', label: 'Banners', icon: FaImage },
-    { id: 'notices', label: 'Notices', icon: FaBullhorn },
+  const themeTabs: { id: ThemeTab; label: string; icon: typeof Palette }[] = [
+    { id: 'brand', label: 'Brand & Logo', icon: Palette },
+    { id: 'content', label: 'Content Sections', icon: List },
+    { id: 'integrations', label: 'Integrations', icon: Plug },
+    { id: 'sweetnote', label: 'Sweetnote Popup', icon: Gift },
+    { id: 'banners', label: 'Banners', icon: Image },
+    { id: 'notices', label: 'Notices', icon: Megaphone },
   ];
 
   // Initialize local state from theme context.
@@ -99,10 +114,23 @@ function ThemeCustomization() {
         setLocalUddoktaBaseUrl(uddoktaBaseUrl ?? '');
         setLocalUddoktaApiKey('');
         setLocalUddoktaCheckoutPath(uddoktaGatewayConfig?.checkoutPath ?? '');
+        setLocalUddoktaCheckoutV2Path(uddoktaGatewayConfig?.checkoutV2Path ?? '');
         setLocalUddoktaVerifyPath(uddoktaGatewayConfig?.verifyPath ?? '');
+        setLocalUddoktaRefundPath(uddoktaGatewayConfig?.refundPath ?? '');
+        setLocalShellUsername(shellUsername ?? '');
+        setLocalShellPassword(shellPassword ?? '');
+        setLocalShellAutocode(shellAutocode ?? '');
+      }
+      if (activeTab !== 'sweetnote') {
+        setLocalSweetnoteEnabled(sweetnoteEnabled ?? false);
+        setLocalSweetnoteImageUrl(sweetnoteImageUrl ?? '');
+        setLocalSweetnoteHeading(sweetnoteHeading ?? '');
+        setLocalSweetnoteText(sweetnoteText ?? '');
+        setLocalSweetnoteButtonText(sweetnoteButtonText ?? 'Join Now');
+        setLocalSweetnoteButtonUrl(sweetnoteButtonUrl ?? '');
       }
     }
-  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig]);
+  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig, shellUsername, shellPassword, shellAutocode, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl]);
 
   // Apply preview colors
   useEffect(() => {
@@ -394,6 +422,47 @@ function ThemeCustomization() {
     }
   };
 
+  const handleSaveSweetnote = async () => {
+    setSavingSweetnote(true);
+    try {
+      await updateTheme(
+        primaryColor,
+        secondaryColor,
+        user?.email || 'admin',
+        livePurchaseStatementEnabled,
+        topUpCategoriesEnabled,
+        topUpCategoriesBadge,
+        topUpCategoriesHeading,
+        subscriptionsEnabled,
+        subscriptionsBadge,
+        subscriptionsHeading,
+        reviewSectionEnabled,
+        navbarLogoUrl,
+        fontFamily,
+        fontSizeBase,
+        navbarSearchPlaceholder,
+        navbarSearchEnabled,
+        supportWhatsAppUrl,
+        supportMessengerUrl,
+        supportTelegramUrl,
+        uddoktaBaseUrl,
+        undefined,
+        uddoktaGatewayConfig,
+        localSweetnoteEnabled,
+        localSweetnoteImageUrl,
+        localSweetnoteHeading,
+        localSweetnoteText,
+        localSweetnoteButtonText,
+        localSweetnoteButtonUrl
+      );
+      showToast({ type: 'success', text: 'Sweetnote popup saved. Users will see it on first visit.' });
+    } catch (error: any) {
+      showToast({ type: 'error', text: error?.message || 'Failed to save sweetnote.' });
+    } finally {
+      setSavingSweetnote(false);
+    }
+  };
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     
@@ -413,8 +482,10 @@ function ThemeCustomization() {
       await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled, localTopUpCategoriesEnabled, localTopUpCategoriesBadge, localTopUpCategoriesHeading, localSubscriptionsEnabled, localSubscriptionsBadge, localSubscriptionsHeading, localReviewSectionEnabled, localNavbarLogoUrl, localFontFamily, localFontSizeBase, localNavbarSearchPlaceholder, localNavbarSearchEnabled, localSupportWhatsAppUrl, localSupportMessengerUrl, localSupportTelegramUrl, localUddoktaBaseUrl, localUddoktaApiKey.trim() || undefined, {
         baseUrl: localUddoktaBaseUrl.trim(),
         checkoutPath: localUddoktaCheckoutPath.trim(),
+        checkoutV2Path: localUddoktaCheckoutV2Path.trim(),
         verifyPath: localUddoktaVerifyPath.trim(),
-      });
+        refundPath: localUddoktaRefundPath.trim(),
+      }, undefined, undefined, undefined, undefined, undefined, undefined, localShellUsername, localShellPassword, localShellAutocode);
       setLocalUddoktaApiKey('');
       showToast({ 
         type: 'success', 
@@ -494,9 +565,9 @@ function ThemeCustomization() {
   const inputRingStyle = { '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties;
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 space-y-6 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="space-y-6 pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 sm:pl-0 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-4 mb-6 bg-white border shadow-sm rounded-xl border-slate-200">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
@@ -541,7 +612,7 @@ function ThemeCustomization() {
               }`}
               style={activeTab === t.id ? themeBtnStyle : undefined}
             >
-              <t.icon className="w-4 h-4 shrink-0" />
+              <t.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
               {t.label}
             </button>
           ))}
@@ -565,15 +636,15 @@ function ThemeCustomization() {
         </div>
       )}
 
-      <div className="p-4 bg-white border shadow-sm sm:p-5 md:p-6 rounded-xl border-slate-200">
+      <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
         <div className="mb-6">
-          <h3 className="text-lg font-bold text-slate-900">Store Theme Customization</h3>
+          <h3 className="text-lg font-bold tracking-tight text-slate-900">Store Theme Customization</h3>
           <p className="mt-1 text-sm text-slate-600">
             Customize your store brand, colors, content sections, and integrations. Changes apply site-wide.
           </p>
         </div>
 
-        {['brand', 'content', 'integrations'].includes(activeTab) && (
+        {['brand', 'content', 'integrations', 'sweetnote'].includes(activeTab) && (
           <form id="theme-form" onSubmit={handleSave} className="space-y-6">
             {/* Brand & Logo tab */}
             <div className={activeTab !== 'brand' ? 'hidden' : 'space-y-6'}>
@@ -1064,12 +1135,23 @@ function ThemeCustomization() {
                 />
               </div>
               <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout Path</label>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout Path (V1)</label>
                 <input
                   type="text"
                   value={localUddoktaCheckoutPath}
                   onChange={(e) => setLocalUddoktaCheckoutPath(e.target.value)}
-                  placeholder="https://.../checkout-v2 or /checkout-v2"
+                  placeholder="/checkout"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout V2 Path</label>
+                <input
+                  type="text"
+                  value={localUddoktaCheckoutV2Path}
+                  onChange={(e) => setLocalUddoktaCheckoutV2Path(e.target.value)}
+                  placeholder="/checkout-v2 (preferred)"
                   className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
                   style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
                 />
@@ -1080,7 +1162,18 @@ function ThemeCustomization() {
                   type="text"
                   value={localUddoktaVerifyPath}
                   onChange={(e) => setLocalUddoktaVerifyPath(e.target.value)}
-                  placeholder="https://.../verify-payment or /verify-payment"
+                  placeholder="/verify-payment"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Refund Path</label>
+                <input
+                  type="text"
+                  value={localUddoktaRefundPath}
+                  onChange={(e) => setLocalUddoktaRefundPath(e.target.value)}
+                  placeholder="/refund (for future use)"
                   className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
                   style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
                 />
@@ -1102,9 +1195,164 @@ function ThemeCustomization() {
               </div>
             </div>
           </div>
+
+          {/* UC Shell Order Credentials */}
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+            <span className="block mb-3 text-sm font-semibold text-slate-700">UC Shell Order Credentials</span>
+            <p className="mb-4 text-xs text-slate-500">Required for shell order products. Keep credentials private.</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Username</label>
+                <input
+                  type="text"
+                  value={localShellUsername}
+                  onChange={(e) => setLocalShellUsername(e.target.value)}
+                  placeholder="Shell username"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Password</label>
+                <input
+                  type="password"
+                  value={localShellPassword}
+                  onChange={(e) => setLocalShellPassword(e.target.value)}
+                  placeholder="Shell password"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-slate-600">Autocode</label>
+                <input
+                  type="password"
+                  value={localShellAutocode}
+                  onChange={(e) => setLocalShellAutocode(e.target.value)}
+                  placeholder="Shell autocode"
+                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                />
+              </div>
+            </div>
+          </div>
             </div>
 
-            {/* Sticky action bar */}
+            {/* Sweetnote tab - first-visit popup */}
+            <div className={activeTab !== 'sweetnote' ? 'hidden' : 'space-y-6'}>
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Sweetnote Popup (প্রথম ভিজিটে দেখাবে)</span>
+                <p className="mb-4 text-xs text-slate-500">
+                  Website এ কেউ প্রথম ঢুকলে এই popup দেখাবে। Image, Heading, Text আর CTA button সেট করুন। Admin panel থেকে configure করা যাবে।
+                </p>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-slate-100/80 border border-slate-200">
+                    <div>
+                      <span className="block text-sm font-semibold text-slate-700">Enable Sweetnote Popup</span>
+                      <p className="text-xs text-slate-500">On করলে প্রথম visit এ popup দেখাবে</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={localSweetnoteEnabled}
+                        onChange={(e) => setLocalSweetnoteEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div
+                        className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                          localSweetnoteEnabled ? '' : 'bg-slate-300'
+                        }`}
+                        style={localSweetnoteEnabled ? { background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' } : undefined}
+                      >
+                        <div
+                          className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 mt-0.5 ${
+                            localSweetnoteEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          }`}
+                        />
+                      </div>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Image</label>
+                    <input
+                      type="url"
+                      value={localSweetnoteImageUrl}
+                      onChange={(e) => setLocalSweetnoteImageUrl(e.target.value)}
+                      placeholder="https://... or paste URL"
+                      className="w-full px-3 py-2 mb-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                    <ImageUpload
+                      label="Or upload image"
+                      value={localSweetnoteImageUrl}
+                      uploadEndpoint="/upload/sweetnote-image"
+                      onChange={setLocalSweetnoteImageUrl}
+                    />
+                    {localSweetnoteImageUrl && (
+                      <img src={getImageUrl(localSweetnoteImageUrl)} alt="Preview" className="mt-2 max-h-32 rounded-lg object-cover border border-slate-200" />
+                    )}
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Heading</label>
+                    <input
+                      type="text"
+                      value={localSweetnoteHeading}
+                      onChange={(e) => setLocalSweetnoteHeading(e.target.value)}
+                      placeholder="JOIN OUR WHATSAPP CHANNEL অফার ❤️✨🔥"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Text (বাংলা/English)</label>
+                    <textarea
+                      value={localSweetnoteText}
+                      onChange={(e) => setLocalSweetnoteText(e.target.value)}
+                      placeholder="ট্রানজেকশন ID সমস্যা হলে ৫ মিনিট পর চেষ্টা করুন। যেকোনো সমস্যা হলে WhatsApp এ জানান।"
+                      rows={3}
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block mb-1.5 text-xs font-medium text-slate-600">Button Text</label>
+                      <input
+                        type="text"
+                        value={localSweetnoteButtonText}
+                        onChange={(e) => setLocalSweetnoteButtonText(e.target.value)}
+                        placeholder="Join Now"
+                        className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                      />
+                    </div>
+                    <div>
+                      <label className="block mb-1.5 text-xs font-medium text-slate-600">Button URL (WhatsApp/Telegram link)</label>
+                      <input
+                        type="url"
+                        value={localSweetnoteButtonUrl}
+                        onChange={(e) => setLocalSweetnoteButtonUrl(e.target.value)}
+                        placeholder="https://wa.me/... or https://t.me/..."
+                        className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                        style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveSweetnote}
+                    disabled={savingSweetnote}
+                    className="px-5 py-2.5 font-semibold text-white rounded-xl disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' }}
+                  >
+                    {savingSweetnote ? 'Saving...' : 'Save Sweetnote'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky action bar - hide when on sweetnote (has its own save) */}
+            {activeTab !== 'sweetnote' && (
             <div className="sticky z-10 flex flex-wrap gap-3 px-1 pt-4 pb-2 -mx-1 rounded-lg top-4 bg-white/95 backdrop-blur-sm">
             <button
               type="submit"
@@ -1143,6 +1391,7 @@ function ThemeCustomization() {
               Reset to Default
             </button>
           </div>
+            )}
         </form>
         )}
 
@@ -1156,6 +1405,9 @@ function ThemeCustomization() {
             <h4 className="mb-3 text-base font-semibold text-slate-700">
               {editingBanner ? 'Edit Banner' : 'Add New Banner'}
             </h4>
+            <p className="mb-3 text-xs text-slate-500">
+              Admin note: For best full-cover result, use banner image size <strong>1920 x 768 px</strong> (aspect ratio <strong>5:2</strong>).
+            </p>
             <div className="max-w-md">
               <ImageUpload
                 label="Banner Image *"

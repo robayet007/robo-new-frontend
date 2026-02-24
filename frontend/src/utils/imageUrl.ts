@@ -9,10 +9,21 @@ import { SmartAPIManager } from '../services/api';
 export function getImageUrl(path: string | null | undefined): string {
   if (!path || !path.trim()) return '';
   const p = path.trim();
-  if (p.startsWith('http://') || p.startsWith('https://')) return p;
-  if (p.startsWith('/uploads')) {
+  const extractUploadsPath = (value: string): string | null => {
+    const marker = '/uploads/';
+    const idx = value.indexOf(marker);
+    if (idx === -1) return null;
+    const after = value.slice(idx);
+    const noQuery = after.split('?')[0] || after;
+    return noQuery;
+  };
+
+  const uploadsPath = extractUploadsPath(p);
+  if (uploadsPath) {
     const base = SmartAPIManager.getBackendBaseURL();
-    return base ? `${base}${p}` : p;
+    return base ? `${base}${uploadsPath}` : uploadsPath;
   }
+
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
   return p;
 }

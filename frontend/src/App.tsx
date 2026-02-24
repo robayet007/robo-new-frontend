@@ -15,6 +15,7 @@ import OrderHistory from './components/OrderHistory';
 import NotFound from './components/NotFound';
 import InstallButton from './components/InstallButton';
 import SupportFab from './components/SupportFab';
+import SweetnoteModal from './components/SweetnoteModal';
 import MobileBottomNav from './components/MobileBottomNav';
 import RoboGameZone from './components/RoboGameZone';
 import useCatalog from './hooks/useCatalog';
@@ -48,8 +49,7 @@ function App() {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') ?? undefined;
   const isAdminRoute = location.pathname === '/admin';
-  const isPurchaseRoute = location.pathname.startsWith('/category/');
-  const hideSearchBar = location.pathname === '/service-workflow' || isPurchaseRoute;
+  const hideSearchBar = location.pathname !== '/';
   const authLoadingElement = (
     <div className="max-w-6xl p-4 mx-auto mt-4 sm:mt-6 md:mt-8 sm:p-6">
       <div className="flex items-center justify-center py-12">
@@ -256,6 +256,7 @@ function App() {
           <InstallButton />
           <MobileBottomNav />
           <SupportFab />
+          <SweetnoteModal />
         </div>
       )}
       {isAdminRoute && (

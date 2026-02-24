@@ -9,6 +9,8 @@ import { getImageUrl } from '../utils/imageUrl';
 
 type SubTab = 'deals' | 'categories' | 'products';
 
+const SHELL_PACKAGES = ['LITE', '3D', '7D', '30D', '108588', '108589', '108590', '108591', '108592', '108593'] as const;
+
 const themeBtnStyle = {
   background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
 };
@@ -44,6 +46,8 @@ export default function AdminProducts() {
   // Product form
   const [name, setName] = useState('');
   const [ucCategoryQuantities, setUcCategoryQuantities] = useState<Array<{ ucCategory: string; quantity: number }>>([{ ucCategory: '', quantity: 1 }]);
+  const [topupType, setTopupType] = useState<'voucher' | 'shell'>('voucher');
+  const [shellPackage, setShellPackage] = useState<string>('');
   const [price, setPrice] = useState('');
   const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
@@ -72,8 +76,8 @@ export default function AdminProducts() {
   const sortedProducts = useMemo(
     () =>
       [...products].sort((a, b) => {
-        const aVal = (a.ucCategoryQuantities?.length ? a.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? a.ucCategory ?? a.diamonds ?? '';
-        const bVal = (b.ucCategoryQuantities?.length ? b.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? b.ucCategory ?? b.diamonds ?? '';
+        const aVal = (a.topupType === 'shell' && a.shellPackage) ? a.shellPackage : (a.ucCategoryQuantities?.length ? a.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? a.ucCategory ?? a.diamonds ?? '';
+        const bVal = (b.topupType === 'shell' && b.shellPackage) ? b.shellPackage : (b.ucCategoryQuantities?.length ? b.ucCategoryQuantities.map((x) => x.ucCategory).join(',') : null) ?? b.ucCategory ?? b.diamonds ?? '';
         const aNum = Number(aVal);
         const bNum = Number(bVal);
         if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
@@ -276,21 +280,43 @@ export default function AdminProducts() {
       showToast({ type: 'error', text: 'Name, price and category required' });
       return;
     }
+    if (topupType === 'shell') {
+      if (!shellPackage || !SHELL_PACKAGES.includes(shellPackage)) {
+        showToast({ type: 'error', text: 'Select a valid shell package' });
+        return;
+      }
+    } else {
+      const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
+      if (!validRows.length) {
+        showToast({ type: 'error', text: 'Add at least one UC package and quantity' });
+        return;
+      }
+    }
     const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
-    const result = await addProduct({
+    const payload: Parameters<typeof addProduct>[0] = {
       name: name.trim(),
       categoryId,
-      diamonds: validRows.length ? validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ') : '',
-      ucCategoryQuantities: validRows.length ? validRows : [],
       price: Number(price),
       resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
-    });
+      topupType,
+    };
+    if (topupType === 'shell') {
+      payload.shellPackage = shellPackage;
+      payload.diamonds = shellPackage;
+      payload.ucCategoryQuantities = [];
+    } else {
+      payload.diamonds = validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ');
+      payload.ucCategoryQuantities = validRows;
+    }
+    const result = await addProduct(payload);
     if (result.success) {
       showToast({ type: 'success', text: 'Product added!' });
       setName('');
       setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
+      setTopupType('voucher');
+      setShellPackage('');
       setPrice('');
       setResellerPrice('');
       setBonus('');
@@ -301,22 +327,44 @@ export default function AdminProducts() {
   const handleUpdateProduct = async (e: FormEvent) => {
     e.preventDefault();
     if (!editingProduct || !name || !price || !categoryId) return;
+    if (topupType === 'shell') {
+      if (!shellPackage || !SHELL_PACKAGES.includes(shellPackage)) {
+        showToast({ type: 'error', text: 'Select a valid shell package' });
+        return;
+      }
+    } else {
+      const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
+      if (!validRows.length) {
+        showToast({ type: 'error', text: 'Add at least one UC package and quantity' });
+        return;
+      }
+    }
     const validRows = ucCategoryQuantities.filter((r) => r.ucCategory && r.quantity >= 1);
-    const result = await updateProduct(editingProduct, {
+    const payload: Parameters<typeof updateProduct>[1] = {
       name: name.trim(),
       categoryId,
-      diamonds: validRows.length ? validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ') : '',
-      ucCategoryQuantities: validRows.length ? validRows : [],
       price: Number(price),
       resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
-    });
+      topupType,
+    };
+    if (topupType === 'shell') {
+      payload.shellPackage = shellPackage;
+      payload.diamonds = shellPackage;
+      payload.ucCategoryQuantities = [];
+    } else {
+      payload.diamonds = validRows.map((r) => `${r.ucCategory}x${r.quantity}`).join(', ');
+      payload.ucCategoryQuantities = validRows;
+    }
+    const result = await updateProduct(editingProduct, payload);
     if (result.success) {
       showToast({ type: 'success', text: 'Product updated!' });
       setEditingProduct(null);
       setName('');
       setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
+      setTopupType('voucher');
+      setShellPackage('');
       setPrice('');
       setResellerPrice('');
       setBonus('');
@@ -341,9 +389,9 @@ export default function AdminProducts() {
   ];
 
   return (
-    <div className="pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 md:pt-6 md:pr-6 md:pb-6 md:pl-0">
+    <div className="pt-4 pb-4 pl-0 pr-4 sm:pt-5 sm:pr-5 sm:pb-5 md:pt-6 md:pr-6 md:pb-6 md:pl-0" style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}>
       {/* Summary bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 p-4 rounded-xl border border-slate-200 bg-white">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm">
         <div className="flex items-center gap-6">
           <div>
             <p className="text-xs font-medium text-slate-500">Categories</p>
@@ -688,6 +736,8 @@ export default function AdminProducts() {
                     setEditingProduct(null);
                     setName('');
                     setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
+                    setTopupType('voucher');
+                    setShellPackage('');
                     setPrice('');
                     setResellerPrice('');
                     setBonus('');
@@ -726,8 +776,34 @@ export default function AdminProducts() {
                 />
               </label>
               <div className="block sm:col-span-2 lg:col-span-3">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">UC Categories & Quantities</span>
-                <p className="mb-2 text-xs text-slate-500">Add rows for each UC category and quantity. Product will use codes from these categories for auto top-up.</p>
+                <span className="block mb-2 text-sm font-semibold text-slate-700">Top-up Type</span>
+                <div className="flex gap-4 mb-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="topupType"
+                      checked={topupType === 'voucher'}
+                      onChange={() => { setTopupType('voucher'); setShellPackage(''); }}
+                      className="w-4 h-4"
+                    />
+                    <span>Voucher (UC codes)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="topupType"
+                      checked={topupType === 'shell'}
+                      onChange={() => { setTopupType('shell'); setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]); }}
+                      className="w-4 h-4"
+                    />
+                    <span>Shell order</span>
+                  </label>
+                </div>
+              </div>
+              {topupType === 'voucher' && (
+              <div className="block sm:col-span-2 lg:col-span-3">
+                <span className="block mb-2 text-sm font-semibold text-slate-700">UC Packages & Quantities</span>
+                <p className="mb-2 text-xs text-slate-500">Add rows for each UC package and quantity. Product will use codes from these packages for auto top-up.</p>
                 <div className="space-y-2">
                   {ucCategoryQuantities.map((row, idx) => (
                     <div key={idx} className="flex flex-wrap items-center gap-2">
@@ -736,7 +812,7 @@ export default function AdminProducts() {
                         onChange={(e) => updateUcCategoryRow(idx, 'ucCategory', e.target.value)}
                         className="flex-1 min-w-[120px] px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                       >
-                        <option value="">Select UC category</option>
+                        <option value="">Select UC package</option>
                         {ucCategories.map((cat) => (
                           <option key={cat} value={cat}>{cat} UC</option>
                         ))}
@@ -767,6 +843,22 @@ export default function AdminProducts() {
                   </button>
                 </div>
               </div>
+              )}
+              {topupType === 'shell' && (
+              <div className="block sm:col-span-2 lg:col-span-3">
+                <span className="block mb-2 text-sm font-semibold text-slate-700">Shell Package</span>
+                <select
+                  value={shellPackage}
+                  onChange={(e) => setShellPackage(e.target.value)}
+                  className="w-full max-w-xs px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                >
+                  <option value="">Select package</option>
+                  {SHELL_PACKAGES.map((pkg) => (
+                    <option key={pkg} value={pkg}>{pkg}</option>
+                  ))}
+                </select>
+              </div>
+              )}
               <label className="block">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Price (৳) *</span>
                 <input
@@ -844,11 +936,13 @@ export default function AdminProducts() {
                       <div className="flex flex-wrap gap-2 text-sm text-slate-600">
                         <span>{categories.find((c) => c.id === item.categoryId)?.name || '-'}</span>
                         <span>
-                          {item.ucCategoryQuantities?.length
-                            ? `UC: ${item.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(', ')}`
-                            : item.ucCategory
-                              ? `UC: ${item.ucCategory}`
-                              : `Diamonds: ${item.diamonds || 'Special'}`}
+                          {item.topupType === 'shell' && item.shellPackage
+                            ? `Shell: ${item.shellPackage}`
+                            : item.ucCategoryQuantities?.length
+                              ? `UC: ${item.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(', ')}`
+                              : item.ucCategory
+                                ? `UC: ${item.ucCategory}`
+                                : `Diamonds: ${item.diamonds || 'Special'}`}
                         </span>
                         <span className="font-bold text-slate-900">৳{item.price}</span>
                       </div>
@@ -859,12 +953,16 @@ export default function AdminProducts() {
                         onClick={() => {
                           setEditingProduct(item.id);
                           setName(item.name);
+                          setTopupType(item.topupType === 'shell' ? 'shell' : 'voucher');
+                          setShellPackage(item.shellPackage || '');
                           setUcCategoryQuantities(
-                            item.ucCategoryQuantities?.length
-                              ? item.ucCategoryQuantities.map((x) => ({ ucCategory: x.ucCategory, quantity: x.quantity >= 1 ? x.quantity : 1 }))
-                              : item.ucCategory
-                                ? [{ ucCategory: item.ucCategory, quantity: 1 }]
-                                : [{ ucCategory: '', quantity: 1 }]
+                            item.topupType === 'shell'
+                              ? [{ ucCategory: '', quantity: 1 }]
+                              : item.ucCategoryQuantities?.length
+                                ? item.ucCategoryQuantities.map((x) => ({ ucCategory: x.ucCategory, quantity: x.quantity >= 1 ? x.quantity : 1 }))
+                                : item.ucCategory
+                                  ? [{ ucCategory: item.ucCategory, quantity: 1 }]
+                                  : [{ ucCategory: '', quantity: 1 }]
                           );
                           setPrice(String(item.price));
                           setResellerPrice(item.resellerPrice?.toString() || '');

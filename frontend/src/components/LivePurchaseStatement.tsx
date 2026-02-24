@@ -39,7 +39,9 @@ function LivePurchaseStatement() {
       const response = await paymentApi.getAll(50);
       if (response.success && Array.isArray(response.data)) {
         const filtered = response.data.filter(
-          (p: BackendPurchase) => !['add_money', 'balance_transfer'].includes(p.productId || '')
+          (p: BackendPurchase) =>
+            !['add_money', 'balance_transfer'].includes(p.productId || '') &&
+            normalizedStatus(p) !== 'pending'
         );
         setPurchases(filtered.slice(0, 10));
       } else {
@@ -369,12 +371,12 @@ function LivePurchaseStatement() {
                     key={purchase._id}
                     className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-lg bg-slate-50/80 border border-slate-200/60 hover:bg-slate-100/80 transition-colors duration-150"
                   >
-                    <div className="relative flex-shrink-0 w-9 h-9 sm:w-10 sm:h-10">
+                    <div className="relative flex-shrink-0 w-8 h-8 sm:w-9 sm:h-9">
                       {purchase.userPhotoURL ? (
                         <img
                           src={getImageUrl(purchase.userPhotoURL)}
                           alt={displayName}
-                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover border border-slate-200"
+                          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover border border-slate-200"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                             const fallback = e.currentTarget.nextElementSibling;
@@ -383,7 +385,7 @@ function LivePurchaseStatement() {
                         />
                       ) : null}
                       <div
-                        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-semibold border border-slate-200 ${purchase.userPhotoURL ? 'hidden' : ''}`}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-sm font-semibold border border-slate-200 ${purchase.userPhotoURL ? 'hidden' : ''}`}
                         style={{ backgroundColor: 'var(--theme-primary)', color: 'white', opacity: 0.9 }}
                       >
                         {initial}
