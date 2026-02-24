@@ -10,6 +10,11 @@ import { getImageUrl } from '../utils/imageUrl';
 type SubTab = 'deals' | 'categories' | 'products';
 
 const SHELL_PACKAGES = ['LITE', '3D', '7D', '30D', '108588', '108589', '108590', '108591', '108592', '108593'] as const;
+type ShellPackage = (typeof SHELL_PACKAGES)[number];
+const isShellPackage = (value: string): value is ShellPackage =>
+  (SHELL_PACKAGES as readonly string[]).includes(value);
+const toShellPackage = (value: string | null | undefined): ShellPackage | '' =>
+  value && isShellPackage(value) ? value : '';
 
 const themeBtnStyle = {
   background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
@@ -47,7 +52,7 @@ export default function AdminProducts() {
   const [name, setName] = useState('');
   const [ucCategoryQuantities, setUcCategoryQuantities] = useState<Array<{ ucCategory: string; quantity: number }>>([{ ucCategory: '', quantity: 1 }]);
   const [topupType, setTopupType] = useState<'voucher' | 'shell'>('voucher');
-  const [shellPackage, setShellPackage] = useState<string>('');
+  const [shellPackage, setShellPackage] = useState<ShellPackage | ''>('');
   const [price, setPrice] = useState('');
   const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
@@ -281,7 +286,7 @@ export default function AdminProducts() {
       return;
     }
     if (topupType === 'shell') {
-      if (!shellPackage || !SHELL_PACKAGES.includes(shellPackage)) {
+      if (!shellPackage || !isShellPackage(shellPackage)) {
         showToast({ type: 'error', text: 'Select a valid shell package' });
         return;
       }
@@ -296,6 +301,7 @@ export default function AdminProducts() {
     const payload: Parameters<typeof addProduct>[0] = {
       name: name.trim(),
       categoryId,
+      diamonds: '',
       price: Number(price),
       resellerPrice: resellerPrice ? Number(resellerPrice) : undefined,
       bonus: bonus.trim() || undefined,
@@ -328,7 +334,7 @@ export default function AdminProducts() {
     e.preventDefault();
     if (!editingProduct || !name || !price || !categoryId) return;
     if (topupType === 'shell') {
-      if (!shellPackage || !SHELL_PACKAGES.includes(shellPackage)) {
+      if (!shellPackage || !isShellPackage(shellPackage)) {
         showToast({ type: 'error', text: 'Select a valid shell package' });
         return;
       }
@@ -849,7 +855,7 @@ export default function AdminProducts() {
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Shell Package</span>
                 <select
                   value={shellPackage}
-                  onChange={(e) => setShellPackage(e.target.value)}
+                  onChange={(e) => setShellPackage(toShellPackage(e.target.value))}
                   className="w-full max-w-xs px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                 >
                   <option value="">Select package</option>
@@ -954,7 +960,7 @@ export default function AdminProducts() {
                           setEditingProduct(item.id);
                           setName(item.name);
                           setTopupType(item.topupType === 'shell' ? 'shell' : 'voucher');
-                          setShellPackage(item.shellPackage || '');
+                          setShellPackage(toShellPackage(item.shellPackage));
                           setUcCategoryQuantities(
                             item.topupType === 'shell'
                               ? [{ ucCategory: '', quantity: 1 }]
