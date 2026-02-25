@@ -1,5 +1,5 @@
-import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigationType, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import SearchBarRow from './components/SearchBarRow';
 import Notice from './components/Notice';
@@ -46,10 +46,55 @@ function App() {
   const { isAdmin } = useUserRole();
   const { livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading } = useTheme();
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const scrollPositionsRef = useRef<Record<string, { x: number; y: number }>>({});
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') ?? undefined;
   const isAdminRoute = location.pathname === '/admin';
   const hideSearchBar = location.pathname !== '/';
+  // Manual scroll restoration so browser back returns user to previous position.
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+  }, []);
+
+  // Persist scroll position for each history entry key.
+  useEffect(() => {
+    const savePosition = () => {
+      scrollPositionsRef.current[location.key] = {
+        x: window.scrollX,
+        y: window.scrollY,
+      };
+    };
+
+    window.addEventListener('scroll', savePosition, { passive: true });
+
+    return () => {
+      savePosition();
+      window.removeEventListener('scroll', savePosition);
+    };
+  }, [location.key]);
+
+  // Restore scroll position on browser back/forward (POP navigation).
+  useEffect(() => {
+    if (navigationType !== 'POP') return;
+
+    const saved = scrollPositionsRef.current[location.key];
+    if (!saved) return;
+
+    requestAnimationFrame(() => {
+      window.scrollTo(saved.x, saved.y);
+    });
+
+    // Banner/image layouts can shift after mount; re-apply once.
+    const t = window.setTimeout(() => {
+      window.scrollTo(saved.x, saved.y);
+    }, 120);
+
+    return () => window.clearTimeout(t);
+  }, [location.key, navigationType]);
+
   const authLoadingElement = (
     <div className="max-w-6xl p-4 mx-auto mt-4 sm:mt-6 md:mt-8 sm:p-6">
       <div className="flex items-center justify-center py-12">

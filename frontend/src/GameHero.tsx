@@ -19,6 +19,9 @@ interface Slide {
 
 type Direction = "next" | "prev"
 
+let bannerSlidesCache: Slide[] | null = null
+let bannerSlidesRequest: Promise<Slide[]> | null = null
+
 export default function GameHero() {
   const navigate = useNavigate()
   const [activeSlide, setActiveSlide] = useState(0)
@@ -61,21 +64,38 @@ export default function GameHero() {
   useEffect(() => {
     const loadBanners = async () => {
       try {
-        setLoading(true)
-        const response = await bannerApi.getAll()
-        if (response.success && response.data) {
-          const bannerSlides: Slide[] = response.data.map((banner: BackendBanner) => ({
-            id: banner.id,
-            title: banner.title || "",
-            subtitle: banner.subtitle || "",
-            buttonText: banner.buttonText || "",
-            image: banner.image,
-            link: banner.link,
-          }))
-          setSlides(bannerSlides)
-        } else {
-          setSlides([])
+        if (bannerSlidesCache) {
+          setSlides(bannerSlidesCache)
+          setLoading(false)
+          return
         }
+
+        setLoading(true)
+
+        if (!bannerSlidesRequest) {
+          bannerSlidesRequest = bannerApi
+            .getAll()
+            .then((response) => {
+              if (response.success && response.data) {
+                return response.data.map((banner: BackendBanner) => ({
+                  id: banner.id,
+                  title: banner.title || "",
+                  subtitle: banner.subtitle || "",
+                  buttonText: banner.buttonText || "",
+                  image: banner.image,
+                  link: banner.link,
+                }))
+              }
+              return []
+            })
+            .finally(() => {
+              bannerSlidesRequest = null
+            })
+        }
+
+        const bannerSlides = await bannerSlidesRequest
+        bannerSlidesCache = bannerSlides
+        setSlides(bannerSlides)
       } catch (error) {
         console.error("Failed to load banners:", error)
         setSlides([])
