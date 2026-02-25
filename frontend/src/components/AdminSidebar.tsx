@@ -18,8 +18,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getImageUrl } from '../utils/imageUrl';
 
 type SidebarProps = {
-  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher';
-  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher') => void;
+  activeTab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher' | 'shellAccounts';
+  onTabChange: (tab: 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher' | 'shellAccounts') => void;
   onLogout: () => void;
 };
 
@@ -39,6 +39,7 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
     { id: 'reseller' as const, label: 'Reseller Management', icon: Store, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'membership' as const, label: 'Membership Packages', icon: Crown, permission: 'canAccessDashboard', adminOnly: true },
     { id: 'voucher' as const, label: 'Voucher', icon: Ticket, permission: 'canAccessDashboard', adminOnly: true },
+    { id: 'shellAccounts' as const, label: 'Shell Accounts', icon: Store, permission: 'canAccessDashboard', adminOnly: true },
   ];
 
   // Filter menu items based on permissions
@@ -77,9 +78,8 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
 
       {/* Sidebar - White premium */}
       <div
-        className={`fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-slate-200/80 bg-white shadow-xl transition-transform duration-300 ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0`}
+        className={`fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-slate-200/80 bg-white shadow-xl transition-transform duration-300 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0`}
         style={{ fontFamily: "var(--theme-font-family), 'Plus Jakarta Sans', sans-serif" }}
       >
         {/* Logo/Header */}
@@ -124,17 +124,16 @@ function AdminSidebar({ activeTab, onTabChange, onLogout }: SidebarProps) {
                   onTabChange(item.id);
                   setIsMobileOpen(false);
                 }}
-                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left transition-all duration-200 ${
-                  isActive
+                className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-left transition-all duration-200 ${isActive
                     ? 'text-white shadow-md'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`}
+                  }`}
                 style={
                   isActive
                     ? {
-                        background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
-                        boxShadow: `0 4px 12px rgba(var(--theme-primary-rgb), 0.25)`,
-                      }
+                      background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`,
+                      boxShadow: `0 4px 12px rgba(var(--theme-primary-rgb), 0.25)`,
+                    }
                     : {}
                 }
               >

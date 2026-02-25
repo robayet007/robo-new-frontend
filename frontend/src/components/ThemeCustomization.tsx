@@ -15,7 +15,7 @@ const themeBtnStyle = {
 };
 
 function ThemeCustomization() {
-  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl, shellUsername, shellPassword, shellAutocode, pwaAppName, isLoaded, updateTheme } = useTheme();
+  const { primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaConfigured, uddoktaGatewayConfig, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl, pwaAppName, isLoaded, updateTheme } = useTheme();
   const { showToast } = useToast();
   const { user } = useAuth();
   const [localPrimary, setLocalPrimary] = useState<string>('#a855f7');
@@ -45,9 +45,6 @@ function ThemeCustomization() {
   const [localUddoktaCheckoutV2Path, setLocalUddoktaCheckoutV2Path] = useState<string>('');
   const [localUddoktaVerifyPath, setLocalUddoktaVerifyPath] = useState<string>('');
   const [localUddoktaRefundPath, setLocalUddoktaRefundPath] = useState<string>('');
-  const [localShellUsername, setLocalShellUsername] = useState<string>('');
-  const [localShellPassword, setLocalShellPassword] = useState<string>('');
-  const [localShellAutocode, setLocalShellAutocode] = useState<string>('');
   const [localPwaAppName, setLocalPwaAppName] = useState<string>('Robo Top Up Zone');
 
   // Banners (image-only)
@@ -119,9 +116,7 @@ function ThemeCustomization() {
         setLocalUddoktaCheckoutV2Path(uddoktaGatewayConfig?.checkoutV2Path ?? '');
         setLocalUddoktaVerifyPath(uddoktaGatewayConfig?.verifyPath ?? '');
         setLocalUddoktaRefundPath(uddoktaGatewayConfig?.refundPath ?? '');
-        setLocalShellUsername(shellUsername ?? '');
-        setLocalShellPassword(shellPassword ?? '');
-        setLocalShellAutocode(shellAutocode ?? '');
+        setLocalUddoktaRefundPath(uddoktaGatewayConfig?.refundPath ?? '');
       }
       if (activeTab !== 'sweetnote') {
         setLocalSweetnoteEnabled(sweetnoteEnabled ?? false);
@@ -132,7 +127,7 @@ function ThemeCustomization() {
         setLocalSweetnoteButtonUrl(sweetnoteButtonUrl ?? '');
       }
     }
-  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig, shellUsername, shellPassword, shellAutocode, pwaAppName, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl]);
+  }, [isLoaded, activeTab, primaryColor, secondaryColor, livePurchaseStatementEnabled, topUpCategoriesEnabled, subscriptionsEnabled, reviewSectionEnabled, topUpCategoriesBadge, topUpCategoriesHeading, subscriptionsBadge, subscriptionsHeading, navbarLogoUrl, fontFamily, fontSizeBase, navbarSearchPlaceholder, navbarSearchEnabled, supportWhatsAppUrl, supportMessengerUrl, supportTelegramUrl, uddoktaBaseUrl, uddoktaGatewayConfig, pwaAppName, sweetnoteEnabled, sweetnoteImageUrl, sweetnoteHeading, sweetnoteText, sweetnoteButtonText, sweetnoteButtonUrl]);
 
   // Apply preview colors
   useEffect(() => {
@@ -142,10 +137,10 @@ function ThemeCustomization() {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result
           ? {
-              r: parseInt(result[1], 16),
-              g: parseInt(result[2], 16),
-              b: parseInt(result[3], 16),
-            }
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16),
+          }
           : null;
       };
 
@@ -444,9 +439,6 @@ function ThemeCustomization() {
         undefined,
         undefined,
         undefined,
-        shellUsername,
-        shellPassword,
-        shellAutocode,
         localPwaAppName
       );
       showToast({ type: 'success', text: 'Logo saved.' });
@@ -500,13 +492,13 @@ function ThemeCustomization() {
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     // Validate colors
     if (!/^#([A-Fa-f0-9]{6})$/.test(localPrimary)) {
       showToast({ type: 'error', text: 'Invalid primary color format' });
       return;
     }
-    
+
     if (!/^#([A-Fa-f0-9]{6})$/.test(localSecondary)) {
       showToast({ type: 'error', text: 'Invalid secondary color format' });
       return;
@@ -520,19 +512,19 @@ function ThemeCustomization() {
         checkoutV2Path: localUddoktaCheckoutV2Path.trim(),
         verifyPath: localUddoktaVerifyPath.trim(),
         refundPath: localUddoktaRefundPath.trim(),
-      }, undefined, undefined, undefined, undefined, undefined, undefined, localShellUsername, localShellPassword, localShellAutocode, localPwaAppName);
+      }, undefined, undefined, undefined, undefined, undefined, undefined, localPwaAppName);
       setLocalUddoktaApiKey('');
-      showToast({ 
-        type: 'success', 
-        text: 'Theme updated successfully! Changes are live now and saved to MongoDB.' 
+      showToast({
+        type: 'success',
+        text: 'Theme updated successfully! Changes are live now and saved to MongoDB.'
       });
       setPreviewMode(false);
     } catch (error: any) {
       console.error('Theme update error:', error);
       const errorMessage = error.message || 'Failed to update theme';
-      showToast({ 
-        type: 'error', 
-        text: `Failed to save theme: ${errorMessage}. Please check your connection and try again.` 
+      showToast({
+        type: 'error',
+        text: `Failed to save theme: ${errorMessage}. Please check your connection and try again.`
       });
       // Keep preview mode active so user can retry
     } finally {
@@ -561,10 +553,10 @@ function ThemeCustomization() {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
       return result
         ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-          }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
         : null;
     };
     const primaryRgb = hexToRgb(primaryColor);
@@ -642,9 +634,8 @@ function ThemeCustomization() {
               key={t.id}
               type="button"
               onClick={() => setActiveTab(t.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${
-                activeTab === t.id ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${activeTab === t.id ? 'text-white' : 'bg-white text-slate-600 hover:bg-slate-50'
+                }`}
               style={activeTab === t.id ? themeBtnStyle : undefined}
             >
               <t.icon className="h-4 w-4 shrink-0" strokeWidth={2} />
@@ -684,608 +675,558 @@ function ThemeCustomization() {
             {/* Brand & Logo tab */}
             <div className={activeTab !== 'brand' ? 'hidden' : 'space-y-6'}>
               <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Store logo (navbar)</span>
-            <p className="mb-4 text-xs text-slate-500">Upload an image to show in the navbar instead of text. Recommended size: height 40–48px. Display size is fixed in the navbar.</p>
-            <div className="max-w-xs">
-              {localNavbarLogoUrl && (
-                <div className="mb-2">
-                  <img src={localNavbarLogoUrl} alt="Navbar logo preview" className="object-contain w-auto max-h-12" />
-                </div>
-              )}
-              <ImageUpload
-                label="Navbar Logo"
-                value={localNavbarLogoUrl}
-                uploadEndpoint="/upload/navbar-logo"
-                onChange={(url) => setLocalNavbarLogoUrl(url)}
-              />
-              <button
-                type="button"
-                onClick={handleSaveLogo}
-                disabled={savingLogo}
-                className="px-4 py-2 mt-3 text-sm font-semibold text-white transition-all rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
-              >
-                {savingLogo ? 'Saving…' : 'Save logo'}
-              </button>
-            </div>
-          </div>
-
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <label className="block mb-2 text-sm font-semibold text-slate-700">PWA App Name</label>
-            <input
-              type="text"
-              value={localPwaAppName}
-              onChange={(e) => setLocalPwaAppName(e.target.value)}
-              placeholder="Robo Top Up Zone"
-              className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-              style={inputRingStyle}
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              This name is used for installed app title (PWA) and iOS web app title.
-            </p>
-          </div>
-
-          {/* Color Pickers - Brand tab */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-              <label className="block mb-3">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Primary Color *</span>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="color"
-                    value={localPrimary}
-                    onChange={(e) => {
-                      setLocalPrimary(e.target.value);
-                      if (previewMode) {
-                        setPreviewMode(false);
-                        setTimeout(() => setPreviewMode(true), 10);
-                      }
-                    }}
-                    className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Store logo (navbar)</span>
+                <p className="mb-4 text-xs text-slate-500">Upload an image to show in the navbar instead of text. Recommended size: height 40–48px. Display size is fixed in the navbar.</p>
+                <div className="max-w-xs">
+                  {localNavbarLogoUrl && (
+                    <div className="mb-2">
+                      <img src={localNavbarLogoUrl} alt="Navbar logo preview" className="object-contain w-auto max-h-12" />
+                    </div>
+                  )}
+                  <ImageUpload
+                    label="Navbar Logo"
+                    value={localNavbarLogoUrl}
+                    uploadEndpoint="/upload/navbar-logo"
+                    onChange={(url) => setLocalNavbarLogoUrl(url)}
                   />
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={localPrimary}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^#[A-Fa-f0-9]{0,6}$/.test(value)) {
-                          setLocalPrimary(value.length === 6 ? `#${value}` : value);
-                          if (previewMode && value.length === 7) {
-                            setPreviewMode(false);
-                            setTimeout(() => setPreviewMode(true), 10);
-                          }
-                        }
-                      }}
-                      placeholder="#a855f7"
-                      className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={inputRingStyle}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Used for buttons, links, and primary accents</p>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSaveLogo}
+                    disabled={savingLogo}
+                    className="px-4 py-2 mt-3 text-sm font-semibold text-white transition-all rounded-xl bg-slate-700 hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    {savingLogo ? 'Saving…' : 'Save logo'}
+                  </button>
                 </div>
-              </label>
-            </div>
-            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-              <label className="block mb-3">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Secondary Color *</span>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="color"
-                    value={localSecondary}
-                    onChange={(e) => {
-                      setLocalSecondary(e.target.value);
-                      if (previewMode) {
-                        setPreviewMode(false);
-                        setTimeout(() => setPreviewMode(true), 10);
-                      }
-                    }}
-                    className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
-                  />
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={localSecondary}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^#[A-Fa-f0-9]{0,6}$/.test(value)) {
-                          setLocalSecondary(value.length === 6 ? `#${value}` : value);
-                          if (previewMode && value.length === 7) {
-                            setPreviewMode(false);
-                            setTimeout(() => setPreviewMode(true), 10);
-                          }
-                        }
-                      }}
-                      placeholder="#8b5cf6"
-                      className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      style={inputRingStyle}
-                    />
-                    <p className="mt-1 text-xs text-slate-500">Used for gradients and secondary accents</p>
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
+              </div>
 
-          {/* Color Preview - Brand tab */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Color Preview</span>
-            <div className="flex flex-wrap gap-4">
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
-                  style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
-                />
-                <span className="text-xs text-slate-600">Gradient</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
-                  style={{ backgroundColor: localPrimary }}
-                />
-                <span className="text-xs text-slate-600">Primary</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <div
-                  className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
-                  style={{ backgroundColor: localSecondary }}
-                />
-                <span className="text-xs text-slate-600">Secondary</span>
-              </div>
-              <div className="flex flex-col items-center gap-2">
-                <button
-                  type="button"
-                  className="px-6 py-3 font-semibold text-white transition-all rounded-lg shadow-md"
-                  style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
-                >
-                  Sample Button
-                </button>
-                <span className="text-xs text-slate-600">Button Style</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Typography & Navbar - Brand tab */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Typography & Navbar</span>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-slate-700">Font family</label>
-                <select
-                  value={localFontFamily}
-                  onChange={(e) => setLocalFontFamily(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={inputRingStyle}
-                >
-                  <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
-                  <option value="Inter">Inter</option>
-                  <option value="Poppins">Poppins</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="system-ui">system-ui</option>
-                </select>
-              </div>
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-slate-700">Font size (base)</label>
-                <input
-                  type="number"
-                  min={14}
-                  max={20}
-                  value={localFontSizeBase}
-                  onChange={(e) => {
-                    const n = parseInt(e.target.value, 10);
-                    if (!Number.isNaN(n) && n >= 14 && n <= 20) setLocalFontSizeBase(n);
-                  }}
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={inputRingStyle}
-                />
-                <p className="mt-1 text-xs text-slate-500">14–20 px, applied site-wide</p>
-              </div>
-            </div>
-            <div className="mt-4 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <span className="block mb-1 text-sm font-semibold text-slate-700">Show search box in navbar</span>
-                  <p className="text-xs text-slate-500">Display a search input and button in the navbar</p>
-                </div>
-                <label className="relative inline-flex items-center ml-4 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={localNavbarSearchEnabled}
-                    onChange={(e) => setLocalNavbarSearchEnabled(e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    localNavbarSearchEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                  }`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                      localNavbarSearchEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                    } mt-0.5`}></div>
-                  </div>
-                </label>
-              </div>
-              <div>
-                <label className="block mb-2 text-sm font-semibold text-slate-700">Search placeholder</label>
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <label className="block mb-2 text-sm font-semibold text-slate-700">PWA App Name</label>
                 <input
                   type="text"
-                  value={localNavbarSearchPlaceholder}
-                  onChange={(e) => setLocalNavbarSearchPlaceholder(e.target.value)}
-                  placeholder="Search games..."
+                  value={localPwaAppName}
+                  onChange={(e) => setLocalPwaAppName(e.target.value)}
+                  placeholder="Robo Top Up Zone"
                   className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   style={inputRingStyle}
                 />
+                <p className="mt-1 text-xs text-slate-500">
+                  This name is used for installed app title (PWA) and iOS web app title.
+                </p>
               </div>
-            </div>
-          </div>
 
-          {/* Quick Presets - Brand tab */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Quick Presets</span>
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-              {presetColors.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => {
-                    setLocalPrimary(preset.primary);
-                    setLocalSecondary(preset.secondary);
-                    if (previewMode) {
-                      setPreviewMode(false);
-                      setTimeout(() => setPreviewMode(true), 10);
-                    }
-                  }}
-                  className="p-3 text-left transition-all bg-white border rounded-lg shadow-sm border-slate-200 hover:border-slate-300"
-                >
-                  <div className="flex items-center gap-2 mb-2">
+              {/* Color Pickers - Brand tab */}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <label className="block mb-3">
+                    <span className="block mb-2 text-sm font-semibold text-slate-700">Primary Color *</span>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="color"
+                        value={localPrimary}
+                        onChange={(e) => {
+                          setLocalPrimary(e.target.value);
+                          if (previewMode) {
+                            setPreviewMode(false);
+                            setTimeout(() => setPreviewMode(true), 10);
+                          }
+                        }}
+                        className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={localPrimary}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^#[A-Fa-f0-9]{0,6}$/.test(value)) {
+                              setLocalPrimary(value.length === 6 ? `#${value}` : value);
+                              if (previewMode && value.length === 7) {
+                                setPreviewMode(false);
+                                setTimeout(() => setPreviewMode(true), 10);
+                              }
+                            }
+                          }}
+                          placeholder="#a855f7"
+                          className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Used for buttons, links, and primary accents</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <label className="block mb-3">
+                    <span className="block mb-2 text-sm font-semibold text-slate-700">Secondary Color *</span>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="color"
+                        value={localSecondary}
+                        onChange={(e) => {
+                          setLocalSecondary(e.target.value);
+                          if (previewMode) {
+                            setPreviewMode(false);
+                            setTimeout(() => setPreviewMode(true), 10);
+                          }
+                        }}
+                        className="w-20 h-20 border-2 rounded-lg cursor-pointer border-slate-300"
+                      />
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={localSecondary}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^#[A-Fa-f0-9]{0,6}$/.test(value)) {
+                              setLocalSecondary(value.length === 6 ? `#${value}` : value);
+                              if (previewMode && value.length === 7) {
+                                setPreviewMode(false);
+                                setTimeout(() => setPreviewMode(true), 10);
+                              }
+                            }
+                          }}
+                          placeholder="#8b5cf6"
+                          className="w-full px-4 py-2 font-mono border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Used for gradients and secondary accents</p>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Color Preview - Brand tab */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Color Preview</span>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex flex-col items-center gap-2">
                     <div
-                      className="w-6 h-6 border rounded border-slate-300"
-                      style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }}
+                      className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
+                      style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
                     />
-                    <span className="text-sm font-semibold text-slate-700">{preset.name}</span>
+                    <span className="text-xs text-slate-600">Gradient</span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex flex-col items-center gap-2">
                     <div
-                      className="w-4 h-4 border rounded border-slate-300"
-                      style={{ backgroundColor: preset.primary }}
+                      className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
+                      style={{ backgroundColor: localPrimary }}
                     />
+                    <span className="text-xs text-slate-600">Primary</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
                     <div
-                      className="w-4 h-4 border rounded border-slate-300"
-                      style={{ backgroundColor: preset.secondary }}
+                      className="w-24 h-24 border-2 rounded-lg shadow-md border-slate-300"
+                      style={{ backgroundColor: localSecondary }}
+                    />
+                    <span className="text-xs text-slate-600">Secondary</span>
+                  </div>
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      type="button"
+                      className="px-6 py-3 font-semibold text-white transition-all rounded-lg shadow-md"
+                      style={{ background: `linear-gradient(135deg, ${localPrimary}, ${localSecondary})` }}
+                    >
+                      Sample Button
+                    </button>
+                    <span className="text-xs text-slate-600">Button Style</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Typography & Navbar - Brand tab */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Typography & Navbar</span>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">Font family</label>
+                    <select
+                      value={localFontFamily}
+                      onChange={(e) => setLocalFontFamily(e.target.value)}
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    >
+                      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                      <option value="Inter">Inter</option>
+                      <option value="Poppins">Poppins</option>
+                      <option value="Roboto">Roboto</option>
+                      <option value="system-ui">system-ui</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">Font size (base)</label>
+                    <input
+                      type="number"
+                      min={14}
+                      max={20}
+                      value={localFontSizeBase}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        if (!Number.isNaN(n) && n >= 14 && n <= 20) setLocalFontSizeBase(n);
+                      }}
+                      className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                    <p className="mt-1 text-xs text-slate-500">14–20 px, applied site-wide</p>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="block mb-1 text-sm font-semibold text-slate-700">Show search box in navbar</span>
+                      <p className="text-xs text-slate-500">Display a search input and button in the navbar</p>
+                    </div>
+                    <label className="relative inline-flex items-center ml-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={localNavbarSearchEnabled}
+                        onChange={(e) => setLocalNavbarSearchEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${localNavbarSearchEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${localNavbarSearchEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`}></div>
+                      </div>
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-semibold text-slate-700">Search placeholder</label>
+                    <input
+                      type="text"
+                      value={localNavbarSearchPlaceholder}
+                      onChange={(e) => setLocalNavbarSearchPlaceholder(e.target.value)}
+                      placeholder="Search games..."
+                      className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
                     />
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
+                </div>
+              </div>
+
+              {/* Quick Presets - Brand tab */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Quick Presets</span>
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                  {presetColors.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        setLocalPrimary(preset.primary);
+                        setLocalSecondary(preset.secondary);
+                        if (previewMode) {
+                          setPreviewMode(false);
+                          setTimeout(() => setPreviewMode(true), 10);
+                        }
+                      }}
+                      className="p-3 text-left transition-all bg-white border rounded-lg shadow-sm border-slate-200 hover:border-slate-300"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className="w-6 h-6 border rounded border-slate-300"
+                          style={{ background: `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})` }}
+                        />
+                        <span className="text-sm font-semibold text-slate-700">{preset.name}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <div
+                          className="w-4 h-4 border rounded border-slate-300"
+                          style={{ backgroundColor: preset.primary }}
+                        />
+                        <div
+                          className="w-4 h-4 border rounded border-slate-300"
+                          style={{ backgroundColor: preset.secondary }}
+                        />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Content Sections tab */}
             <div className={activeTab !== 'content' ? 'hidden' : 'space-y-6'}>
-            {/* Section Visibility Toggles */}
-            <div className="space-y-4">
-              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
-                    <p className="text-xs text-slate-500">Show or hide the live purchase statement section on the home page</p>
-                  </div>
-                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={localLivePurchaseEnabled}
-                      onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                      localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                    }`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                        localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      } mt-0.5`}></div>
+              {/* Section Visibility Toggles */}
+              <div className="space-y-4">
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="block mb-1 text-sm font-semibold text-slate-700">Live Purchase Statement</span>
+                      <p className="text-xs text-slate-500">Show or hide the live purchase statement section on the home page</p>
                     </div>
-                  </label>
-                </div>
-              </div>
-              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <span className="block mb-1 text-sm font-semibold text-slate-700">Top-up Categories</span>
-                    <p className="text-xs text-slate-500">Show or hide the top-up categories section on the home page</p>
-                  </div>
-                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={localTopUpCategoriesEnabled}
-                      onChange={(e) => setLocalTopUpCategoriesEnabled(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                      localTopUpCategoriesEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                    }`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                        localTopUpCategoriesEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      } mt-0.5`}></div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <span className="block mb-1 text-sm font-semibold text-slate-700">Subscriptions</span>
-                    <p className="text-xs text-slate-500">Show or hide the subscriptions section on the home page</p>
-                  </div>
-                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={localSubscriptionsEnabled}
-                      onChange={(e) => setLocalSubscriptionsEnabled(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                      localSubscriptionsEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                    }`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                        localSubscriptionsEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      } mt-0.5`}></div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <span className="block mb-1 text-sm font-semibold text-slate-700">Review Section</span>
-                    <p className="text-xs text-slate-500">Show or hide the customer reviews section on the home page</p>
-                  </div>
-                  <label className="relative inline-flex items-center ml-4 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={localReviewSectionEnabled}
-                      onChange={(e) => setLocalReviewSectionEnabled(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                      localReviewSectionEnabled ? 'bg-blue-600' : 'bg-slate-300'
-                    }`}>
-                      <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${
-                        localReviewSectionEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                      } mt-0.5`}></div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
-            {/* Section Titles Customization */}
-            <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-              <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
-              <p className="mb-6 text-sm text-slate-600">
-                Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
-              </p>
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
+                    <label className="relative inline-flex items-center ml-4 cursor-pointer">
                       <input
-                        type="text"
-                        value={localTopUpCategoriesBadge}
-                        onChange={(e) => setLocalTopUpCategoriesBadge(e.target.value)}
-                        placeholder="Top-up categories"
-                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        style={inputRingStyle}
+                        type="checkbox"
+                        checked={localLivePurchaseEnabled}
+                        onChange={(e) => setLocalLivePurchaseEnabled(e.target.checked)}
+                        className="sr-only peer"
                       />
-                      <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
-                      <input
-                        type="text"
-                        value={localTopUpCategoriesHeading}
-                        onChange={(e) => setLocalTopUpCategoriesHeading(e.target.value)}
-                        placeholder="Browse Categories"
-                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        style={inputRingStyle}
-                      />
-                      <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
-                    </div>
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${localLivePurchaseEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${localLivePurchaseEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`}></div>
+                      </div>
+                    </label>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
-                      <input
-                        type="text"
-                        value={localSubscriptionsBadge}
-                        onChange={(e) => setLocalSubscriptionsBadge(e.target.value)}
-                        placeholder="Subscriptions"
-                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        style={inputRingStyle}
-                      />
-                      <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="block mb-1 text-sm font-semibold text-slate-700">Top-up Categories</span>
+                      <p className="text-xs text-slate-500">Show or hide the top-up categories section on the home page</p>
                     </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
+                    <label className="relative inline-flex items-center ml-4 cursor-pointer">
                       <input
-                        type="text"
-                        value={localSubscriptionsHeading}
-                        onChange={(e) => setLocalSubscriptionsHeading(e.target.value)}
-                        placeholder="Subscription Plans"
-                        className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        style={inputRingStyle}
+                        type="checkbox"
+                        checked={localTopUpCategoriesEnabled}
+                        onChange={(e) => setLocalTopUpCategoriesEnabled(e.target.checked)}
+                        className="sr-only peer"
                       />
-                      <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${localTopUpCategoriesEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${localTopUpCategoriesEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`}></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="block mb-1 text-sm font-semibold text-slate-700">Subscriptions</span>
+                      <p className="text-xs text-slate-500">Show or hide the subscriptions section on the home page</p>
+                    </div>
+                    <label className="relative inline-flex items-center ml-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={localSubscriptionsEnabled}
+                        onChange={(e) => setLocalSubscriptionsEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${localSubscriptionsEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${localSubscriptionsEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`}></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <span className="block mb-1 text-sm font-semibold text-slate-700">Review Section</span>
+                      <p className="text-xs text-slate-500">Show or hide the customer reviews section on the home page</p>
+                    </div>
+                    <label className="relative inline-flex items-center ml-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={localReviewSectionEnabled}
+                        onChange={(e) => setLocalReviewSectionEnabled(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors duration-200 ${localReviewSectionEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                        }`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 ${localReviewSectionEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                          } mt-0.5`}></div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              {/* Section Titles Customization */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <h3 className="mb-4 text-lg font-bold text-slate-900">Section Titles</h3>
+                <p className="mb-6 text-sm text-slate-600">
+                  Customize the badge and heading text for each section on the home page. You can include emojis and special characters.
+                </p>
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-slate-700">Top-up Categories Section</h4>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
+                        <input
+                          type="text"
+                          value={localTopUpCategoriesBadge}
+                          onChange={(e) => setLocalTopUpCategoriesBadge(e.target.value)}
+                          placeholder="Top-up categories"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
+                        <input
+                          type="text"
+                          value={localTopUpCategoriesHeading}
+                          onChange={(e) => setLocalTopUpCategoriesHeading(e.target.value)}
+                          placeholder="Browse Categories"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-semibold text-slate-700">Subscriptions Section</h4>
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">Badge Text</label>
+                        <input
+                          type="text"
+                          value={localSubscriptionsBadge}
+                          onChange={(e) => setLocalSubscriptionsBadge(e.target.value)}
+                          placeholder="Subscriptions"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Small badge text displayed above the heading</p>
+                      </div>
+                      <div>
+                        <label className="block mb-2 text-sm font-semibold text-slate-700">Heading Text</label>
+                        <input
+                          type="text"
+                          value={localSubscriptionsHeading}
+                          onChange={(e) => setLocalSubscriptionsHeading(e.target.value)}
+                          placeholder="Subscription Plans"
+                          className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          style={inputRingStyle}
+                        />
+                        <p className="mt-1 text-xs text-slate-500">Main heading text for the section</p>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
             </div>
 
             {/* Integrations tab */}
             <div className={activeTab !== 'integrations' ? 'hidden' : 'space-y-6'}>
-          {/* Support links */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Support Links</span>
-            <p className="mb-4 text-xs text-slate-500">URLs for the Support section on the landing page (WhatsApp, Messenger, Telegram). Leave empty to hide that card.</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">WhatsApp URL</label>
-                <input
-                  type="url"
-                  value={localSupportWhatsAppUrl}
-                  onChange={(e) => setLocalSupportWhatsAppUrl(e.target.value)}
-                  placeholder="https://wa.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={inputRingStyle}
-                />
+              {/* Support links */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Support Links</span>
+                <p className="mb-4 text-xs text-slate-500">URLs for the Support section on the landing page (WhatsApp, Messenger, Telegram). Leave empty to hide that card.</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">WhatsApp URL</label>
+                    <input
+                      type="url"
+                      value={localSupportWhatsAppUrl}
+                      onChange={(e) => setLocalSupportWhatsAppUrl(e.target.value)}
+                      placeholder="https://wa.me/..."
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Messenger (Facebook) URL</label>
+                    <input
+                      type="url"
+                      value={localSupportMessengerUrl}
+                      onChange={(e) => setLocalSupportMessengerUrl(e.target.value)}
+                      placeholder="https://m.me/..."
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Telegram URL</label>
+                    <input
+                      type="url"
+                      value={localSupportTelegramUrl}
+                      onChange={(e) => setLocalSupportTelegramUrl(e.target.value)}
+                      placeholder="https://t.me/..."
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Messenger (Facebook) URL</label>
-                <input
-                  type="url"
-                  value={localSupportMessengerUrl}
-                  onChange={(e) => setLocalSupportMessengerUrl(e.target.value)}
-                  placeholder="https://m.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={inputRingStyle}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Telegram URL</label>
-                <input
-                  type="url"
-                  value={localSupportTelegramUrl}
-                  onChange={(e) => setLocalSupportTelegramUrl(e.target.value)}
-                  placeholder="https://t.me/..."
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={inputRingStyle}
-                />
-              </div>
-            </div>
-          </div>
 
-          {/* Payment Gateway (Uddokta Pay) */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">Payment Gateway (Uddokta Pay)</span>
-            <p className="mb-4 text-xs text-slate-500">
-              Add gateway base URL and API key from admin panel. After saving, Instant Pay will start using this config dynamically.
-            </p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway Base URL</label>
-                <input
-                  type="url"
-                  value={localUddoktaBaseUrl}
-                  onChange={(e) => setLocalUddoktaBaseUrl(e.target.value)}
-                  placeholder="https://robotopupzone.paymently.io/api"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout Path (V1)</label>
-                <input
-                  type="text"
-                  value={localUddoktaCheckoutPath}
-                  onChange={(e) => setLocalUddoktaCheckoutPath(e.target.value)}
-                  placeholder="/checkout"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout V2 Path</label>
-                <input
-                  type="text"
-                  value={localUddoktaCheckoutV2Path}
-                  onChange={(e) => setLocalUddoktaCheckoutV2Path(e.target.value)}
-                  placeholder="/checkout-v2 (preferred)"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Verify Path</label>
-                <input
-                  type="text"
-                  value={localUddoktaVerifyPath}
-                  onChange={(e) => setLocalUddoktaVerifyPath(e.target.value)}
-                  placeholder="/verify-payment"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Refund Path</label>
-                <input
-                  type="text"
-                  value={localUddoktaRefundPath}
-                  onChange={(e) => setLocalUddoktaRefundPath(e.target.value)}
-                  placeholder="/refund (for future use)"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway API Key</label>
-                <input
-                  type="password"
-                  value={localUddoktaApiKey}
-                  onChange={(e) => setLocalUddoktaApiKey(e.target.value)}
-                  placeholder="Paste new API key"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-                <p className="mt-1 text-[11px] text-slate-500">
-                  {uddoktaConfigured ? 'API key is configured. Leave empty to keep current key.' : 'No API key configured yet.'}
+              {/* Payment Gateway (Uddokta Pay) */}
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <span className="block mb-3 text-sm font-semibold text-slate-700">Payment Gateway (Uddokta Pay)</span>
+                <p className="mb-4 text-xs text-slate-500">
+                  Add gateway base URL and API key from admin panel. After saving, Instant Pay will start using this config dynamically.
                 </p>
-                <p className="mt-1 text-[11px] text-slate-500">Header key used: RT-UDDOKTAPAY-API-KEY</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway Base URL</label>
+                    <input
+                      type="url"
+                      value={localUddoktaBaseUrl}
+                      onChange={(e) => setLocalUddoktaBaseUrl(e.target.value)}
+                      placeholder="https://robotopupzone.paymently.io/api"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout Path (V1)</label>
+                    <input
+                      type="text"
+                      value={localUddoktaCheckoutPath}
+                      onChange={(e) => setLocalUddoktaCheckoutPath(e.target.value)}
+                      placeholder="/checkout"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Checkout V2 Path</label>
+                    <input
+                      type="text"
+                      value={localUddoktaCheckoutV2Path}
+                      onChange={(e) => setLocalUddoktaCheckoutV2Path(e.target.value)}
+                      placeholder="/checkout-v2 (preferred)"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Verify Path</label>
+                    <input
+                      type="text"
+                      value={localUddoktaVerifyPath}
+                      onChange={(e) => setLocalUddoktaVerifyPath(e.target.value)}
+                      placeholder="/verify-payment"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Refund Path</label>
+                    <input
+                      type="text"
+                      value={localUddoktaRefundPath}
+                      onChange={(e) => setLocalUddoktaRefundPath(e.target.value)}
+                      placeholder="/refund (for future use)"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Gateway API Key</label>
+                    <input
+                      type="password"
+                      value={localUddoktaApiKey}
+                      onChange={(e) => setLocalUddoktaApiKey(e.target.value)}
+                      placeholder="Paste new API key"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {uddoktaConfigured ? 'API key is configured. Leave empty to keep current key.' : 'No API key configured yet.'}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-500">Header key used: RT-UDDOKTAPAY-API-KEY</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* UC Shell Order Credentials */}
-          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
-            <span className="block mb-3 text-sm font-semibold text-slate-700">UC Shell Order Credentials</span>
-            <p className="mb-4 text-xs text-slate-500">Required for shell order products. Keep credentials private.</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Username</label>
-                <input
-                  type="text"
-                  value={localShellUsername}
-                  onChange={(e) => setLocalShellUsername(e.target.value)}
-                  placeholder="Shell username"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Password</label>
-                <input
-                  type="password"
-                  value={localShellPassword}
-                  onChange={(e) => setLocalShellPassword(e.target.value)}
-                  placeholder="Shell password"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-              <div>
-                <label className="block mb-1.5 text-xs font-medium text-slate-600">Autocode</label>
-                <input
-                  type="password"
-                  value={localShellAutocode}
-                  onChange={(e) => setLocalShellAutocode(e.target.value)}
-                  placeholder="Shell autocode"
-                  className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </div>
-            </div>
-          </div>
             </div>
 
             {/* Sweetnote tab - first-visit popup */}
@@ -1309,15 +1250,13 @@ function ThemeCustomization() {
                         className="sr-only peer"
                       />
                       <div
-                        className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                          localSweetnoteEnabled ? '' : 'bg-slate-300'
-                        }`}
+                        className={`w-11 h-6 rounded-full transition-colors duration-200 ${localSweetnoteEnabled ? '' : 'bg-slate-300'
+                          }`}
                         style={localSweetnoteEnabled ? { background: 'linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))' } : undefined}
                       >
                         <div
-                          className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 mt-0.5 ${
-                            localSweetnoteEnabled ? 'translate-x-5' : 'translate-x-0.5'
-                          }`}
+                          className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-200 mt-0.5 ${localSweetnoteEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                            }`}
                         />
                       </div>
                     </label>
@@ -1403,369 +1342,369 @@ function ThemeCustomization() {
 
             {/* Sticky action bar - hide when on sweetnote (has its own save) */}
             {activeTab !== 'sweetnote' && (
-            <div className="sticky z-10 flex flex-wrap gap-3 px-1 pt-4 pb-2 -mx-1 rounded-lg top-4 bg-white/95 backdrop-blur-sm">
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="px-6 py-3 font-semibold text-white transition-all rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
-              }}
-              onMouseEnter={(e) => {
-                if (!isSaving) {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSaving) {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
-                }
-              }}
-            >
-              {isSaving ? 'Saving...' : 'Save Theme'}
-            </button>
-            <button
-              type="button"
-              onClick={handlePreview}
-              disabled={isSaving || previewMode}
-              className="px-6 py-3 font-semibold text-blue-700 transition-all bg-blue-100 rounded-xl hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Preview Changes
-            </button>
-            <button
-              type="button"
-              onClick={handleReset}
-              disabled={isSaving}
-              className="px-6 py-3 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Reset to Default
-            </button>
-          </div>
+              <div className="sticky z-10 flex flex-wrap gap-3 px-1 pt-4 pb-2 -mx-1 rounded-lg top-4 bg-white/95 backdrop-blur-sm">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="px-6 py-3 font-semibold text-white transition-all rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSaving) {
+                      e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSaving) {
+                      e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                    }
+                  }}
+                >
+                  {isSaving ? 'Saving...' : 'Save Theme'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePreview}
+                  disabled={isSaving || previewMode}
+                  className="px-6 py-3 font-semibold text-blue-700 transition-all bg-blue-100 rounded-xl hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Preview Changes
+                </button>
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isSaving}
+                  className="px-6 py-3 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Reset to Default
+                </button>
+              </div>
             )}
-        </form>
+          </form>
         )}
 
         {activeTab === 'banners' && (
-        <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
-          <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
-          <form
-            className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
-            onSubmit={editingBanner ? handleUpdateBanner : handleAddBanner}
-          >
-            <h4 className="mb-3 text-base font-semibold text-slate-700">
-              {editingBanner ? 'Edit Banner' : 'Add New Banner'}
-            </h4>
-            <p className="mb-3 text-xs text-slate-500">
-              Admin note: For best full-cover result, use banner image size <strong>1920 x 768 px</strong> (aspect ratio <strong>5:2</strong>).
-            </p>
-            <div className="max-w-md">
-              <ImageUpload
-                label="Banner Image *"
-                value={bannerImage}
-                onChange={setBannerImage}
-                uploadEndpoint="/upload/banner-image"
-              />
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                type="submit"
-                className="px-4 py-2 font-semibold text-white transition-all rounded-xl"
-                style={{ background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))` }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
-                }}
-              >
-                {editingBanner ? 'Update Banner' : 'Add Banner'}
-              </button>
-              {editingBanner && (
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Banner Management</h3>
+            <form
+              className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
+              onSubmit={editingBanner ? handleUpdateBanner : handleAddBanner}
+            >
+              <h4 className="mb-3 text-base font-semibold text-slate-700">
+                {editingBanner ? 'Edit Banner' : 'Add New Banner'}
+              </h4>
+              <p className="mb-3 text-xs text-slate-500">
+                Admin note: For best full-cover result, use banner image size <strong>1920 x 768 px</strong> (aspect ratio <strong>5:2</strong>).
+              </p>
+              <div className="max-w-md">
+                <ImageUpload
+                  label="Banner Image *"
+                  value={bannerImage}
+                  onChange={setBannerImage}
+                  uploadEndpoint="/upload/banner-image"
+                />
+              </div>
+              <div className="flex gap-2 mt-4">
                 <button
-                  type="button"
-                  onClick={handleCancelBannerEdit}
-                  className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                  type="submit"
+                  className="px-4 py-2 font-semibold text-white transition-all rounded-xl"
+                  style={{ background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))` }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                  }}
                 >
-                  Cancel
+                  {editingBanner ? 'Update Banner' : 'Add Banner'}
                 </button>
-              )}
-            </div>
-          </form>
-          <div>
-            <h4 className="mb-3 text-base font-semibold text-slate-700">Existing Banners ({banners.length})</h4>
-            <div className="space-y-2">
-              {banners.length > 0 ? (
-                banners.map((banner) => {
-                  const isActive = banner.isActive !== false;
-                  return (
-                    <div
-                      key={banner.id}
-                      className={`p-4 transition-colors border rounded-lg ${isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'} hover:bg-slate-50`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          {!isActive && (
-                            <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
-                              Inactive
-                            </span>
-                          )}
-                          <div className="mb-2">
-                            <img
-                              src={getImageUrl(banner.image)}
-                              alt="Banner"
-                              className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={isActive}
-                                onChange={() => handleToggleBannerActive(banner.id, isActive)}
-                                className="sr-only peer"
+                {editingBanner && (
+                  <button
+                    type="button"
+                    onClick={handleCancelBannerEdit}
+                    className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+            <div>
+              <h4 className="mb-3 text-base font-semibold text-slate-700">Existing Banners ({banners.length})</h4>
+              <div className="space-y-2">
+                {banners.length > 0 ? (
+                  banners.map((banner) => {
+                    const isActive = banner.isActive !== false;
+                    return (
+                      <div
+                        key={banner.id}
+                        className={`p-4 transition-colors border rounded-lg ${isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'} hover:bg-slate-50`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            {!isActive && (
+                              <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
+                                Inactive
+                              </span>
+                            )}
+                            <div className="mb-2">
+                              <img
+                                src={getImageUrl(banner.image)}
+                                alt="Banner"
+                                className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
                               />
-                              <div
-                                className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
-                                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                              />
-                            </label>
-                            <span className="text-[10px] text-slate-500">{isActive ? 'ON' : 'OFF'}</span>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all"
-                            onClick={() => handleEditBanner(banner)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all"
-                            onClick={() => handleRemoveBanner(banner.id)}
-                          >
-                            Delete
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isActive}
+                                  onChange={() => handleToggleBannerActive(banner.id, isActive)}
+                                  className="sr-only peer"
+                                />
+                                <div
+                                  className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                                />
+                              </label>
+                              <span className="text-[10px] text-slate-500">{isActive ? 'ON' : 'OFF'}</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all"
+                              onClick={() => handleEditBanner(banner)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all"
+                              onClick={() => handleRemoveBanner(banner.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-500">No banners yet. Add your first banner.</div>
-              )}
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-slate-500">No banners yet. Add your first banner.</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {activeTab === 'notices' && (
-        <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
-          <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
-          <form
-            className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
-            onSubmit={editingNotice ? handleUpdateNotice : handleAddNotice}
-          >
-            <h4 className="mb-3 text-base font-semibold text-slate-700">
-              {editingNotice ? 'Edit Notice' : 'Add New Notice'}
-            </h4>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <label className="block md:col-span-2">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
-                <textarea
-                  required
-                  value={noticeMessage}
-                  onChange={(e) => setNoticeMessage(e.target.value)}
-                  placeholder="Notice message..."
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </label>
-              <label className="block">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
-                <input
-                  value={noticeTitle}
-                  onChange={(e) => setNoticeTitle(e.target.value)}
-                  placeholder="Notice Title"
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </label>
-              <label className="block">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Icon</span>
-                <select
-                  value={noticeIcon}
-                  onChange={(e) => setNoticeIcon(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                >
-                  <option value="FaRobot">Robot</option>
-                  <option value="FaShieldAlt">Shield</option>
-                  <option value="FaBolt">Bolt</option>
-                </select>
-              </label>
-              <label className="block">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
-                <input
-                  type="number"
-                  value={noticeOrder}
-                  onChange={(e) => setNoticeOrder(e.target.value)}
-                  placeholder="0"
-                  className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                />
-              </label>
-              <div className="block md:col-span-2">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Features (optional)</span>
-                <div className="mb-2 space-y-2">
-                  {noticeFeatures.map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-white border rounded-lg border-slate-200">
-                      <span className="flex-1 text-sm">{feature.text}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFeature(index)}
-                        className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newFeatureText}
-                    onChange={(e) => setNewFeatureText(e.target.value)}
-                    placeholder="Feature text"
-                    className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+          <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200 sm:p-5 md:p-6">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">Notice Management</h3>
+            <form
+              className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
+              onSubmit={editingNotice ? handleUpdateNotice : handleAddNotice}
+            >
+              <h4 className="mb-3 text-base font-semibold text-slate-700">
+                {editingNotice ? 'Edit Notice' : 'Add New Notice'}
+              </h4>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="block md:col-span-2">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Message *</span>
+                  <textarea
+                    required
+                    value={noticeMessage}
+                    onChange={(e) => setNoticeMessage(e.target.value)}
+                    placeholder="Notice message..."
+                    rows={3}
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                     style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
                   />
+                </label>
+                <label className="block">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Title (optional)</span>
+                  <input
+                    value={noticeTitle}
+                    onChange={(e) => setNoticeTitle(e.target.value)}
+                    placeholder="Notice Title"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                  />
+                </label>
+                <label className="block">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Icon</span>
                   <select
-                    value={newFeatureIcon}
-                    onChange={(e) => setNewFeatureIcon(e.target.value)}
-                    className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                    value={noticeIcon}
+                    onChange={(e) => setNoticeIcon(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                     style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
                   >
+                    <option value="FaRobot">Robot</option>
                     <option value="FaShieldAlt">Shield</option>
                     <option value="FaBolt">Bolt</option>
-                    <option value="FaRobot">Robot</option>
                   </select>
-                  <button
-                    type="button"
-                    onClick={handleAddFeature}
-                    className="px-4 py-2 text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200"
-                  >
-                    Add Feature
-                  </button>
+                </label>
+                <label className="block">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Display Order</span>
+                  <input
+                    type="number"
+                    value={noticeOrder}
+                    onChange={(e) => setNoticeOrder(e.target.value)}
+                    placeholder="0"
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                    style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                  />
+                </label>
+                <div className="block md:col-span-2">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Features (optional)</span>
+                  <div className="mb-2 space-y-2">
+                    {noticeFeatures.map((feature, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-white border rounded-lg border-slate-200">
+                        <span className="flex-1 text-sm">{feature.text}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFeature(index)}
+                          className="px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newFeatureText}
+                      onChange={(e) => setNewFeatureText(e.target.value)}
+                      placeholder="Feature text"
+                      className="flex-1 px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    />
+                    <select
+                      value={newFeatureIcon}
+                      onChange={(e) => setNewFeatureIcon(e.target.value)}
+                      className="px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                      style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                    >
+                      <option value="FaShieldAlt">Shield</option>
+                      <option value="FaBolt">Bolt</option>
+                      <option value="FaRobot">Robot</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleAddFeature}
+                      className="px-4 py-2 text-blue-700 bg-blue-100 rounded-xl hover:bg-blue-200"
+                    >
+                      Add Feature
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex gap-2 mt-4">
-              <button
-                type="submit"
-                className="px-4 py-2 font-semibold text-white transition-all rounded-xl"
-                style={{ background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))` }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
-                }}
-              >
-                {editingNotice ? 'Update Notice' : 'Add Notice'}
-              </button>
-              {editingNotice && (
+              <div className="flex gap-2 mt-4">
                 <button
-                  type="button"
-                  onClick={handleCancelNoticeEdit}
-                  className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                  type="submit"
+                  className="px-4 py-2 font-semibold text-white transition-all rounded-xl"
+                  style={{ background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))` }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary-hover), var(--theme-secondary-dark))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`;
+                  }}
                 >
-                  Cancel
+                  {editingNotice ? 'Update Notice' : 'Add Notice'}
                 </button>
-              )}
-            </div>
-          </form>
-          <div>
-            <h4 className="mb-3 text-base font-semibold text-slate-700">Existing Notices ({notices.length})</h4>
-            <div className="space-y-2">
-              {notices.length > 0 ? (
-                notices.map((notice) => {
-                  const isActive = notice.isActive !== false;
-                  return (
-                    <div
-                      key={notice.id}
-                      className={`p-4 transition-colors border rounded-lg ${isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'} hover:bg-slate-50`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                          {!isActive && (
-                            <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
-                              Inactive
+                {editingNotice && (
+                  <button
+                    type="button"
+                    onClick={handleCancelNoticeEdit}
+                    className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+            <div>
+              <h4 className="mb-3 text-base font-semibold text-slate-700">Existing Notices ({notices.length})</h4>
+              <div className="space-y-2">
+                {notices.length > 0 ? (
+                  notices.map((notice) => {
+                    const isActive = notice.isActive !== false;
+                    return (
+                      <div
+                        key={notice.id}
+                        className={`p-4 transition-colors border rounded-lg ${isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'} hover:bg-slate-50`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            {!isActive && (
+                              <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-slate-200 text-slate-600 text-xs font-semibold">
+                                Inactive
+                              </span>
+                            )}
+                            <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+                              Order: {notice.displayOrder}
                             </span>
-                          )}
-                          <span className="inline-block px-2 py-0.5 mb-2 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
-                            Order: {notice.displayOrder}
-                          </span>
-                          {notice.title && (
-                            <p className="mb-1 text-sm font-semibold text-slate-900">{notice.title}</p>
-                          )}
-                          <p className="mb-2 text-sm text-slate-700">{notice.message}</p>
-                          {notice.features && notice.features.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {notice.features.map((feature, index) => (
-                                <span key={index} className="px-2 py-1 text-xs rounded text-slate-600 bg-slate-100">
-                                  {feature.text}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <label className="relative inline-flex items-center cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={isActive}
-                                onChange={() => handleToggleNoticeActive(notice.id, isActive)}
-                                className="sr-only peer"
-                              />
-                              <div
-                                className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
-                                style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
-                              />
-                            </label>
-                            <span className="text-[10px] text-slate-500">{isActive ? 'ON' : 'OFF'}</span>
+                            {notice.title && (
+                              <p className="mb-1 text-sm font-semibold text-slate-900">{notice.title}</p>
+                            )}
+                            <p className="mb-2 text-sm text-slate-700">{notice.message}</p>
+                            {notice.features && notice.features.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {notice.features.map((feature, index) => (
+                                  <span key={index} className="px-2 py-1 text-xs rounded text-slate-600 bg-slate-100">
+                                    {feature.text}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            type="button"
-                            className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all"
-                            onClick={() => handleEditNotice(notice)}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all"
-                            onClick={() => handleRemoveNotice(notice.id)}
-                          >
-                            Delete
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={isActive}
+                                  onChange={() => handleToggleNoticeActive(notice.id, isActive)}
+                                  className="sr-only peer"
+                                />
+                                <div
+                                  className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
+                                  style={{ '--tw-ring-color': 'var(--theme-primary)' } as React.CSSProperties}
+                                />
+                              </label>
+                              <span className="text-[10px] text-slate-500">{isActive ? 'ON' : 'OFF'}</span>
+                            </div>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all"
+                              onClick={() => handleEditNotice(notice)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all"
+                              onClick={() => handleRemoveNotice(notice.id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-slate-500">No notices yet. Add your first notice.</div>
-              )}
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center text-slate-500">No notices yet. Add your first notice.</div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         )}
       </div>
     </div>

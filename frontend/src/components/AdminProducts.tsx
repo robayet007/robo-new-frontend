@@ -57,11 +57,15 @@ export default function AdminProducts() {
   const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
   const [tag, setTag] = useState('');
+  const [shellAccountId, setShellAccountId] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
 
   // UC categories from voucher stats
   const [ucCategories, setUcCategories] = useState<string[]>([]);
+
+  // Shell accounts for selection
+  const [shellAccounts, setShellAccounts] = useState<any[]>([]);
 
   // Deals
   const [deals, setDeals] = useState<BackendDeal[]>([]);
@@ -118,10 +122,23 @@ export default function AdminProducts() {
     }
   };
 
+  const loadShellAccounts = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts`, {
+        headers: { 'x-api-key': import.meta.env.VITE_API_KEY || '' }
+      });
+      const data = await res.json();
+      if (data.success) setShellAccounts(data.data);
+    } catch (err) {
+      console.error('Failed to load shell accounts:', err);
+    }
+  };
+
   useEffect(() => {
     loadAllCategories();
     loadDeals();
     loadUcCategories();
+    loadShellAccounts();
   }, []);
 
   useEffect(() => {
@@ -307,6 +324,7 @@ export default function AdminProducts() {
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
       topupType,
+      shellAccountId: shellAccountId || undefined,
     };
     if (topupType === 'shell') {
       payload.shellPackage = shellPackage;
@@ -327,6 +345,7 @@ export default function AdminProducts() {
       setResellerPrice('');
       setBonus('');
       setTag('');
+      setShellAccountId('');
     } else showToast({ type: 'error', text: result.error || 'Failed' });
   };
 
@@ -354,6 +373,7 @@ export default function AdminProducts() {
       bonus: bonus.trim() || undefined,
       tag: tag.trim() || undefined,
       topupType,
+      shellAccountId: shellAccountId || undefined,
     };
     if (topupType === 'shell') {
       payload.shellPackage = shellPackage;
@@ -375,6 +395,7 @@ export default function AdminProducts() {
       setResellerPrice('');
       setBonus('');
       setTag('');
+      setShellAccountId('');
       setCategoryId(categories[0]?.id ?? '');
     } else showToast({ type: 'error', text: result.error || 'Failed' });
   };
@@ -418,11 +439,10 @@ export default function AdminProducts() {
               key={t.id}
               type="button"
               onClick={() => setSubTab(t.id)}
-              className={`px-4 py-2 text-sm font-semibold transition-colors ${
-                subTab === t.id
+              className={`px-4 py-2 text-sm font-semibold transition-colors ${subTab === t.id
                   ? 'text-white'
                   : 'bg-white text-slate-600 hover:bg-slate-50'
-              }`}
+                }`}
               style={subTab === t.id ? themeBtnStyle : undefined}
             >
               {t.label}
@@ -664,7 +684,7 @@ export default function AdminProducts() {
                               src={getImageUrl(cat.image)}
                               alt={cat.name}
                               className="mt-2 object-cover w-12 h-12 rounded-lg border border-slate-200"
-                              onError={(e) => {(e.target as HTMLImageElement).style.display = 'none';}}
+                              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                             />
                           )}
                         </div>
@@ -806,64 +826,81 @@ export default function AdminProducts() {
                   </label>
                 </div>
               </div>
-              {topupType === 'voucher' && (
-              <div className="block sm:col-span-2 lg:col-span-3">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">UC Packages & Quantities</span>
-                <p className="mb-2 text-xs text-slate-500">Add rows for each UC package and quantity. Product will use codes from these packages for auto top-up.</p>
-                <div className="space-y-2">
-                  {ucCategoryQuantities.map((row, idx) => (
-                    <div key={idx} className="flex flex-wrap items-center gap-2">
-                      <select
-                        value={row.ucCategory}
-                        onChange={(e) => updateUcCategoryRow(idx, 'ucCategory', e.target.value)}
-                        className="flex-1 min-w-[120px] px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                      >
-                        <option value="">Select UC package</option>
-                        {ucCategories.map((cat) => (
-                          <option key={cat} value={cat}>{cat} UC</option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min={1}
-                        value={row.quantity}
-                        onChange={(e) => updateUcCategoryRow(idx, 'quantity', e.target.value)}
-                        className="w-20 px-3 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                        placeholder="Qty"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeUcCategoryRow(idx)}
-                        className="px-3 py-2 text-sm font-semibold rounded-xl bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addUcCategoryRow}
-                    className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300"
+              {topupType === 'shell' && (
+                <label className="block sm:col-span-2 lg:col-span-3">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Shell Account (Gateway) *</span>
+                  <select
+                    required
+                    value={shellAccountId}
+                    onChange={(e) => setShellAccountId(e.target.value)}
+                    className="w-full max-w-md px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
                   >
-                    + Add row
-                  </button>
+                    <option value="">Select account</option>
+                    {shellAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id}>{acc.name} ({acc.region}) - {acc.username}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">The account used to perform top-ups for this product.</p>
+                </label>
+              )}
+              {topupType === 'voucher' && (
+                <div className="block sm:col-span-2 lg:col-span-3">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">UC Packages & Quantities</span>
+                  <p className="mb-2 text-xs text-slate-500">Add rows for each UC package and quantity. Product will use codes from these packages for auto top-up.</p>
+                  <div className="space-y-2">
+                    {ucCategoryQuantities.map((row, idx) => (
+                      <div key={idx} className="flex flex-wrap items-center gap-2">
+                        <select
+                          value={row.ucCategory}
+                          onChange={(e) => updateUcCategoryRow(idx, 'ucCategory', e.target.value)}
+                          className="flex-1 min-w-[120px] px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                        >
+                          <option value="">Select UC package</option>
+                          {ucCategories.map((cat) => (
+                            <option key={cat} value={cat}>{cat} UC</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min={1}
+                          value={row.quantity}
+                          onChange={(e) => updateUcCategoryRow(idx, 'quantity', e.target.value)}
+                          className="w-20 px-3 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                          placeholder="Qty"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeUcCategoryRow(idx)}
+                          className="px-3 py-2 text-sm font-semibold rounded-xl bg-red-100 text-red-700 hover:bg-red-200"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addUcCategoryRow}
+                      className="px-4 py-2 text-sm font-semibold rounded-xl bg-slate-200 text-slate-700 hover:bg-slate-300"
+                    >
+                      + Add row
+                    </button>
+                  </div>
                 </div>
-              </div>
               )}
               {topupType === 'shell' && (
-              <div className="block sm:col-span-2 lg:col-span-3">
-                <span className="block mb-2 text-sm font-semibold text-slate-700">Shell Package</span>
-                <select
-                  value={shellPackage}
-                  onChange={(e) => setShellPackage(toShellPackage(e.target.value))}
-                  className="w-full max-w-xs px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
-                >
-                  <option value="">Select package</option>
-                  {SHELL_PACKAGES.map((pkg) => (
-                    <option key={pkg} value={pkg}>{pkg}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="block sm:col-span-2 lg:col-span-3">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Shell Package</span>
+                  <select
+                    value={shellPackage}
+                    onChange={(e) => setShellPackage(toShellPackage(e.target.value))}
+                    className="w-full max-w-xs px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                  >
+                    <option value="">Select package</option>
+                    {SHELL_PACKAGES.map((pkg) => (
+                      <option key={pkg} value={pkg}>{pkg}</option>
+                    ))}
+                  </select>
+                </div>
               )}
               <label className="block">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Price (৳) *</span>
@@ -974,6 +1011,7 @@ export default function AdminProducts() {
                           setResellerPrice(item.resellerPrice?.toString() || '');
                           setBonus(item.bonus || '');
                           setTag(item.tag || '');
+                          setShellAccountId(item.shellAccountId || '');
                           setCategoryId(item.categoryId);
                           document.querySelector('.product-form')?.scrollIntoView({ behavior: 'smooth' });
                         }}

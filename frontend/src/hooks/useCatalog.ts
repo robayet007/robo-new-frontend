@@ -15,15 +15,15 @@ const getCategoryImageUrl = (category: Category): string => {
   if (!category || !category.name) {
     return '/diamond-top-up.png';
   }
-  
+
   // If category has an image URL, use it (resolve /uploads to full backend URL)
   if (category.image) {
     return getImageUrl(category.image);
   }
-  
+
   // Fallback to name-based logic
   const nameLower = category.name.toLowerCase();
-  
+
   if (nameLower.includes('weekly')) {
     return '/weekly.jpg';
   } else if (nameLower.includes('monthly')) {
@@ -35,7 +35,7 @@ const getCategoryImageUrl = (category: Category): string => {
   } else if (nameLower.includes('level') && nameLower.includes('up')) {
     return '/level-up-pass.png';
   }
-  
+
   // Default fallback image
   return '/diamond-top-up.png';
 };
@@ -54,9 +54,9 @@ function useCatalog() {
     try {
       setLoading(true);
       setError(null);
-      
+
       // console.log('📦 Loading catalog data from backend...');
-      
+
       // Try multiple endpoints for categories
       let categoriesRes: ApiResponse<BackendCategory[]> | undefined;
       const categoryEndpoints = [
@@ -80,7 +80,7 @@ function useCatalog() {
           throw new Error('Cannot extract categories');
         }
       ];
-      
+
       for (const endpoint of categoryEndpoints) {
         try {
           categoriesRes = await endpoint();
@@ -92,11 +92,11 @@ function useCatalog() {
           // console.log('Category endpoint failed, trying next...');
         }
       }
-      
+
       // Load products (pass userId and userEmail for reseller pricing)
       let convertedProducts: Product[] | null = null;
       const productsRes = await productApi.getAll(user?.uid, user?.email || undefined);
-      
+
       if (productsRes.success && productsRes.data) {
         const backendProducts = productsRes.data;
         convertedProducts = backendProducts
@@ -110,6 +110,7 @@ function useCatalog() {
             ucCategoryQuantities: p.ucCategoryQuantities,
             topupType: p.topupType,
             shellPackage: p.shellPackage,
+            shellAccountId: p.shellAccountId,
             price: p.price,
             resellerPrice: p.resellerPrice,
             bonus: p.bonus,
@@ -119,7 +120,7 @@ function useCatalog() {
       } else {
         throw new Error(productsRes.message || 'Failed to load products');
       }
-      
+
       // Process categories
       if (categoriesRes?.success && categoriesRes.data) {
         const backendCategories = categoriesRes.data;
@@ -134,7 +135,7 @@ function useCatalog() {
             image: c.image || undefined
           }));
         setCategories(convertedCategories);
-        
+
         // Update localStorage with new categories (only if products were loaded successfully)
         if (convertedProducts) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -142,7 +143,7 @@ function useCatalog() {
             products: convertedProducts
           }));
         }
-        
+
         // Preload category images (non-blocking)
         const categoryImageUrls = convertedCategories.map(cat => getCategoryImageUrl(cat));
         preloadImages(categoryImageUrls).catch(() => {
@@ -158,13 +159,13 @@ function useCatalog() {
             description: `Products in ${catId}`
           }));
           setCategories(extractedCategories);
-          
+
           // Update localStorage with extracted categories
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
             categories: extractedCategories,
             products: convertedProducts
           }));
-          
+
           // Preload category images for extracted categories too
           const categoryImageUrls = extractedCategories.map(cat => getCategoryImageUrl(cat));
           preloadImages(categoryImageUrls).catch(() => {
@@ -173,11 +174,11 @@ function useCatalog() {
           // console.warn('Using extracted categories from products');
         }
       }
-      
+
     } catch (err) {
       // console.error('Failed to load from backend:', err);
       setError(err instanceof Error ? err.message : 'Backend connection failed. Using local backup.');
-      
+
       // Try to load from localStorage
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
@@ -234,7 +235,7 @@ function useCatalog() {
         // console.error('Failed to parse localStorage data:', parseErr);
       }
     }
-    
+
     // Then load fresh data from backend
     loadFromBackend();
   }, [retryCount, loadFromBackend]);
@@ -245,7 +246,7 @@ function useCatalog() {
         id: crypto.randomUUID(),
         ...category
       };
-      
+
       const response = await categoryApi.create({
         id: newCategory.id,
         name: newCategory.name,
@@ -255,7 +256,7 @@ function useCatalog() {
         dealId: newCategory.dealId || null,
         isActive: true
       });
-      
+
       if (response.success) {
         setCategories(prev => [...prev, newCategory]);
         saveToStorage();
@@ -265,9 +266,9 @@ function useCatalog() {
       }
     } catch (err) {
       // console.error('Failed to save category to backend:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to create category' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to create category'
       };
     }
   };
@@ -284,9 +285,9 @@ function useCatalog() {
       return { success: false, error: response.message };
     } catch (err) {
       // console.error('Failed to delete category:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to delete category' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to delete category'
       };
     }
   };
@@ -297,9 +298,9 @@ function useCatalog() {
         id: crypto.randomUUID(),
         ...product
       };
-      
+
       const category = categories.find(c => c.id === product.categoryId);
-      
+
       const response = await productApi.create({
         id: newProduct.id,
         categoryId: newProduct.categoryId,
@@ -309,6 +310,7 @@ function useCatalog() {
         ucCategoryQuantities: newProduct.ucCategoryQuantities,
         topupType: newProduct.topupType,
         shellPackage: newProduct.shellPackage,
+        shellAccountId: newProduct.shellAccountId,
         price: newProduct.price,
         resellerPrice: newProduct.resellerPrice,
         bonus: newProduct.bonus || '',
@@ -316,7 +318,7 @@ function useCatalog() {
         categoryName: category?.name || 'Unknown',
         isActive: true
       });
-      
+
       if (response.success) {
         setProducts(prev => [...prev, newProduct]);
         saveToStorage();
@@ -326,9 +328,9 @@ function useCatalog() {
       }
     } catch (err) {
       // console.error('Failed to save product to backend:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to create product' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to create product'
       };
     }
   };
@@ -341,7 +343,7 @@ function useCatalog() {
       }
 
       const category = categories.find(c => c.id === (productData.categoryId || existingProduct.categoryId));
-      
+
       const response = await productApi.update(id, {
         id: id,
         categoryId: productData.categoryId || existingProduct.categoryId,
@@ -351,6 +353,7 @@ function useCatalog() {
         ucCategoryQuantities: productData.ucCategoryQuantities !== undefined ? productData.ucCategoryQuantities : existingProduct.ucCategoryQuantities,
         topupType: productData.topupType !== undefined ? productData.topupType : existingProduct.topupType,
         shellPackage: productData.shellPackage !== undefined ? productData.shellPackage : existingProduct.shellPackage,
+        shellAccountId: productData.shellAccountId !== undefined ? productData.shellAccountId : existingProduct.shellAccountId,
         price: productData.price !== undefined ? productData.price : existingProduct.price,
         resellerPrice: productData.resellerPrice !== undefined ? productData.resellerPrice : existingProduct.resellerPrice,
         bonus: productData.bonus !== undefined ? productData.bonus : existingProduct.bonus || '',
@@ -358,10 +361,10 @@ function useCatalog() {
         categoryName: category?.name || 'Unknown',
         isActive: true
       });
-      
+
       if (response.success) {
-        setProducts(prev => prev.map(product => 
-          product.id === id 
+        setProducts(prev => prev.map(product =>
+          product.id === id
             ? { ...product, ...productData }
             : product
         ));
@@ -372,9 +375,9 @@ function useCatalog() {
       }
     } catch (err) {
       // console.error('Failed to update product:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to update product' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to update product'
       };
     }
   };
@@ -390,9 +393,9 @@ function useCatalog() {
       return { success: false, error: response.message };
     } catch (err) {
       // console.error('Failed to delete product:', err);
-      return { 
-        success: false, 
-        error: err instanceof Error ? err.message : 'Failed to delete product' 
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Failed to delete product'
       };
     }
   };
@@ -405,9 +408,9 @@ function useCatalog() {
     setRetryCount(prev => prev + 1);
   };
 
-  return { 
-    categories, 
-    products, 
+  return {
+    categories,
+    products,
     loading,
     error,
     addCategory: addCategoryToBackend,

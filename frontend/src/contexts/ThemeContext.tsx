@@ -37,12 +37,9 @@ interface ThemeContextType {
   sweetnoteText: string;
   sweetnoteButtonText: string;
   sweetnoteButtonUrl: string;
-  shellUsername: string;
-  shellPassword: string;
-  shellAutocode: string;
   pwaAppName: string;
   isLoaded: boolean;
-  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabled?: boolean, sweetnoteImageUrl?: string, sweetnoteHeading?: string, sweetnoteText?: string, sweetnoteButtonText?: string, sweetnoteButtonUrl?: string, shellUsername?: string, shellPassword?: string, shellAutocode?: string, pwaAppName?: string) => Promise<void>;
+  updateTheme: (primaryColor: string, secondaryColor: string, updatedBy?: string, livePurchaseStatementEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadge?: string, topUpCategoriesHeading?: string, subscriptionsEnabled?: boolean, subscriptionsBadge?: string, subscriptionsHeading?: string, reviewSectionEnabled?: boolean, navbarLogoUrl?: string, fontFamily?: string, fontSizeBase?: number, navbarSearchPlaceholder?: string, navbarSearchEnabled?: boolean, supportWhatsAppUrl?: string, supportMessengerUrl?: string, supportTelegramUrl?: string, uddoktaBaseUrl?: string, uddoktaApiKey?: string, uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabled?: boolean, sweetnoteImageUrl?: string, sweetnoteHeading?: string, sweetnoteText?: string, sweetnoteButtonText?: string, sweetnoteButtonUrl?: string, pwaAppName?: string) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -95,25 +92,22 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [sweetnoteText, setSweetnoteText] = useState<string>('');
   const [sweetnoteButtonText, setSweetnoteButtonText] = useState<string>('Join Now');
   const [sweetnoteButtonUrl, setSweetnoteButtonUrl] = useState<string>('');
-  const [shellUsername, setShellUsername] = useState<string>('');
-  const [shellPassword, setShellPassword] = useState<string>('');
-  const [shellAutocode, setShellAutocode] = useState<string>('');
   const [pwaAppName, setPwaAppName] = useState<string>(DEFAULT_PWA_APP_NAME);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
   // Apply CSS variables to root element (colors + typography)
   const applyTheme = (primary: string, secondary: string, font?: string, fontSize?: number) => {
     const root = document.documentElement;
-    
+
     // Convert hex to RGB for rgba usage
     const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
       return result
         ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-          }
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16),
+        }
         : null;
     };
 
@@ -123,7 +117,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // Set CSS variables
     root.style.setProperty('--theme-primary', primary);
     root.style.setProperty('--theme-secondary', secondary);
-    
+
     if (primaryRgb) {
       root.style.setProperty('--theme-primary-rgb', `${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}`);
       root.style.setProperty('--theme-primary-light', `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, 0.14)`);
@@ -133,7 +127,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       root.style.setProperty('--theme-border', 'rgba(0, 0, 0, 0.12)');
     }
-    
+
     if (secondaryRgb) {
       root.style.setProperty('--theme-secondary-rgb', `${secondaryRgb.r}, ${secondaryRgb.g}, ${secondaryRgb.b}`);
     }
@@ -238,9 +232,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           const sweetnoteTextValue = response.data.sweetnoteText ?? '';
           const sweetnoteButtonTextValue = response.data.sweetnoteButtonText ?? 'Join Now';
           const sweetnoteButtonUrlValue = response.data.sweetnoteButtonUrl ?? '';
-          const shellUsernameValue = response.data.shellUsername ?? '';
-          const shellPasswordValue = response.data.shellPassword ?? '';
-          const shellAutocodeValue = response.data.shellAutocode ?? '';
           const pwaAppNameValue = response.data.pwaAppName || DEFAULT_PWA_APP_NAME;
           const versionToken = response.data.updatedAt || new Date().toISOString();
 
@@ -271,9 +262,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setSweetnoteText(sweetnoteTextValue);
           setSweetnoteButtonText(sweetnoteButtonTextValue);
           setSweetnoteButtonUrl(sweetnoteButtonUrlValue);
-          setShellUsername(shellUsernameValue);
-          setShellPassword(shellPasswordValue);
-          setShellAutocode(shellAutocodeValue);
           setPwaAppName(pwaAppNameValue);
           applyTheme(primary, secondary, fontFamilyValue, fontSizeBaseValue);
           applyPwaBranding(navbarLogoUrlValue, pwaAppNameValue, versionToken);
@@ -325,7 +313,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update theme function
-  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabledValue?: boolean, sweetnoteImageUrlValue?: string, sweetnoteHeadingValue?: string, sweetnoteTextValue?: string, sweetnoteButtonTextValue?: string, sweetnoteButtonUrlValue?: string, shellUsernameValue?: string, shellPasswordValue?: string, shellAutocodeValue?: string, pwaAppNameValue?: string) => {
+  const updateTheme = async (primary: string, secondary: string, updatedBy?: string, livePurchaseEnabled?: boolean, topUpCategoriesEnabled?: boolean, topUpCategoriesBadgeValue?: string, topUpCategoriesHeadingValue?: string, subscriptionsEnabledValue?: boolean, subscriptionsBadgeValue?: string, subscriptionsHeadingValue?: string, reviewSectionEnabledValue?: boolean, navbarLogoUrlValue?: string, fontFamilyValue?: string, fontSizeBaseValue?: number, navbarSearchPlaceholderValue?: string, navbarSearchEnabledValue?: boolean, supportWhatsAppUrlValue?: string, supportMessengerUrlValue?: string, supportTelegramUrlValue?: string, uddoktaBaseUrlValue?: string, uddoktaApiKeyValue?: string, uddoktaGatewayConfigValue?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }, sweetnoteEnabledValue?: boolean, sweetnoteImageUrlValue?: string, sweetnoteHeadingValue?: string, sweetnoteTextValue?: string, sweetnoteButtonTextValue?: string, sweetnoteButtonUrlValue?: string, pwaAppNameValue?: string) => {
     try {
       const response = await themeApi.update({
         primaryColor: primary,
@@ -355,9 +343,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         sweetnoteText: sweetnoteTextValue,
         sweetnoteButtonText: sweetnoteButtonTextValue,
         sweetnoteButtonUrl: sweetnoteButtonUrlValue,
-        shellUsername: shellUsernameValue,
-        shellPassword: shellPasswordValue,
-        shellAutocode: shellAutocodeValue,
         pwaAppName: pwaAppNameValue,
         updatedBy: updatedBy || 'admin'
       });
@@ -397,9 +382,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         const savedSweetnoteText = response.data.sweetnoteText ?? '';
         const savedSweetnoteButtonText = response.data.sweetnoteButtonText ?? 'Join Now';
         const savedSweetnoteButtonUrl = response.data.sweetnoteButtonUrl ?? '';
-        const savedShellUsername = response.data.shellUsername ?? '';
-        const savedShellPassword = response.data.shellPassword ?? '';
-        const savedShellAutocode = response.data.shellAutocode ?? '';
         const savedPwaAppName = response.data.pwaAppName ?? pwaAppNameValue ?? pwaAppName;
         const versionToken = response.data.updatedAt || new Date().toISOString();
 
@@ -430,9 +412,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setSweetnoteText(savedSweetnoteText);
         setSweetnoteButtonText(savedSweetnoteButtonText);
         setSweetnoteButtonUrl(savedSweetnoteButtonUrl);
-        setShellUsername(savedShellUsername);
-        setShellPassword(savedShellPassword);
-        setShellAutocode(savedShellAutocode);
         setPwaAppName(savedPwaAppName);
         applyTheme(savedPrimary, savedSecondary, savedFontFamily, savedFontSizeBase);
         applyPwaBranding(savedNavbarLogoUrl, savedPwaAppName, versionToken);
@@ -485,9 +464,6 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         sweetnoteText,
         sweetnoteButtonText,
         sweetnoteButtonUrl,
-        shellUsername,
-        shellPassword,
-        shellAutocode,
         pwaAppName,
         isLoaded,
         updateTheme,

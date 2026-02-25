@@ -13,6 +13,7 @@ import AdminSubscriptions from './AdminSubscriptions';
 import AdminReseller from './AdminReseller';
 import AdminMembership from './AdminMembership';
 import AdminVoucher from './AdminVoucher';
+import AdminShellAccounts from './AdminShellAccounts';
 import AdminProducts from './AdminProducts';
 import ImageUpload from './ImageUpload';
 import { useModeratorPermissionsContext } from '../contexts/ModeratorPermissionsContext';
@@ -34,20 +35,20 @@ function utcToBDTimeForInput(utcDateString: string): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher';
+type TabType = 'dashboard' | 'products' | 'users' | 'orders' | 'gamePackages' | 'theme' | 'subscriptions' | 'reseller' | 'membership' | 'voucher' | 'shellAccounts';
 
 function AdminPanel({ onLogout }: { onLogout: () => void }) {
-  const { 
+  const {
     loading,
     error,
-    retry 
+    retry
   } = useCatalog();
 
   const { role, permissions, loading: permissionsLoading } = useModeratorPermissionsContext();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const validTabs: TabType[] = ['dashboard', 'products', 'users', 'orders', 'gamePackages', 'theme', 'subscriptions', 'reseller', 'membership', 'voucher'];
+  const validTabs: TabType[] = ['dashboard', 'products', 'users', 'orders', 'gamePackages', 'theme', 'subscriptions', 'reseller', 'membership', 'voucher', 'shellAccounts'];
   const tabFromUrl = searchParams.get('tab');
   const initialTab: TabType = validTabs.includes(tabFromUrl as TabType) ? (tabFromUrl as TabType) : 'dashboard';
 
@@ -88,19 +89,20 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       reseller: 'canAccessDashboard', // Reseller is admin-only, but uses dashboard permission for check
       membership: 'canAccessDashboard', // Membership is admin-only, but uses dashboard permission for check
       voucher: 'canAccessDashboard', // Voucher is admin-only, but uses dashboard permission for check
+      shellAccounts: 'canAccessDashboard', // ShellAccounts is admin-only, but uses dashboard permission for check
     };
 
     // Theme and reseller tabs are admin-only
-    if ((activeTab === 'theme' || activeTab === 'reseller' || activeTab === 'membership' || activeTab === 'voucher') && role !== 'admin') {
+    if ((activeTab === 'theme' || activeTab === 'reseller' || activeTab === 'membership' || activeTab === 'voucher' || activeTab === 'shellAccounts') && role !== 'admin') {
       const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
-        tab => tab !== 'theme' && tab !== 'reseller' && tab !== 'membership' && tab !== 'voucher' && hasPermission(tabPermissions[tab])
+        tab => tab !== 'theme' && tab !== 'reseller' && tab !== 'membership' && tab !== 'voucher' && tab !== 'shellAccounts' && hasPermission(tabPermissions[tab])
       );
       if (availableTab) {
         setActiveTab(availableTab);
       }
       return;
     }
-    
+
     if (!hasPermission(tabPermissions[activeTab])) {
       // Find first available tab
       const availableTab = (Object.keys(tabPermissions) as TabType[]).find(
@@ -272,9 +274,9 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     try {
       const response = await gamePackageApi.update(id, { isActive: !currentStatus });
       if (response.success) {
-        showToast({ 
-          type: 'success', 
-          text: `Game package ${!currentStatus ? 'activated' : 'deactivated'} successfully!` 
+        showToast({
+          type: 'success',
+          text: `Game package ${!currentStatus ? 'activated' : 'deactivated'} successfully!`
         });
         await loadGamePackages();
       } else {
@@ -318,6 +320,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'reseller' && 'Reseller Management'}
               {activeTab === 'membership' && 'Membership Packages'}
               {activeTab === 'voucher' && 'Voucher'}
+              {activeTab === 'shellAccounts' && 'Shell Accounts'}
               {activeTab === 'theme' && 'Store Customize & Key Integration'}
             </h1>
             <p className="text-sm font-medium text-slate-500">
@@ -330,6 +333,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               {activeTab === 'reseller' && 'Manage reseller prices for all products'}
               {activeTab === 'membership' && 'Create and manage membership packages for users'}
               {activeTab === 'voucher' && 'Manage voucher settings and workflow'}
+              {activeTab === 'shellAccounts' && 'Manage Shell Top-up accounts and credentials'}
               {activeTab === 'theme' && 'Upload navbar logo and customize theme colors and branding'}
             </p>
             {error && (
@@ -355,6 +359,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
               <AdminMembership />
             ) : activeTab === 'voucher' && role === 'admin' ? (
               <AdminVoucher />
+            ) : activeTab === 'shellAccounts' && role === 'admin' ? (
+              <AdminShellAccounts />
             ) : activeTab === 'subscriptions' && hasPermission('canManageSubscriptions') ? (
               <AdminSubscriptions />
             ) : activeTab === 'dashboard' && hasPermission('canAccessDashboard') ? (
@@ -368,10 +374,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 {/* Game Package Management Section */}
                 <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5 md:p-6">
                   <h3 className="mb-4 text-lg font-bold tracking-tight text-slate-900">Game Package Management</h3>
-                  
+
                   {/* Add/Edit Package Form */}
-                  <form 
-                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200" 
+                  <form
+                    className="p-4 mb-6 border rounded-lg bg-slate-50 border-slate-200"
                     onSubmit={editingPackage ? handleUpdateGamePackage : handleAddGamePackage}
                   >
                     <h4 className="mb-3 text-base font-semibold text-slate-700">
@@ -486,8 +492,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       </label>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <button 
-                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl" 
+                      <button
+                        className="px-4 py-2 font-semibold text-white transition-all rounded-xl"
                         style={{
                           background: `linear-gradient(135deg, var(--theme-primary), var(--theme-secondary))`
                         }}
@@ -502,7 +508,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                         {editingPackage ? 'Update Package' : 'Add Package'}
                       </button>
                       {editingPackage && (
-                        <button 
+                        <button
                           type="button"
                           onClick={handleCancelGamePackageEdit}
                           className="px-4 py-2 font-semibold transition-all bg-slate-200 rounded-xl text-slate-700 hover:bg-slate-300"
@@ -523,9 +529,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                         gamePackages.map((pkg) => {
                           const isActive = pkg.isActive !== false;
                           return (
-                            <div key={pkg.id} className={`p-4 transition-colors border rounded-lg ${
-                              isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
-                            } hover:bg-slate-50`}>
+                            <div key={pkg.id} className={`p-4 transition-colors border rounded-lg ${isActive ? 'border-slate-200 bg-white' : 'border-slate-300 bg-slate-50'
+                              } hover:bg-slate-50`}>
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-2">
@@ -534,7 +539,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         Inactive
                                       </span>
                                     )}
-                                    <span 
+                                    <span
                                       className="px-2 py-0.5 rounded-full text-xs font-semibold"
                                       style={{
                                         backgroundColor: 'var(--theme-primary-light)',
@@ -545,8 +550,8 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                     </span>
                                   </div>
                                   <div className="mb-2">
-                                    <img 
-                                      src={getImageUrl(pkg.image)} 
+                                    <img
+                                      src={getImageUrl(pkg.image)}
                                       alt={pkg.title}
                                       className="object-cover w-full h-32 max-w-md border rounded-lg border-slate-300"
                                       onError={(e) => {
@@ -574,7 +579,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                         onChange={() => handleToggleGamePackageActive(pkg.id, isActive)}
                                         className="sr-only peer"
                                       />
-                                      <div 
+                                      <div
                                         className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"
                                         style={{
                                           '--tw-ring-color': 'var(--theme-primary)'
@@ -585,14 +590,14 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                                       {isActive ? 'ON' : 'OFF'}
                                     </span>
                                   </div>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all" 
+                                  <button
+                                    className="px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 text-sm font-semibold hover:bg-blue-200 transition-all"
                                     onClick={() => handleEditGamePackage(pkg)}
                                   >
                                     Edit
                                   </button>
-                                  <button 
-                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all" 
+                                  <button
+                                    className="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 text-sm font-semibold hover:bg-red-200 transition-all"
                                     onClick={() => handleRemoveGamePackage(pkg.id)}
                                   >
                                     Delete
@@ -623,7 +628,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
                 </div>
               </div>
             )
-          }
+            }
           </div>
         </div>
       </div>

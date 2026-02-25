@@ -40,12 +40,12 @@ export class SmartAPIManager {
     if (import.meta.env.DEV) return 'http://localhost:5000/api';
     throw new Error('VITE_BACKEND_URL (or VITE_API_URL) is not set. Set it in Vercel environment variables.');
   }
-  
+
   // Get API base URL (async for compatibility)
   static async getBaseURLAsync(): Promise<string> {
     return this.getBaseURL();
   }
-  
+
   // Get API key from environment variable (optional for local development)
   static getApiKey(): string | null {
     const apiKey = import.meta.env.VITE_API_KEY || import.meta.env.VITE_BACKEND_API_KEY;
@@ -55,17 +55,17 @@ export class SmartAPIManager {
     }
     return apiKey || null;
   }
-  
+
   // Detect if device is mobile
   static isMobile(): boolean {
     if (typeof window === 'undefined') return false;
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
-  
+
   // Retry fetch with exponential backoff (for mobile networks)
   static async retryFetch(
-    url: string, 
-    options: RequestInit, 
+    url: string,
+    options: RequestInit,
     retries: number = 2,
     baseDelay: number = 1000
   ): Promise<Response> {
@@ -92,25 +92,25 @@ export class SmartAPIManager {
     }
     throw new Error('Failed to fetch after retries');
   }
-  
+
   // Simple fetch to backend with timeout and API key authentication
   static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
     const baseURL = this.getBaseURL();
     const url = `${baseURL}${path}`;
-    
+
     // Get API key for authentication (optional)
     const apiKey = this.getApiKey();
-    
+
     // Detect mobile device for adaptive timeout
     const isMobileDevice = this.isMobile();
-    
+
     // console.log(`🌐 API Call: ${options.method || 'GET'} ${url}`);
-    
+
     // Use provided signal or create new one with timeout
     let controller: AbortController | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
     let signalToUse: AbortSignal;
-    
+
     if (options.signal) {
       // Use provided signal (already has timeout from caller)
       signalToUse = options.signal;
@@ -126,24 +126,24 @@ export class SmartAPIManager {
         }
       }, timeout);
     }
-    
+
     // Build headers - only include API key if provided
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers as Record<string, string> || {})
     };
-    
+
     if (apiKey) {
       headers['X-API-Key'] = apiKey;
     }
-    
+
     // Prepare fetch options
     const fetchOptions: RequestInit = {
       ...options,
       signal: signalToUse,
       headers
     };
-    
+
     try {
       // Use retry logic for mobile devices
       let response: Response;
@@ -153,13 +153,13 @@ export class SmartAPIManager {
       } else {
         response = await fetch(url, fetchOptions);
       }
-      
+
       if (timeoutId) clearTimeout(timeoutId);
       return response;
     } catch (error: any) {
       if (timeoutId) clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        const timeoutMsg = isMobileDevice 
+        const timeoutMsg = isMobileDevice
           ? 'Request timeout. Mobile network may be slow. Please check your connection and try again.'
           : 'Request timeout. Please check your connection.';
         throw new Error(timeoutMsg);
@@ -185,7 +185,7 @@ export const productApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getById: async (id: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendProduct>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -195,7 +195,7 @@ export const productApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getByCategory: async (categoryId: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendProduct[]>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -205,7 +205,7 @@ export const productApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   create: async (productData: Omit<BackendProduct, '_id'>): Promise<ApiResponse<BackendProduct>> => {
     const response = await SmartAPIManager.smartFetch('/products', {
       method: 'POST',
@@ -213,7 +213,7 @@ export const productApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, productData: Partial<BackendProduct>): Promise<ApiResponse<BackendProduct>> => {
     const response = await SmartAPIManager.smartFetch(`/products/${id}`, {
       method: 'PUT',
@@ -221,7 +221,7 @@ export const productApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/${id}`, {
       method: 'DELETE'
@@ -236,17 +236,17 @@ export const categoryApi = {
     const response = await SmartAPIManager.smartFetch('/products/categories/all');
     return response.json();
   },
-  
+
   getAllForAdmin: async (): Promise<ApiResponse<BackendCategory[]>> => {
     const response = await SmartAPIManager.smartFetch('/products/categories/admin');
     return response.json();
   },
-  
+
   getCategories: async (): Promise<ApiResponse<BackendCategory[]>> => {
     const response = await SmartAPIManager.smartFetch('/products/categories');
     return response.json();
   },
-  
+
   create: async (categoryData: Omit<BackendCategory, '_id'>): Promise<ApiResponse<BackendCategory>> => {
     const response = await SmartAPIManager.smartFetch('/products/categories', {
       method: 'POST',
@@ -254,7 +254,7 @@ export const categoryApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, categoryData: Partial<BackendCategory>): Promise<ApiResponse<BackendCategory>> => {
     const response = await SmartAPIManager.smartFetch(`/products/categories/${id}`, {
       method: 'PUT',
@@ -262,7 +262,7 @@ export const categoryApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/categories/${id}`, {
       method: 'DELETE'
@@ -277,12 +277,12 @@ export const dealApi = {
     const response = await SmartAPIManager.smartFetch('/products/deals');
     return response.json();
   },
-  
+
   getById: async (id: string): Promise<ApiResponse<BackendDeal>> => {
     const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`);
     return response.json();
   },
-  
+
   create: async (dealData: Omit<BackendDeal, '_id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<BackendDeal>> => {
     const response = await SmartAPIManager.smartFetch('/products/deals', {
       method: 'POST',
@@ -290,7 +290,7 @@ export const dealApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, dealData: Partial<BackendDeal>): Promise<ApiResponse<BackendDeal>> => {
     const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`, {
       method: 'PUT',
@@ -298,7 +298,7 @@ export const dealApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/deals/${id}`, {
       method: 'DELETE'
@@ -314,12 +314,12 @@ export const bannerApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getById: async (id: string): Promise<ApiResponse<BackendBanner>> => {
     const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`);
     return response.json();
   },
-  
+
   create: async (bannerData: Omit<BackendBanner, '_id' | 'createdAt'>): Promise<ApiResponse<BackendBanner>> => {
     const response = await SmartAPIManager.smartFetch('/products/banners', {
       method: 'POST',
@@ -327,7 +327,7 @@ export const bannerApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, bannerData: Partial<BackendBanner>): Promise<ApiResponse<BackendBanner>> => {
     const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`, {
       method: 'PUT',
@@ -335,7 +335,7 @@ export const bannerApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/banners/${id}`, {
       method: 'DELETE'
@@ -351,12 +351,12 @@ export const noticeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getById: async (id: string): Promise<ApiResponse<BackendNotice>> => {
     const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`);
     return response.json();
   },
-  
+
   create: async (noticeData: Omit<BackendNotice, '_id' | 'createdAt'>): Promise<ApiResponse<BackendNotice>> => {
     const response = await SmartAPIManager.smartFetch('/products/notices', {
       method: 'POST',
@@ -364,7 +364,7 @@ export const noticeApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, noticeData: Partial<BackendNotice>): Promise<ApiResponse<BackendNotice>> => {
     const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`, {
       method: 'PUT',
@@ -372,7 +372,7 @@ export const noticeApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/products/notices/${id}`, {
       method: 'DELETE'
@@ -515,16 +515,16 @@ export const paymentApi = {
       // console.log('📦 Request Payload:', JSON.stringify(paymentData, null, 2));
       // console.log('🔑 Payment Method:', paymentData.paymentMethod);
       // console.log('💰 Updated Balance:', paymentData.updatedBalance);
-      
+
       const response = await SmartAPIManager.smartFetch('/payments/verify', {
         method: 'POST',
         body: JSON.stringify(paymentData),
         ...options // Pass options including signal
       });
-      
+
       // console.log('API Response status:', response.status);
       // console.log('API Response ok:', response.ok);
-      
+
       if (!response.ok) {
         let errorMessage = `Server error: ${response.status} ${response.statusText}`;
         try {
@@ -551,7 +551,7 @@ export const paymentApi = {
           data: null
         };
       }
-      
+
       const jsonResponse = await response.json();
       // console.log('API JSON response:', jsonResponse);
       return jsonResponse;
@@ -564,14 +564,14 @@ export const paymentApi = {
       };
     }
   },
-  
+
   getStatus: async (transactionId: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/payments/status/${transactionId}`);
     return response.json();
   },
-  
+
   getAll: async (limit: number = 50, userId?: string): Promise<ApiResponse> => {
-    const url = userId 
+    const url = userId
       ? `/payments/user/${userId}?limit=${limit}`
       : `/payments?limit=${limit}`;
     const response = await SmartAPIManager.smartFetch(url);
@@ -616,9 +616,9 @@ export const paymentApi = {
         method: 'POST',
         body: JSON.stringify(checkoutData)
       });
-      
+
       // console.log('📥 Uddokta Pay API response status:', response.status);
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         // console.error('❌ Uddokta Pay API error:', errorText);
@@ -635,7 +635,7 @@ export const paymentApi = {
           data: undefined
         };
       }
-      
+
       const jsonResponse = await response.json();
       // console.log('✅ Uddokta Pay API response:', jsonResponse);
       return jsonResponse;
@@ -844,17 +844,17 @@ export const gamePackageApi = {
     const response = await SmartAPIManager.smartFetch('/game-packages');
     return response.json();
   },
-  
+
   getAllForAdmin: async (): Promise<ApiResponse<BackendGamePackage[]>> => {
     const response = await SmartAPIManager.smartFetch('/game-packages/admin');
     return response.json();
   },
-  
+
   getById: async (id: string): Promise<ApiResponse<BackendGamePackage>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`);
     return response.json();
   },
-  
+
   create: async (packageData: Omit<BackendGamePackage, '_id' | 'createdAt' | 'updatedAt' | 'purchaseCount'>): Promise<ApiResponse<BackendGamePackage>> => {
     const response = await SmartAPIManager.smartFetch('/game-packages', {
       method: 'POST',
@@ -862,7 +862,7 @@ export const gamePackageApi = {
     });
     return response.json();
   },
-  
+
   update: async (id: string, packageData: Partial<BackendGamePackage>): Promise<ApiResponse<BackendGamePackage>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`, {
       method: 'PUT',
@@ -870,14 +870,14 @@ export const gamePackageApi = {
     });
     return response.json();
   },
-  
+
   delete: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${id}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   purchase: async (packageId: string, purchaseData: {
     userId: string;
     userEmail: string;
@@ -889,12 +889,12 @@ export const gamePackageApi = {
     });
     return response.json();
   },
-  
+
   getUserPurchases: async (userId: string): Promise<ApiResponse<BackendGamePackagePurchase[]>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/purchases/user/${userId}`);
     return response.json();
   },
-  
+
   getPurchaseCount: async (packageId: string): Promise<ApiResponse<{ packageId: string; purchaseCount: number }>> => {
     const response = await SmartAPIManager.smartFetch(`/game-packages/${packageId}/purchases`);
     return response.json();
@@ -915,7 +915,7 @@ export const themeApi = {
       };
     }
   },
-  
+
   update: async (themeData: { primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaApiKey?: string; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }; sweetnoteEnabled?: boolean; sweetnoteImageUrl?: string; sweetnoteHeading?: string; sweetnoteText?: string; sweetnoteButtonText?: string; sweetnoteButtonUrl?: string; shellUsername?: string; shellPassword?: string; shellAutocode?: string; pwaAppName?: string; updatedBy?: string }): Promise<ApiResponse<{ primaryColor: string; secondaryColor: string; livePurchaseStatementEnabled?: boolean; topUpCategoriesEnabled?: boolean; topUpCategoriesBadge?: string; topUpCategoriesHeading?: string; subscriptionsEnabled?: boolean; subscriptionsBadge?: string; subscriptionsHeading?: string; reviewSectionEnabled?: boolean; navbarLogoUrl?: string; fontFamily?: string; fontSizeBase?: number; navbarSearchPlaceholder?: string; navbarSearchEnabled?: boolean; supportWhatsAppUrl?: string; supportMessengerUrl?: string; supportTelegramUrl?: string; uddoktaBaseUrl?: string; uddoktaConfigured?: boolean; uddoktaGatewayConfig?: { baseUrl?: string; checkoutPath?: string; checkoutV2Path?: string; verifyPath?: string; refundPath?: string; apiKeyHeader?: string }; sweetnoteEnabled?: boolean; sweetnoteImageUrl?: string; sweetnoteHeading?: string; sweetnoteText?: string; sweetnoteButtonText?: string; sweetnoteButtonUrl?: string; shellUsername?: string; shellPassword?: string; shellAutocode?: string; pwaAppName?: string; updatedAt?: string; updatedBy?: string }>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/theme', {
@@ -1044,12 +1044,12 @@ export const digitalCodeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getCategoryById: async (id: string): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`);
     return response.json();
   },
-  
+
   createCategory: async (categoryData: Omit<BackendDigitalCodeCategory, '_id'>): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
     const response = await SmartAPIManager.smartFetch('/digital-codes/categories', {
       method: 'POST',
@@ -1057,7 +1057,7 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   updateCategory: async (id: string, categoryData: Partial<BackendDigitalCodeCategory>): Promise<ApiResponse<BackendDigitalCodeCategory>> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`, {
       method: 'PUT',
@@ -1065,14 +1065,14 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   deleteCategory: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/categories/${id}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   // Products
   getProducts: async (admin?: boolean, categoryId?: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendDigitalCodeProduct[]>> => {
     const params = new URLSearchParams();
@@ -1084,12 +1084,12 @@ export const digitalCodeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getAllProductsForAdmin: async (): Promise<ApiResponse<BackendDigitalCodeProduct[]>> => {
     const response = await SmartAPIManager.smartFetch('/digital-codes/products/admin');
     return response.json();
   },
-  
+
   getProductById: async (id: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -1099,7 +1099,7 @@ export const digitalCodeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   createProduct: async (productData: Omit<BackendDigitalCodeProduct, '_id'>): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
     const response = await SmartAPIManager.smartFetch('/digital-codes/products', {
       method: 'POST',
@@ -1107,7 +1107,7 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   updateProduct: async (id: string, productData: Partial<BackendDigitalCodeProduct>): Promise<ApiResponse<BackendDigitalCodeProduct>> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${id}`, {
       method: 'PUT',
@@ -1115,14 +1115,14 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   deleteProduct: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${id}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   // Codes
   getCodes: async (status?: 'active' | 'used', categoryId?: string, productId?: string, limit?: number): Promise<ApiResponse<BackendDigitalCode[]>> => {
     const params = new URLSearchParams();
@@ -1134,15 +1134,15 @@ export const digitalCodeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getCodeStats: async (categoryId?: string): Promise<ApiResponse<{ active: number; used: number; total: number }>> => {
-    const url = categoryId 
+    const url = categoryId
       ? `/digital-codes/codes/stats?categoryId=${categoryId}`
       : '/digital-codes/codes/stats';
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   bulkUploadCodes: async (bulkText: string, categoryId: string, productId?: string): Promise<ApiResponse<{ inserted: number; skipped: number; codes: BackendDigitalCode[] }>> => {
     const response = await SmartAPIManager.smartFetch('/digital-codes/codes/bulk-upload', {
       method: 'POST',
@@ -1150,7 +1150,7 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   addCode: async (codeData: { categoryId: string; productId?: string; code: string; prefix?: string }): Promise<ApiResponse<BackendDigitalCode>> => {
     const response = await SmartAPIManager.smartFetch('/digital-codes/codes', {
       method: 'POST',
@@ -1158,14 +1158,14 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   deleteCode: async (serialNumber: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/codes/${serialNumber}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   // Purchases
   purchase: async (purchaseData: {
     productId: string;
@@ -1181,7 +1181,7 @@ export const digitalCodeApi = {
     });
     return response.json();
   },
-  
+
   getUserPurchases: async (userId: string, limit?: number): Promise<ApiResponse<BackendDigitalCodePurchase[]>> => {
     const params = new URLSearchParams();
     if (limit) params.append('limit', limit.toString());
@@ -1189,12 +1189,12 @@ export const digitalCodeApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getPurchaseByTransactionId: async (transactionId: string): Promise<ApiResponse<BackendDigitalCodePurchase>> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/purchases/transaction/${transactionId}`);
     return response.json();
   },
-  
+
   checkProductStock: async (productId: string): Promise<ApiResponse<{ available: number }>> => {
     const response = await SmartAPIManager.smartFetch(`/digital-codes/products/${productId}/stock`);
     return response.json();
@@ -1209,12 +1209,12 @@ export const subscriptionApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getCategoryById: async (id: string): Promise<ApiResponse<BackendSubscriptionCategory>> => {
     const response = await SmartAPIManager.smartFetch(`/subscriptions/categories/${id}`);
     return response.json();
   },
-  
+
   createCategory: async (categoryData: Omit<BackendSubscriptionCategory, '_id'>): Promise<ApiResponse<BackendSubscriptionCategory>> => {
     const response = await SmartAPIManager.smartFetch('/subscriptions/categories', {
       method: 'POST',
@@ -1222,7 +1222,7 @@ export const subscriptionApi = {
     });
     return response.json();
   },
-  
+
   updateCategory: async (id: string, categoryData: Partial<BackendSubscriptionCategory>): Promise<ApiResponse<BackendSubscriptionCategory>> => {
     const response = await SmartAPIManager.smartFetch(`/subscriptions/categories/${id}`, {
       method: 'PUT',
@@ -1230,14 +1230,14 @@ export const subscriptionApi = {
     });
     return response.json();
   },
-  
+
   deleteCategory: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/subscriptions/categories/${id}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   // Products
   getProducts: async (admin?: boolean, categoryId?: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendSubscriptionProduct[]>> => {
     const params = new URLSearchParams();
@@ -1249,12 +1249,12 @@ export const subscriptionApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getAllProductsForAdmin: async (): Promise<ApiResponse<BackendSubscriptionProduct[]>> => {
     const response = await SmartAPIManager.smartFetch('/subscriptions/products/admin');
     return response.json();
   },
-  
+
   getProductsByCategory: async (categoryId: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendSubscriptionProduct[]>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -1264,7 +1264,7 @@ export const subscriptionApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   getProductById: async (id: string, userId?: string, userEmail?: string): Promise<ApiResponse<BackendSubscriptionProduct>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -1274,7 +1274,7 @@ export const subscriptionApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   createProduct: async (productData: Omit<BackendSubscriptionProduct, '_id'>): Promise<ApiResponse<BackendSubscriptionProduct>> => {
     const response = await SmartAPIManager.smartFetch('/subscriptions/products', {
       method: 'POST',
@@ -1282,7 +1282,7 @@ export const subscriptionApi = {
     });
     return response.json();
   },
-  
+
   updateProduct: async (id: string, productData: Partial<BackendSubscriptionProduct>): Promise<ApiResponse<BackendSubscriptionProduct>> => {
     const response = await SmartAPIManager.smartFetch(`/subscriptions/products/${id}`, {
       method: 'PUT',
@@ -1290,14 +1290,14 @@ export const subscriptionApi = {
     });
     return response.json();
   },
-  
+
   deleteProduct: async (id: string): Promise<ApiResponse> => {
     const response = await SmartAPIManager.smartFetch(`/subscriptions/products/${id}`, {
       method: 'DELETE'
     });
     return response.json();
   },
-  
+
   // Purchases
   purchase: async (purchaseData: {
     productId: string;
@@ -1313,7 +1313,7 @@ export const subscriptionApi = {
     });
     return response.json();
   },
-  
+
   getPurchases: async (userId?: string, productId?: string): Promise<ApiResponse<BackendSubscriptionPurchase[]>> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
@@ -1330,7 +1330,7 @@ export const membershipApi = {
   getPackages: async (): Promise<ApiResponse<BackendMembershipPackage[]>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/memberships/packages');
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         try {
@@ -1348,7 +1348,7 @@ export const membershipApi = {
           };
         }
       }
-      
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
@@ -1358,7 +1358,7 @@ export const membershipApi = {
           data: undefined
         };
       }
-      
+
       return response.json();
     } catch (error: any) {
       if (error.message && error.message.includes('timeout')) {
@@ -1382,7 +1382,7 @@ export const membershipApi = {
       };
     }
   },
-  
+
   getMyMembership: async (userId?: string, userEmail?: string): Promise<ApiResponse<BackendMembershipPurchase | null | undefined>> => {
     try {
       const params = new URLSearchParams();
@@ -1391,7 +1391,7 @@ export const membershipApi = {
       const qs = params.toString();
       const url = `/memberships/my-membership${qs ? `?${qs}` : ''}`;
       const response = await SmartAPIManager.smartFetch(url);
-      
+
       if (!response.ok) {
         // For my-membership, it's optional - return success with null data if not found
         if (response.status === 404) {
@@ -1417,7 +1417,7 @@ export const membershipApi = {
           };
         }
       }
-      
+
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         // For my-membership, if response is not JSON, assume no membership
@@ -1427,7 +1427,7 @@ export const membershipApi = {
           data: null
         } as ApiResponse<BackendMembershipPurchase | null>;
       }
-      
+
       return response.json();
     } catch (error: any) {
       // For my-membership, network errors are not critical - return success with null
@@ -1445,14 +1445,14 @@ export const membershipApi = {
       } as ApiResponse<BackendMembershipPurchase | null>;
     }
   },
-  
+
   purchaseMembership: async (packageId: string, userId: string, userEmail: string, userName?: string): Promise<ApiResponse<BackendMembershipPurchase>> => {
     try {
       const response = await SmartAPIManager.smartFetch('/memberships/purchase', {
         method: 'POST',
         body: JSON.stringify({ packageId, userId, userEmail, userName })
       });
-      
+
       // Check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
@@ -1471,7 +1471,7 @@ export const membershipApi = {
           };
         }
       }
-      
+
       // Check content type before parsing JSON
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
@@ -1482,7 +1482,7 @@ export const membershipApi = {
           data: undefined
         };
       }
-      
+
       return response.json();
     } catch (error: any) {
       // Handle network errors
@@ -1515,7 +1515,7 @@ export const membershipApi = {
       };
     }
   },
-  
+
   // Admin routes
   getAllPackages: async (userId?: string, userEmail?: string): Promise<ApiResponse<BackendMembershipPackage[]>> => {
     const params = new URLSearchParams();
@@ -1526,7 +1526,7 @@ export const membershipApi = {
     const response = await SmartAPIManager.smartFetch(url);
     return response.json();
   },
-  
+
   createPackage: async (data: {
     name: string;
     role?: 'reseller';
@@ -1541,7 +1541,7 @@ export const membershipApi = {
     });
     return response.json();
   },
-  
+
   updatePackage: async (id: string, data: {
     name?: string;
     role?: 'reseller';
@@ -1556,7 +1556,7 @@ export const membershipApi = {
     });
     return response.json();
   },
-  
+
   deletePackage: async (id: string, userId?: string, userEmail?: string): Promise<ApiResponse> => {
     const params = new URLSearchParams();
     if (userId) params.append('userId', userId);
