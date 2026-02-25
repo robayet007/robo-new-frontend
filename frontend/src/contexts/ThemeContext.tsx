@@ -172,6 +172,11 @@ const applyPwaBranding = (logoPath: string, appName: string, versionToken?: stri
   };
 
   setLink('manifest', manifestUrl);
+  // Ensure manifest has crossorigin for cross-domain loading
+  const manifestLink = document.head.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+  if (manifestLink) {
+    manifestLink.crossOrigin = 'anonymous';
+  }
   setLink('icon', cacheBustedIcon);
   setLink('icon', cacheBustedIcon, '16x16');
   setLink('icon', cacheBustedIcon, '32x32');
