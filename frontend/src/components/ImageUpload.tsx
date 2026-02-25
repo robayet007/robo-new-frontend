@@ -1,21 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
+import { SmartAPIManager } from '../services/api';
 import { getImageUrl } from '../utils/imageUrl';
 
-// Get API base URL (same logic as SmartAPIManager)
+// Get API base URL (consistent with SmartAPIManager)
 const getApiBaseURL = (): string => {
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  
-  if (!backendUrl) {
-    throw new Error(
-      'VITE_BACKEND_URL environment variable is not set. ' +
-      'Please set it in your .env file or Vercel environment variables.'
-    );
+  try {
+    return SmartAPIManager.getBaseURL();
+  } catch (err) {
+    // Fallback if SmartAPIManager fails, though it shouldn't
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+    return backendUrl ? `${backendUrl}/api` : '/api';
   }
-  
-  return `${backendUrl}/api`;
 };
 
-// Get API key for authentication (optional – backend may allow requests without it)
+// Get API key for authentication
 const getApiKey = (): string => {
   return import.meta.env.VITE_API_KEY || '';
 };
@@ -95,7 +93,17 @@ function ImageUpload({
       formData.append('image', file);
 
       const baseURL = getApiBaseURL();
-      const fullUrl = `${baseURL}${uploadEndpoint}`;
+      // Ensure endpoint starts with / if not already
+      const cleanEndpoint = uploadEndpoint.startsWith('/') ? uploadEndpoint : `/${uploadEndpoint}`;
+
+      // If baseURL already ends with /api and cleanEndpoint starts with /api, avoid double /api
+      let fullUrl = '';
+      if (baseURL.endsWith('/api') && cleanEndpoint.startsWith('/api')) {
+        fullUrl = `${baseURL}${cleanEndpoint.replace('/api', '')}`;
+      } else {
+        fullUrl = `${baseURL}${cleanEndpoint}`;
+      }
+
       const apiKey = getApiKey();
 
       const headers: Record<string, string> = {};
@@ -147,7 +155,7 @@ function ImageUpload({
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-semibold text-slate-700">{label}</label>
-      
+
       {/* Preview */}
       {preview && (
         <div className="relative w-full max-w-xs">
@@ -181,16 +189,15 @@ function ImageUpload({
         />
         <label
           htmlFor={`image-upload-${label.replace(/\s+/g, '-')}`}
-          className={`px-4 py-2 text-sm font-semibold text-white rounded-lg cursor-pointer transition-all ${
-            uploading ? 'bg-slate-400 cursor-not-allowed' : 'hover:opacity-90'
-          }`}
+          className={`px-4 py-2 text-sm font-semibold text-white rounded-lg cursor-pointer transition-all ${uploading ? 'bg-slate-400 cursor-not-allowed' : 'hover:opacity-90'
+            }`}
           style={
             uploading
               ? undefined
               : {
-                  background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
-                  boxShadow: '0 4px 14px rgba(var(--theme-primary-rgb), 0.35)'
-                }
+                background: 'linear-gradient(to right, var(--theme-primary), var(--theme-secondary))',
+                boxShadow: '0 4px 14px rgba(var(--theme-primary-rgb), 0.35)'
+              }
           }
         >
           {uploading ? 'Uploading...' : preview ? 'Change Image' : 'Choose Image'}
