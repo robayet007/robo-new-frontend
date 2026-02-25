@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import useCatalog from '../hooks/useCatalog';
-import { categoryApi, dealApi, voucherApi } from '../services/api';
+import { categoryApi, dealApi, voucherApi, shellAccountApi } from '../services/api';
 import type { BackendDeal } from '../types';
 import ImageUpload from './ImageUpload';
 import { useToast } from '../contexts/ToastContext';
@@ -124,11 +124,8 @@ export default function AdminProducts() {
 
   const loadShellAccounts = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts`, {
-        headers: { 'x-api-key': import.meta.env.VITE_API_KEY || '' }
-      });
-      const data = await res.json();
-      if (data.success) setShellAccounts(data.data);
+      const res = await shellAccountApi.getAll();
+      if (res.success) setShellAccounts(res.data || []);
     } catch (err) {
       console.error('Failed to load shell accounts:', err);
     }
@@ -440,8 +437,8 @@ export default function AdminProducts() {
               type="button"
               onClick={() => setSubTab(t.id)}
               className={`px-4 py-2 text-sm font-semibold transition-colors ${subTab === t.id
-                  ? 'text-white'
-                  : 'bg-white text-slate-600 hover:bg-slate-50'
+                ? 'text-white'
+                : 'bg-white text-slate-600 hover:bg-slate-50'
                 }`}
               style={subTab === t.id ? themeBtnStyle : undefined}
             >

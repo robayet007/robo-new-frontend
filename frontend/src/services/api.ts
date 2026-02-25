@@ -803,12 +803,47 @@ export const balanceApi = {
     });
     return response.json();
   },
-
   // Search emails for autocomplete
   searchEmails: async (query: string): Promise<ApiResponse<string[]>> => {
     const response = await SmartAPIManager.smartFetch(`/balance/search-emails?q=${encodeURIComponent(query)}`);
     return response.json();
+  }
+};
+
+// Shell Account API (Admin)
+export const shellAccountApi = {
+  getAll: async (params?: { region?: string; isActive?: boolean }): Promise<ApiResponse<any[]>> => {
+    const searchParams = new URLSearchParams();
+    if (params?.region) searchParams.append('region', params.region);
+    if (params?.isActive !== undefined) searchParams.append('isActive', String(params.isActive));
+
+    const qs = searchParams.toString();
+    const response = await SmartAPIManager.smartFetch(`/shell-accounts${qs ? `?${qs}` : ''}`);
+    return response.json();
   },
+
+  create: async (data: any): Promise<ApiResponse<any>> => {
+    const response = await SmartAPIManager.smartFetch('/shell-accounts', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  update: async (id: string, data: any): Promise<ApiResponse<any>> => {
+    const response = await SmartAPIManager.smartFetch(`/shell-accounts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  },
+
+  delete: async (id: string): Promise<ApiResponse<any>> => {
+    const response = await SmartAPIManager.smartFetch(`/shell-accounts/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  }
 };
 
 // Balance transfer API (P2P send money)

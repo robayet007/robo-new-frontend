@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useToast } from '../contexts/ToastContext';
 import { Pencil, Trash2, Shield, Globe } from 'lucide-react';
+import { shellAccountApi } from '../services/api';
 
 type ShellAccount = {
     id: string;
@@ -33,14 +34,9 @@ export default function AdminShellAccounts() {
 
     const fetchAccounts = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts`, {
-                headers: {
-                    'x-api-key': import.meta.env.VITE_API_KEY || '',
-                },
-            });
-            const data = await res.json();
+            const data = await shellAccountApi.getAll();
             if (data.success) {
-                setAccounts(data.data);
+                setAccounts(data.data || []);
             }
         } catch (err) {
             console.error('Failed to fetch shell accounts:', err);
@@ -63,22 +59,10 @@ export default function AdminShellAccounts() {
         };
 
         try {
-            const url = editingId
-                ? `${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts/${editingId}`
-                : `${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts`;
+            const data = editingId
+                ? await shellAccountApi.update(editingId, payload)
+                : await shellAccountApi.create(payload);
 
-            const method = editingId ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': import.meta.env.VITE_API_KEY || '',
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
             if (data.success) {
                 showToast({
                     type: 'success',
@@ -108,14 +92,7 @@ export default function AdminShellAccounts() {
         if (!window.confirm('Are you sure you want to delete this account?')) return;
 
         try {
-            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/shell-accounts/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'x-api-key': import.meta.env.VITE_API_KEY || '',
-                },
-            });
-
-            const data = await res.json();
+            const data = await shellAccountApi.delete(id);
             if (data.success) {
                 showToast({ type: 'success', text: 'Shell account deleted!' });
                 fetchAccounts();
