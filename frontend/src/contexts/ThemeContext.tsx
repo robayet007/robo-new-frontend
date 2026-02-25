@@ -151,7 +151,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const safeName = (appName || DEFAULT_PWA_APP_NAME).trim() || DEFAULT_PWA_APP_NAME;
     const iconUrl = getImageUrl(logoPath) || '/logo-robo.png';
     const cacheBustedIcon = `${iconUrl}${iconUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(versionToken || Date.now().toString())}`;
-    const manifestUrl = `/api/theme/manifest.json?v=${encodeURIComponent(versionToken || Date.now().toString())}`;
+    const baseURL = SmartAPIManager.getBackendBaseURL();
+    const manifestUrl = `${baseURL}/api/theme/manifest.json?v=${encodeURIComponent(versionToken || Date.now().toString())}`;
+    const cacheBustedIcon = `${iconUrl}${iconUrl.includes('?') ? '&' : '?'}v=${encodeURIComponent(versionToken || Date.now().toString())}`;
 
     const setLink = (rel: string, href: string, sizes?: string) => {
       const selector = sizes ? `link[rel="${rel}"][sizes="${sizes}"]` : `link[rel="${rel}"]:not([sizes])`;
