@@ -27,7 +27,7 @@ function SupportFab() {
   if (options.length === 0) return null;
 
   return (
-    <div ref={fabRef} className="fixed bottom-20 sm:bottom-24 right-6 z-50 hidden sm:block">
+    <div ref={fabRef} className="fixed bottom-24 sm:bottom-24 right-4 sm:right-6 z-50">
       {open && (
         <div className="absolute bottom-full right-0 mb-2 w-48 py-2 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
           {options.map(({ url, label, Icon, color }) => (
