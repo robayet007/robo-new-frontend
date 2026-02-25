@@ -117,6 +117,13 @@ export default function ReviewSection() {
     };
   }, [reviews]);
 
+  const marqueeDuration = useMemo(() => {
+    // Keep speed readable on both phone and desktop.
+    return Math.max(24, reviews.length * 5);
+  }, [reviews.length]);
+
+  const marqueeReviews = useMemo(() => [...reviews, ...reviews], [reviews]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorText('');
@@ -162,6 +169,13 @@ export default function ReviewSection() {
 
   return (
     <section className="mx-auto mt-6 rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.5)] sm:p-6">
+      <style>{`
+        @keyframes reviewMarquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Customer Reviews</h2>
@@ -220,24 +234,32 @@ export default function ReviewSection() {
           No reviews yet. Be the first one to post.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {reviews.map((row) => (
-            <article key={row.id || row._id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="mb-3 flex items-center gap-3">
-                <ReviewAvatar row={row} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">{row.userName || 'User'}</p>
-                  <p className="text-xs text-slate-500">
-                    {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'Today'}
-                  </p>
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60 p-2 sm:p-3">
+          <div
+            className="flex w-max gap-3 hover:[animation-play-state:paused]"
+            style={{ animation: `reviewMarquee ${marqueeDuration}s linear infinite` }}
+          >
+            {marqueeReviews.map((row, index) => (
+              <article
+                key={`${row.id || row._id || 'review'}-${index}`}
+                className="w-[270px] flex-shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:w-[320px]"
+              >
+                <div className="mb-3 flex items-center gap-3">
+                  <ReviewAvatar row={row} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{row.userName || 'User'}</p>
+                    <p className="text-xs text-slate-500">
+                      {row.createdAt ? new Date(row.createdAt).toLocaleDateString() : 'Today'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="mb-2">
-                <StarRow value={Number(row.rating) || 0} readOnly />
-              </div>
-              <p className="text-sm leading-relaxed text-slate-700">{row.comment}</p>
-            </article>
-          ))}
+                <div className="mb-2">
+                  <StarRow value={Number(row.rating) || 0} readOnly />
+                </div>
+                <p className="line-clamp-4 text-sm leading-relaxed text-slate-700">{row.comment}</p>
+              </article>
+            ))}
+          </div>
         </div>
       )}
     </section>
