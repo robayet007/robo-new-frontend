@@ -1050,8 +1050,10 @@ export interface BackendReview {
 }
 
 export const reviewApi = {
-  getAll: async (limit: number = 20): Promise<ApiResponse<BackendReview[]>> => {
-    const response = await SmartAPIManager.smartFetch(`/reviews?limit=${limit}`);
+  getAll: async (limit: number = 20, options?: { signal?: AbortSignal }): Promise<ApiResponse<BackendReview[]>> => {
+    const response = await SmartAPIManager.smartFetch(`/reviews?limit=${limit}`, {
+      signal: options?.signal
+    });
     return response.json();
   },
 

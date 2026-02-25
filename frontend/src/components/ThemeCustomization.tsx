@@ -413,33 +413,11 @@ function ThemeCustomization() {
       await updateTheme(
         primaryColor,
         secondaryColor,
-        user?.email || 'admin',
-        livePurchaseStatementEnabled,
-        topUpCategoriesEnabled,
-        topUpCategoriesBadge,
-        topUpCategoriesHeading,
-        subscriptionsEnabled,
-        subscriptionsBadge,
-        subscriptionsHeading,
-        reviewSectionEnabled,
-        localNavbarLogoUrl,
-        fontFamily,
-        fontSizeBase,
-        navbarSearchPlaceholder,
-        navbarSearchEnabled,
-        supportWhatsAppUrl,
-        supportMessengerUrl,
-        supportTelegramUrl,
-        uddoktaBaseUrl,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        localPwaAppName
+        {
+          updatedBy: user?.email || 'admin',
+          navbarLogoUrl: localNavbarLogoUrl,
+          pwaAppName: localPwaAppName
+        }
       );
       showToast({ type: 'success', text: 'Logo saved.' });
     } catch (error: any) {
@@ -455,32 +433,15 @@ function ThemeCustomization() {
       await updateTheme(
         primaryColor,
         secondaryColor,
-        user?.email || 'admin',
-        livePurchaseStatementEnabled,
-        topUpCategoriesEnabled,
-        topUpCategoriesBadge,
-        topUpCategoriesHeading,
-        subscriptionsEnabled,
-        subscriptionsBadge,
-        subscriptionsHeading,
-        reviewSectionEnabled,
-        navbarLogoUrl,
-        fontFamily,
-        fontSizeBase,
-        navbarSearchPlaceholder,
-        navbarSearchEnabled,
-        supportWhatsAppUrl,
-        supportMessengerUrl,
-        supportTelegramUrl,
-        uddoktaBaseUrl,
-        undefined,
-        uddoktaGatewayConfig,
-        localSweetnoteEnabled,
-        localSweetnoteImageUrl,
-        localSweetnoteHeading,
-        localSweetnoteText,
-        localSweetnoteButtonText,
-        localSweetnoteButtonUrl
+        {
+          updatedBy: user?.email || 'admin',
+          sweetnoteEnabled: localSweetnoteEnabled,
+          sweetnoteImageUrl: localSweetnoteImageUrl,
+          sweetnoteHeading: localSweetnoteHeading,
+          sweetnoteText: localSweetnoteText,
+          sweetnoteButtonText: localSweetnoteButtonText,
+          sweetnoteButtonUrl: localSweetnoteButtonUrl
+        }
       );
       showToast({ type: 'success', text: 'Sweetnote popup saved. Users will see it on first visit.' });
     } catch (error: any) {
@@ -506,13 +467,35 @@ function ThemeCustomization() {
 
     setIsSaving(true);
     try {
-      await updateTheme(localPrimary, localSecondary, user?.email || 'admin', localLivePurchaseEnabled, localTopUpCategoriesEnabled, localTopUpCategoriesBadge, localTopUpCategoriesHeading, localSubscriptionsEnabled, localSubscriptionsBadge, localSubscriptionsHeading, localReviewSectionEnabled, localNavbarLogoUrl, localFontFamily, localFontSizeBase, localNavbarSearchPlaceholder, localNavbarSearchEnabled, localSupportWhatsAppUrl, localSupportMessengerUrl, localSupportTelegramUrl, localUddoktaBaseUrl, localUddoktaApiKey.trim() || undefined, {
-        baseUrl: localUddoktaBaseUrl.trim(),
-        checkoutPath: localUddoktaCheckoutPath.trim(),
-        checkoutV2Path: localUddoktaCheckoutV2Path.trim(),
-        verifyPath: localUddoktaVerifyPath.trim(),
-        refundPath: localUddoktaRefundPath.trim(),
-      }, undefined, undefined, undefined, undefined, undefined, undefined, localPwaAppName);
+      await updateTheme(localPrimary, localSecondary, {
+        updatedBy: user?.email || 'admin',
+        livePurchaseStatementEnabled: localLivePurchaseEnabled,
+        topUpCategoriesEnabled: localTopUpCategoriesEnabled,
+        topUpCategoriesBadge: localTopUpCategoriesBadge,
+        topUpCategoriesHeading: localTopUpCategoriesHeading,
+        subscriptionsEnabled: localSubscriptionsEnabled,
+        subscriptionsBadge: localSubscriptionsBadge,
+        subscriptionsHeading: localSubscriptionsHeading,
+        reviewSectionEnabled: localReviewSectionEnabled,
+        navbarLogoUrl: localNavbarLogoUrl,
+        fontFamily: localFontFamily,
+        fontSizeBase: localFontSizeBase,
+        navbarSearchPlaceholder: localNavbarSearchPlaceholder,
+        navbarSearchEnabled: localNavbarSearchEnabled,
+        supportWhatsAppUrl: localSupportWhatsAppUrl,
+        supportMessengerUrl: localSupportMessengerUrl,
+        supportTelegramUrl: localSupportTelegramUrl,
+        uddoktaBaseUrl: localUddoktaBaseUrl,
+        uddoktaApiKey: localUddoktaApiKey.trim() || undefined,
+        uddoktaGatewayConfig: {
+          baseUrl: localUddoktaBaseUrl.trim(),
+          checkoutPath: localUddoktaCheckoutPath.trim(),
+          checkoutV2Path: localUddoktaCheckoutV2Path.trim(),
+          verifyPath: localUddoktaVerifyPath.trim(),
+          refundPath: localUddoktaRefundPath.trim(),
+        },
+        pwaAppName: localPwaAppName
+      });
       setLocalUddoktaApiKey('');
       showToast({
         type: 'success',

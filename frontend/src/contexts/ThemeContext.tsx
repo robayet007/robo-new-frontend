@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, type ReactNode } from 'react';
 import { themeApi, SmartAPIManager } from '../services/api';
 import { getImageUrl } from '../utils/imageUrl';
 
