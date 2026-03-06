@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   collection,
   doc,
@@ -37,7 +37,7 @@ function useUsers() {
     // Real-time listener for users (with error handling for blocked requests)
     let unsubscribe: (() => void) | null = null;
     let fallbackInterval: ReturnType<typeof setInterval> | null = null;
-    
+
     try {
       unsubscribe = onSnapshot(
         collection(db, USERS_COLLECTION),
@@ -70,7 +70,7 @@ function useUsers() {
           // console.warn('⚠️ Real-time listener failed (may be blocked by browser extension)');
           // console.warn('⚠️ Falling back to periodic fetch every 10 seconds');
           setLoading(false);
-          
+
           // Fall back to periodic polling if real-time listener fails
           if (!fallbackInterval) {
             fallbackInterval = setInterval(() => {
@@ -84,7 +84,7 @@ function useUsers() {
       // console.error('❌ Failed to set up real-time listener:', error);
       // console.warn('⚠️ Using periodic fetch instead');
       setLoading(false);
-      
+
       // Set up periodic polling as fallback
       fallbackInterval = setInterval(() => {
         // console.log('🔄 Periodic refresh: Fetching users...');
@@ -159,7 +159,7 @@ function useUsers() {
       // Find user by email
       const q = query(collection(db, USERS_COLLECTION), where('email', '==', email));
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         // console.error('User not found:', email);
         return;
@@ -178,9 +178,9 @@ function useUsers() {
     }
   };
 
-  const getUserRole = async (email: string | null | undefined): Promise<UserRole> => {
+  const getUserRole = useCallback(async (email: string | null | undefined): Promise<UserRole> => {
     if (!email) return 'user';
-    
+
     // Default admin email
     if (email.toLowerCase().trim() === 'mdrobayet007@gmail.com') {
       return 'admin';
@@ -189,7 +189,7 @@ function useUsers() {
     try {
       const q = query(collection(db, USERS_COLLECTION), where('email', '==', email));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         const userData = querySnapshot.docs[0].data();
         return userData.role || 'user';
@@ -197,9 +197,9 @@ function useUsers() {
     } catch (error) {
       // console.error('Error getting user role:', error);
     }
-    
+
     return 'user';
-  };
+  }, []);
 
   const refreshUsers = () => {
     loadUsers();
