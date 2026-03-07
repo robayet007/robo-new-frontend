@@ -1,4 +1,5 @@
 import type { ApiResponse, BackendProduct, BackendCategory, BackendPurchase, BackendDeal, BackendBanner, BackendNotice, BackendGamePackage, BackendGamePackagePurchase, BackendDigitalCodeCategory, BackendDigitalCodeProduct, BackendDigitalCode, BackendDigitalCodePurchase, BackendSubscriptionCategory, BackendSubscriptionProduct, BackendSubscriptionPurchase, BackendMembershipPackage, BackendMembershipPurchase } from '../types';
+import { auth } from '../config/firebase';
 
 // ==================== API MANAGER - Smart URL Detection ====================
 export class SmartAPIManager {
@@ -135,6 +136,19 @@ export class SmartAPIManager {
 
     if (apiKey) {
       headers['X-API-Key'] = apiKey;
+    }
+
+    // Include Firebase ID Token in Authorization header if user is logged in
+    try {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        const idToken = await currentUser.getIdToken();
+        if (idToken) {
+          headers['Authorization'] = `Bearer ${idToken}`;
+        }
+      }
+    } catch (tokenError) {
+      // console.error('Failed to get Firebase ID token:', tokenError);
     }
 
     // Prepare fetch options
