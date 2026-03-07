@@ -114,7 +114,8 @@ function useCatalog() {
             price: p.price,
             resellerPrice: p.resellerPrice,
             bonus: p.bonus,
-            tag: p.tag
+            tag: p.tag,
+            shellQuantity: p.shellQuantity ?? 1
           }));
         setProducts(convertedProducts);
       } else {
@@ -315,6 +316,7 @@ function useCatalog() {
         resellerPrice: newProduct.resellerPrice,
         bonus: newProduct.bonus || '',
         tag: newProduct.tag || '',
+        shellQuantity: newProduct.shellQuantity || 1,
         categoryName: category?.name || 'Unknown',
         isActive: true
       });
@@ -358,6 +360,7 @@ function useCatalog() {
         resellerPrice: productData.resellerPrice !== undefined ? productData.resellerPrice : existingProduct.resellerPrice,
         bonus: productData.bonus !== undefined ? productData.bonus : existingProduct.bonus || '',
         tag: productData.tag !== undefined ? productData.tag : existingProduct.tag || '',
+        shellQuantity: productData.shellQuantity !== undefined ? productData.shellQuantity : existingProduct.shellQuantity || 1,
         categoryName: category?.name || 'Unknown',
         isActive: true
       });
