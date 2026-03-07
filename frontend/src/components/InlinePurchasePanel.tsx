@@ -356,8 +356,27 @@ function InlinePurchasePanel({
           return;
         }
 
-        const transactionId =
-          response.data?.payment?.transactionId || searchParams.get("transactionId") || invoiceId;
+        const returnedStatus = response.data?.payment?.status;
+        const transactionId = response.data?.payment?.transactionId || searchParams.get("transactionId") || invoiceId;
+
+        if (returnedStatus === 'failed') {
+          setPaymentResult({
+            status: "warning",
+            message: "Payment verified, but top-up failed. Please contact support.",
+            amount: product.price,
+            remaining: getCurrentBalance?.() ?? balance,
+            transactionId,
+            productName: product.name,
+            paymentMethod: "Instant Pay",
+            playerId: mode === "regular" ? uid.trim() : "",
+          });
+          setVerifyingPayment({
+            invoiceId,
+            status: "failed",
+            message: "Top-up failed after verification.",
+          });
+          return;
+        }
 
         await assignPostPaymentProduct(transactionId, invoiceId);
         await refresh();
@@ -369,7 +388,9 @@ function InlinePurchasePanel({
         });
         setPaymentResult({
           status: "success",
-          message: "Payment verified! Your order is being processed.",
+          message: returnedStatus === 'processing'
+            ? "Payment verified! Your order is being processed."
+            : "Payment verified! Order completed.",
           amount: product.price,
           remaining: getCurrentBalance?.() ?? balance,
           transactionId,
@@ -377,7 +398,7 @@ function InlinePurchasePanel({
           paymentMethod: "Instant Pay",
           playerId: mode === "regular" ? uid.trim() : "",
         });
-        // Defer URL cleanup so success state is visible before navigation flash
+        // Defer URL cleanup
         setTimeout(() => clearUrlParams(), 500);
       } catch (error: any) {
         setVerifyingPayment({
@@ -481,13 +502,29 @@ function InlinePurchasePanel({
       await refresh();
       const actualBalance = getCurrentBalance?.() ?? balance;
 
+      const returnedStatus = response.data?.status;
+
       if (response.success) {
+        if (returnedStatus === 'failed') {
+          setPaymentResult({
+            status: "warning",
+            message: "Payment successful, but top-up failed. Please contact support.",
+            amount: product.price,
+            remaining: actualBalance,
+            transactionId,
+            productName: product.name,
+            paymentMethod: "Wallet Pay",
+            playerId: mode === "regular" ? uid.trim() : "",
+            ucCode: response.data?.ucCode,
+          });
+          return;
+        }
+
         setPaymentResult({
           status: "success",
-          message:
-            mode === "regular"
-              ? "Payment successful! Your order is being processed."
-              : "Payment successful! Your order has been placed.",
+          message: returnedStatus === 'processing'
+            ? "Payment successful! Your order is being processed."
+            : "Payment successful! Order completed.",
           amount: product.price,
           remaining: actualBalance,
           transactionId,
@@ -622,10 +659,10 @@ function InlinePurchasePanel({
       {verifyingPayment && (
         <div
           className={`mb-4 overflow-hidden rounded-xl border transition-all duration-300 ${verifyingPayment.status === "verifying"
-              ? "p-5 bg-gradient-to-br from-slate-50 to-slate-100/80"
-              : verifyingPayment.status === "verified"
-                ? "p-5 bg-gradient-to-br from-emerald-50 to-teal-50/80"
-                : "p-5 bg-gradient-to-br from-red-50 to-rose-50/80"
+            ? "p-5 bg-gradient-to-br from-slate-50 to-slate-100/80"
+            : verifyingPayment.status === "verified"
+              ? "p-5 bg-gradient-to-br from-emerald-50 to-teal-50/80"
+              : "p-5 bg-gradient-to-br from-red-50 to-rose-50/80"
             }`}
           style={themeBorderStyle}
         >
@@ -721,16 +758,16 @@ function InlinePurchasePanel({
               </span>
               <span className="text-slate-600">Status</span>
               <span className={`font-semibold ${ucTopupStatus?.transactionId === paymentResult.transactionId
-                  ? ucTopupStatus?.status === "completed"
+                ? ucTopupStatus?.status === "completed"
+                  ? "text-emerald-600"
+                  : ucTopupStatus?.status === "failed"
+                    ? "text-red-600"
+                    : "text-blue-600"
+                : product.diamonds && paymentResult.status === "success"
+                  ? "text-blue-600"
+                  : paymentResult.status === "success"
                     ? "text-emerald-600"
-                    : ucTopupStatus?.status === "failed"
-                      ? "text-red-600"
-                      : "text-blue-600"
-                  : product.diamonds && paymentResult.status === "success"
-                    ? "text-blue-600"
-                    : paymentResult.status === "success"
-                      ? "text-emerald-600"
-                      : "text-amber-600"
+                    : "text-amber-600"
                 }`}>
                 {ucTopupStatus?.transactionId === paymentResult.transactionId
                   ? ucTopupStatus?.status === "processing"
@@ -748,12 +785,12 @@ function InlinePurchasePanel({
               </span>
             </div>
             <p className={`mt-2 text-sm ${ucTopupStatus?.transactionId === paymentResult.transactionId
-                ? ucTopupStatus?.status === "completed"
-                  ? "text-emerald-700"
-                  : ucTopupStatus?.status === "failed"
-                    ? "text-red-600"
-                    : "text-blue-600"
-                : "text-slate-600"
+              ? ucTopupStatus?.status === "completed"
+                ? "text-emerald-700"
+                : ucTopupStatus?.status === "failed"
+                  ? "text-red-600"
+                  : "text-blue-600"
+              : "text-slate-600"
               }`}>
               {ucTopupStatus?.transactionId === paymentResult.transactionId
                 ? ucTopupStatus?.status === "processing"
@@ -831,10 +868,10 @@ function InlinePurchasePanel({
                 onClick={handleCheckPlayerId}
                 disabled={loadingPlayer || !uid.trim()}
                 className={`flex items-center justify-center w-full gap-2 px-4 py-2.5 mt-3 text-sm font-semibold border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed ${playerName
-                    ? "text-white border-transparent"
-                    : playerError
-                      ? "text-red-700 border-red-200 bg-red-50"
-                      : "border-slate-300 text-slate-800 hover:bg-slate-50"
+                  ? "text-white border-transparent"
+                  : playerError
+                    ? "text-red-700 border-red-200 bg-red-50"
+                    : "border-slate-300 text-slate-800 hover:bg-slate-50"
                   }`}
                 style={playerName ? { background: "linear-gradient(to right, var(--theme-primary), var(--theme-secondary))" } : undefined}
               >
