@@ -53,6 +53,7 @@ export default function AdminProducts() {
   const [ucCategoryQuantities, setUcCategoryQuantities] = useState<Array<{ ucCategory: string; quantity: number }>>([{ ucCategory: '', quantity: 1 }]);
   const [topupType, setTopupType] = useState<'voucher' | 'shell'>('voucher');
   const [shellPackage, setShellPackage] = useState<ShellPackage | ''>('');
+  const [shellQuantity, setShellQuantity] = useState('1');
   const [price, setPrice] = useState('');
   const [resellerPrice, setResellerPrice] = useState('');
   const [bonus, setBonus] = useState('');
@@ -322,6 +323,7 @@ export default function AdminProducts() {
       tag: tag.trim() || undefined,
       topupType,
       shellAccountId: shellAccountId || undefined,
+      shellQuantity: Number(shellQuantity) || 1,
     };
     if (topupType === 'shell') {
       payload.shellPackage = shellPackage;
@@ -343,6 +345,7 @@ export default function AdminProducts() {
       setBonus('');
       setTag('');
       setShellAccountId('');
+      setShellQuantity('1');
     } else showToast({ type: 'error', text: result.error || 'Failed' });
   };
 
@@ -371,6 +374,7 @@ export default function AdminProducts() {
       tag: tag.trim() || undefined,
       topupType,
       shellAccountId: shellAccountId || undefined,
+      shellQuantity: Number(shellQuantity) || 1,
     };
     if (topupType === 'shell') {
       payload.shellPackage = shellPackage;
@@ -388,6 +392,7 @@ export default function AdminProducts() {
       setUcCategoryQuantities([{ ucCategory: '', quantity: 1 }]);
       setTopupType('voucher');
       setShellPackage('');
+      setShellQuantity('1');
       setPrice('');
       setResellerPrice('');
       setBonus('');
@@ -899,6 +904,19 @@ export default function AdminProducts() {
                   </select>
                 </div>
               )}
+              {topupType === 'shell' && (
+                <label className="block">
+                  <span className="block mb-2 text-sm font-semibold text-slate-700">Quantity</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={shellQuantity}
+                    onChange={(e) => setShellQuantity(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl border-slate-300 focus:outline-none focus:ring-2"
+                    placeholder="1"
+                  />
+                </label>
+              )}
               <label className="block">
                 <span className="block mb-2 text-sm font-semibold text-slate-700">Price (৳) *</span>
                 <input
@@ -977,7 +995,7 @@ export default function AdminProducts() {
                         <span>{categories.find((c) => c.id === item.categoryId)?.name || '-'}</span>
                         <span>
                           {item.topupType === 'shell' && item.shellPackage
-                            ? `Shell: ${item.shellPackage}`
+                            ? `Shell: ${item.shellPackage} x ${item.shellQuantity || 1}`
                             : item.ucCategoryQuantities?.length
                               ? `UC: ${item.ucCategoryQuantities.map((x) => `${x.ucCategory}x${x.quantity}`).join(', ')}`
                               : item.ucCategory
@@ -1009,6 +1027,7 @@ export default function AdminProducts() {
                           setBonus(item.bonus || '');
                           setTag(item.tag || '');
                           setShellAccountId(item.shellAccountId || '');
+                          setShellQuantity(String(item.shellQuantity || 1));
                           setCategoryId(item.categoryId);
                           document.querySelector('.product-form')?.scrollIntoView({ behavior: 'smooth' });
                         }}

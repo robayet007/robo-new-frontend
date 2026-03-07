@@ -17,6 +17,7 @@ export interface BackendProduct {
   ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
   topupType?: 'voucher' | 'shell';
   shellPackage?: string;
+  shellQuantity?: number;
   shellAccountId?: string;
   price: number;
   resellerPrice?: number;
@@ -163,6 +164,7 @@ export type Product = {
   ucCategoryQuantities?: Array<{ ucCategory: string; quantity: number }>;
   topupType?: 'voucher' | 'shell';
   shellPackage?: string;
+  shellQuantity?: number;
   shellAccountId?: string;
   price: number;
   resellerPrice?: number;
