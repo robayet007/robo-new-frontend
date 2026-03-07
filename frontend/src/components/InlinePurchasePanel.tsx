@@ -119,17 +119,17 @@ function InlinePurchasePanel({
         }
       }
       return {
-      id: selectedProduct.id,
-      name: selectedProduct.name,
-      price: selectedProduct.price,
-      diamonds: diamondsDisplay,
-      inputFields:
-        mode === "regular"
-          ? []
-          : Array.isArray((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields)
-            ? ((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields as ProductInputField[]) || []
-            : [],
-    };
+        id: selectedProduct.id,
+        name: selectedProduct.name,
+        price: selectedProduct.price,
+        diamonds: diamondsDisplay,
+        inputFields:
+          mode === "regular"
+            ? []
+            : Array.isArray((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields)
+              ? ((selectedProduct as BackendDigitalCodeProduct | BackendSubscriptionProduct).inputFields as ProductInputField[]) || []
+              : [],
+      };
     },
     [selectedProduct, mode],
   );
@@ -232,26 +232,22 @@ function InlinePurchasePanel({
     setPlayerName("");
 
     try {
-      const baseUrl = SmartAPIManager.getBaseURL();
-      const url = `${baseUrl}/player-nickname?uid=${encodeURIComponent(trimmedUid)}`;
-      const headers: HeadersInit = {};
-      const apiKey = SmartAPIManager.getApiKey();
-      if (apiKey) headers["X-API-Key"] = apiKey;
-      const res = await fetch(url, { headers });
-      const data = await res.json();
+      const response = await SmartAPIManager.smartFetch(`/player-nickname?uid=${encodeURIComponent(trimmedUid)}`);
+      const data = await response.json();
+
       if (uidFetchRef.current !== trimmedUid) return;
 
-      if (res.ok && data?.success && data?.player_info?.nickname != null) {
+      if (response.ok && data?.success && data?.player_info?.nickname != null) {
         setPlayerName(String(data.player_info.nickname));
         setPlayerError("");
       } else {
         setPlayerName("");
         setPlayerError("Player not found");
       }
-    } catch {
+    } catch (error: any) {
       if (uidFetchRef.current !== trimmedUid) return;
       setPlayerName("");
-      setPlayerError("Failed to fetch player");
+      setPlayerError(error?.message || "Failed to fetch player");
     } finally {
       if (uidFetchRef.current === trimmedUid) setLoadingPlayer(false);
     }
@@ -625,13 +621,12 @@ function InlinePurchasePanel({
 
       {verifyingPayment && (
         <div
-          className={`mb-4 overflow-hidden rounded-xl border transition-all duration-300 ${
-            verifyingPayment.status === "verifying"
+          className={`mb-4 overflow-hidden rounded-xl border transition-all duration-300 ${verifyingPayment.status === "verifying"
               ? "p-5 bg-gradient-to-br from-slate-50 to-slate-100/80"
               : verifyingPayment.status === "verified"
                 ? "p-5 bg-gradient-to-br from-emerald-50 to-teal-50/80"
                 : "p-5 bg-gradient-to-br from-red-50 to-rose-50/80"
-          }`}
+            }`}
           style={themeBorderStyle}
         >
           {verifyingPayment.status === "verifying" && (
@@ -678,9 +673,8 @@ function InlinePurchasePanel({
         >
           <div className="flex items-center gap-3 mb-4 pb-3 border-b border-slate-200/80">
             <div
-              className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${
-                paymentResult.status === "success" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"
-              }`}
+              className={`flex items-center justify-center w-10 h-10 rounded-full shrink-0 ${paymentResult.status === "success" ? "bg-emerald-500/15 text-emerald-600" : "bg-amber-500/15 text-amber-600"
+                }`}
             >
               {paymentResult.status === "success" ? (
                 <FaCheck className="w-5 h-5" />
@@ -726,8 +720,7 @@ function InlinePurchasePanel({
                 {paymentResult.transactionId}
               </span>
               <span className="text-slate-600">Status</span>
-              <span className={`font-semibold ${
-                ucTopupStatus?.transactionId === paymentResult.transactionId
+              <span className={`font-semibold ${ucTopupStatus?.transactionId === paymentResult.transactionId
                   ? ucTopupStatus?.status === "completed"
                     ? "text-emerald-600"
                     : ucTopupStatus?.status === "failed"
@@ -738,7 +731,7 @@ function InlinePurchasePanel({
                     : paymentResult.status === "success"
                       ? "text-emerald-600"
                       : "text-amber-600"
-              }`}>
+                }`}>
                 {ucTopupStatus?.transactionId === paymentResult.transactionId
                   ? ucTopupStatus?.status === "processing"
                     ? "⏳ Processing"
@@ -754,15 +747,14 @@ function InlinePurchasePanel({
                       : "⚠️ " + (paymentResult.status || "Unknown")}
               </span>
             </div>
-            <p className={`mt-2 text-sm ${
-              ucTopupStatus?.transactionId === paymentResult.transactionId
+            <p className={`mt-2 text-sm ${ucTopupStatus?.transactionId === paymentResult.transactionId
                 ? ucTopupStatus?.status === "completed"
                   ? "text-emerald-700"
                   : ucTopupStatus?.status === "failed"
                     ? "text-red-600"
                     : "text-blue-600"
                 : "text-slate-600"
-            }`}>
+              }`}>
               {ucTopupStatus?.transactionId === paymentResult.transactionId
                 ? ucTopupStatus?.status === "processing"
                   ? (ucTopupStatus?.message || "UC top-up is being processed. Waiting for response...")
@@ -838,13 +830,12 @@ function InlinePurchasePanel({
                 type="button"
                 onClick={handleCheckPlayerId}
                 disabled={loadingPlayer || !uid.trim()}
-                className={`flex items-center justify-center w-full gap-2 px-4 py-2.5 mt-3 text-sm font-semibold border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed ${
-                  playerName
+                className={`flex items-center justify-center w-full gap-2 px-4 py-2.5 mt-3 text-sm font-semibold border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed ${playerName
                     ? "text-white border-transparent"
                     : playerError
                       ? "text-red-700 border-red-200 bg-red-50"
                       : "border-slate-300 text-slate-800 hover:bg-slate-50"
-                }`}
+                  }`}
                 style={playerName ? { background: "linear-gradient(to right, var(--theme-primary), var(--theme-secondary))" } : undefined}
               >
                 <FaSearch className="text-xs" />
@@ -926,9 +917,8 @@ function InlinePurchasePanel({
               setPaymentResult(null);
               setPaymentMethod("robo");
             }}
-            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              paymentMethod === "robo" ? "shadow-lg" : ""
-            }`}
+            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${paymentMethod === "robo" ? "shadow-lg" : ""
+              }`}
             style={{
               borderColor: paymentMethod === "robo" ? primaryColor : "var(--theme-border)",
               boxShadow: paymentMethod === "robo" ? `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.2)` : undefined,
@@ -958,9 +948,8 @@ function InlinePurchasePanel({
               setPaymentManuallySelected(true);
               setPaymentMethod("uddokta");
             }}
-            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${
-              paymentMethod === "uddokta" ? "shadow-lg" : ""
-            }`}
+            className={`relative bg-white border-2 rounded-xl p-4 transition-all ${paymentMethod === "uddokta" ? "shadow-lg" : ""
+              }`}
             style={{
               borderColor: paymentMethod === "uddokta" ? primaryColor : "var(--theme-border)",
               boxShadow: paymentMethod === "uddokta" ? `0 10px 15px -3px rgba(var(--theme-primary-rgb), 0.2)` : undefined,

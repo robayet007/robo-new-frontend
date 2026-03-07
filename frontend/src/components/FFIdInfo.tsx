@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { SmartAPIManager } from '../services/api';
 
 type FFBasicInfo = {
   accountId: string;
@@ -69,34 +70,41 @@ function FFIdInfo() {
     try {
       setLoading(true);
       setError(null);
-      
-      // Create new AbortController for timeout
-      abortControllerRef.current = new AbortController();
-      const timeoutId = setTimeout(() => abortControllerRef.current?.abort(), 10000); // 10 second timeout
 
-      const url = `https://info-ob49.vercel.app/api/account/?uid=${encodeURIComponent(
-        trimmedUid
-      )}&region=BD`;
-      
-      const resp = await fetch(url, {
-        signal: abortControllerRef.current.signal,
-        cache: 'no-cache',
-      });
+      const response = await SmartAPIManager.smartFetch(`/player-nickname?uid=${encodeURIComponent(trimmedUid)}`);
 
-      clearTimeout(timeoutId);
-
-      if (!resp.ok) {
-        throw new Error(`Request failed: ${resp.status} ${resp.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
       }
 
-      const json = (await resp.json()) as FFAccountResponse;
-      
-      if (!json || !json.basicInfo) {
-        throw new Error('No account info found for this UID.');
+      const json = await response.json();
+
+      if (!json || !json.success || !json.player_info) {
+        throw new Error(json?.message || 'No account info found for this UID.');
       }
+
+      // Map the internal structure to the component's expected structure
+      const mappedData: FFAccountResponse = {
+        basicInfo: {
+          accountId: String(json.player_info.uid || trimmedUid),
+          nickname: json.player_info.nickname || 'Unknown',
+          region: json.player_info.region || 'BD',
+          level: json.player_info.level || 0,
+          exp: 0,
+          rank: 0,
+          rankingPoints: 0,
+          hasElitePass: false,
+          badgeCnt: 0,
+          liked: json.player_info.likes || 0,
+          lastLoginAt: '',
+          maxRank: 0,
+          csRank: 0,
+          csMaxRank: 0,
+        }
+      };
 
       if (!isCancelledRef.current) {
-        setData(json);
+        setData(mappedData);
         setError(null);
         setLoading(false);
         setRetryCount(0);
@@ -104,30 +112,25 @@ function FFIdInfo() {
     } catch (err: any) {
       if (isCancelledRef.current) return;
 
-      // Don't retry on abort (timeout or manual cancellation)
+      // Handle abort separately if needed, but smartFetch throws on timeout/abort
       if (err.name === 'AbortError') {
-        // Retry on timeout (up to 10 attempts)
-        if (attempt < 10) {
+        if (attempt < 5) { // Reduced retries for simpler logic
           setRetryCount(attempt + 1);
-          const delay = Math.min(800 * (attempt + 1), 3000); // Faster retry: 800ms, 1600ms, 2400ms, max 3000ms
-          setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), delay);
+          setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), 1000);
         } else {
           setError('Request timeout. Please check your connection and try again.');
           setLoading(false);
-          setRetryCount(0);
         }
         return;
       }
 
-      // Retry on other errors (up to 8 attempts)
-      if (attempt < 8) {
+      // Retry on other errors
+      if (attempt < 3) {
         setRetryCount(attempt + 1);
-        const delay = Math.min(600 * (attempt + 1), 2500); // Faster retry: 600ms, 1200ms, 1800ms, max 2500ms
-        setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), delay);
+        setTimeout(() => fetchFFInfo(trimmedUid, attempt + 1), 1500);
       } else {
-        setError(err?.message || 'Failed to fetch account info after multiple attempts. Please try again.');
+        setError(err?.message || 'Failed to fetch account info. Please try again.');
         setLoading(false);
-        setRetryCount(0);
       }
     }
   };
