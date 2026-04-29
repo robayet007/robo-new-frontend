@@ -493,6 +493,8 @@ function ThemeCustomization() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue);
   };
 
+  const normalizeGmailAppPassword = (value: string) => value.replace(/\s+/g, '').trim();
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -531,6 +533,17 @@ function ThemeCustomization() {
       return;
     }
 
+    const normalizedMailPassword = normalizeGmailAppPassword(localMailAppPassword);
+    if (normalizedMailPassword && !localMailGmailUser.trim()) {
+      showToast({ type: 'error', text: 'Gmail Address is required before saving a Gmail App Password.' });
+      return;
+    }
+
+    if (normalizedMailPassword && normalizedMailPassword.length !== 16) {
+      showToast({ type: 'error', text: 'Gmail App Password must be 16 characters. Spaces are okay, they will be removed automatically.' });
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateTheme(localPrimary, localSecondary, {
@@ -565,7 +578,7 @@ function ThemeCustomization() {
 
       const mailResponse = await themeApi.updateMailConfig({
         gmailUser: localMailGmailUser.trim(),
-        gmailAppPassword: localMailAppPassword.trim() || undefined,
+        gmailAppPassword: normalizedMailPassword || undefined,
         fromName: localMailFromName.trim(),
         replyTo: localMailReplyTo.trim(),
         updatedBy: user?.email || 'admin'
