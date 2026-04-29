@@ -581,7 +581,7 @@ function UserManagement() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-[11px] text-slate-500 sm:text-xs">
-              Gmail delivery works after backend env সেট করা থাকবে: <span className="font-semibold text-slate-700">GMAIL_USER</span> and <span className="font-semibold text-slate-700">GMAIL_APP_PASSWORD</span>.
+              Sender Gmail এখন <span className="font-semibold text-slate-700">Store Customize &amp; Key Integration</span> থেকে dynamic ভাবে set করা যাবে।
             </p>
             <button
               type="button"

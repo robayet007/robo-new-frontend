@@ -4,7 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import useAuth from '../hooks/useAuth';
 import ImageUpload from './ImageUpload';
-import { bannerApi, noticeApi } from '../services/api';
+import { bannerApi, noticeApi, themeApi } from '../services/api';
 import type { BackendBanner, BackendNotice } from '../types';
 import { getImageUrl } from '../utils/imageUrl';
 
@@ -45,6 +45,11 @@ function ThemeCustomization() {
   const [localUddoktaCheckoutV2Path, setLocalUddoktaCheckoutV2Path] = useState<string>('');
   const [localUddoktaVerifyPath, setLocalUddoktaVerifyPath] = useState<string>('');
   const [localUddoktaRefundPath, setLocalUddoktaRefundPath] = useState<string>('');
+  const [localMailGmailUser, setLocalMailGmailUser] = useState<string>('');
+  const [localMailAppPassword, setLocalMailAppPassword] = useState<string>('');
+  const [localMailFromName, setLocalMailFromName] = useState<string>('');
+  const [localMailReplyTo, setLocalMailReplyTo] = useState<string>('');
+  const [localMailConfigured, setLocalMailConfigured] = useState<boolean>(false);
   const [localPwaAppName, setLocalPwaAppName] = useState<string>('Robo Top Up Zone');
 
   // Banners (image-only)
@@ -71,6 +76,7 @@ function ThemeCustomization() {
   const [localSweetnoteButtonText, setLocalSweetnoteButtonText] = useState<string>('Join Now');
   const [localSweetnoteButtonUrl, setLocalSweetnoteButtonUrl] = useState<string>('');
   const [savingSweetnote, setSavingSweetnote] = useState<boolean>(false);
+  const [loadingMailConfig, setLoadingMailConfig] = useState<boolean>(false);
 
   const [activeTab, setActiveTab] = useState<ThemeTab>('brand');
 
@@ -188,9 +194,28 @@ function ThemeCustomization() {
     }
   };
 
+  const loadMailConfig = async () => {
+    try {
+      setLoadingMailConfig(true);
+      const response = await themeApi.getMailConfig();
+      if (response.success && response.data) {
+        setLocalMailGmailUser(response.data.gmailUser || '');
+        setLocalMailFromName(response.data.fromName || '');
+        setLocalMailReplyTo(response.data.replyTo || '');
+        setLocalMailConfigured(response.data.configured === true);
+        setLocalMailAppPassword('');
+      }
+    } catch (err) {
+      console.error('Failed to load mail config:', err);
+    } finally {
+      setLoadingMailConfig(false);
+    }
+  };
+
   useEffect(() => {
     loadBanners();
     loadNotices();
+    loadMailConfig();
   }, []);
 
   const handleAddBanner = async (e: FormEvent) => {
@@ -496,10 +521,25 @@ function ThemeCustomization() {
         },
         pwaAppName: localPwaAppName
       });
+
+      const mailResponse = await themeApi.updateMailConfig({
+        gmailUser: localMailGmailUser.trim(),
+        gmailAppPassword: localMailAppPassword.trim() || undefined,
+        fromName: localMailFromName.trim(),
+        replyTo: localMailReplyTo.trim(),
+        updatedBy: user?.email || 'admin'
+      });
+
+      if (!mailResponse.success) {
+        throw new Error(mailResponse.message || 'Failed to update mail config');
+      }
+
+      setLocalMailConfigured(mailResponse.data?.configured === true);
+      setLocalMailAppPassword('');
       setLocalUddoktaApiKey('');
       showToast({
         type: 'success',
-        text: 'Theme updated successfully! Changes are live now and saved to MongoDB.'
+        text: 'Theme and mail settings updated successfully! Changes are live now and saved to MongoDB.'
       });
       setPreviewMode(false);
     } catch (error: any) {
@@ -1206,6 +1246,69 @@ function ThemeCustomization() {
                       {uddoktaConfigured ? 'API key is configured. Leave empty to keep current key.' : 'No API key configured yet.'}
                     </p>
                     <p className="mt-1 text-[11px] text-slate-500">Header key used: RT-UDDOKTAPAY-API-KEY</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <span className="block text-sm font-semibold text-slate-700">Admin Email Sender</span>
+                    <p className="mt-1 text-xs text-slate-500">
+                      এখান থেকে dynamic ভাবে ঠিক করবেন কোন Gmail account আর কোন sender name থেকে user-দের mail যাবে।
+                    </p>
+                  </div>
+                  <span className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${localMailConfigured ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {loadingMailConfig ? 'Loading...' : localMailConfigured ? 'Configured' : 'Not configured'}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Gmail Address</label>
+                    <input
+                      type="email"
+                      value={localMailGmailUser}
+                      onChange={(e) => setLocalMailGmailUser(e.target.value)}
+                      placeholder="mdrobayet37@gmail.com"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Sender Name</label>
+                    <input
+                      type="text"
+                      value={localMailFromName}
+                      onChange={(e) => setLocalMailFromName(e.target.value)}
+                      placeholder="Robo top up one"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Reply-To Email</label>
+                    <input
+                      type="email"
+                      value={localMailReplyTo}
+                      onChange={(e) => setLocalMailReplyTo(e.target.value)}
+                      placeholder="mdrobayet37@gmail.com"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1.5 text-xs font-medium text-slate-600">Gmail App Password</label>
+                    <input
+                      type="password"
+                      value={localMailAppPassword}
+                      onChange={(e) => setLocalMailAppPassword(e.target.value)}
+                      placeholder="Paste new 16-character app password"
+                      className="w-full px-3 py-2 text-sm border rounded-lg border-slate-300 focus:outline-none focus:ring-2"
+                      style={inputRingStyle}
+                    />
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {localMailConfigured ? 'Already configured. Leave empty to keep current password.' : 'No mail password configured yet.'}
+                    </p>
                   </div>
                 </div>
               </div>

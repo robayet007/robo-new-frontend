@@ -999,6 +999,35 @@ export const themeApi = {
         data: undefined
       };
     }
+  },
+
+  getMailConfig: async (): Promise<ApiResponse<{ gmailUser?: string; fromName?: string; replyTo?: string; configured?: boolean; updatedAt?: string; updatedBy?: string }>> => {
+    try {
+      const response = await SmartAPIManager.smartFetch('/theme/mail-config');
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to fetch mail config',
+        data: undefined
+      };
+    }
+  },
+
+  updateMailConfig: async (mailConfig: { gmailUser?: string; gmailAppPassword?: string; fromName?: string; replyTo?: string; updatedBy?: string }): Promise<ApiResponse<{ gmailUser?: string; fromName?: string; replyTo?: string; configured?: boolean; updatedAt?: string; updatedBy?: string }>> => {
+    try {
+      const response = await SmartAPIManager.smartFetch('/theme/mail-config', {
+        method: 'PUT',
+        body: JSON.stringify(mailConfig)
+      });
+      return response.json();
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to update mail config',
+        data: undefined
+      };
+    }
   }
 };
 
