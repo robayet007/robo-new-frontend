@@ -4,7 +4,7 @@ const Footer = () => {
       <p className="text-xs sm:text-sm text-slate-600">
         All Rights Reserved | Developed By{' '}
         <a
-          href="https://t.me/UNIPIN_SUPPLYAR_NILOY"
+          href="https://t.me/mohammadrobayet"
           target="_blank"
           rel="noopener noreferrer"
           className="font-semibold transition-colors hover:underline"
