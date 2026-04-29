@@ -95,7 +95,7 @@ export class SmartAPIManager {
   }
 
   // Simple fetch to backend with timeout and API key authentication
-  static async smartFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  static async smartFetch(path: string, options: (RequestInit & { timeoutMs?: number }) = {}): Promise<Response> {
     const baseURL = this.getBaseURL();
     const url = `${baseURL}${path}`;
 
@@ -119,7 +119,7 @@ export class SmartAPIManager {
       // Create new controller with adaptive timeout (shorter for mobile)
       controller = new AbortController();
       signalToUse = controller.signal;
-      const timeout = isMobileDevice ? 15000 : 20000; // 15s for mobile, 20s for desktop
+      const timeout = options.timeoutMs ?? (isMobileDevice ? 15000 : 20000); // 15s for mobile, 20s for desktop
       timeoutId = setTimeout(() => {
         if (controller) {
           controller.abort();
@@ -497,6 +497,7 @@ export const userMailApi = {
     const response = await SmartAPIManager.smartFetch('/users/send-email', {
       method: 'POST',
       body: JSON.stringify(payload),
+      timeoutMs: 120000,
     });
     return response.json();
   },
