@@ -476,6 +476,23 @@ function ThemeCustomization() {
     }
   };
 
+  const isValidOptionalUrl = (value: string) => {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return true;
+    try {
+      const parsedUrl = new URL(trimmedValue);
+      return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
+  const isValidOptionalEmail = (value: string) => {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue);
+  };
+
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
 
@@ -487,6 +504,30 @@ function ThemeCustomization() {
 
     if (!/^#([A-Fa-f0-9]{6})$/.test(localSecondary)) {
       showToast({ type: 'error', text: 'Invalid secondary color format' });
+      return;
+    }
+
+    const optionalUrlFields = [
+      ['WhatsApp URL', localSupportWhatsAppUrl],
+      ['Messenger URL', localSupportMessengerUrl],
+      ['Telegram URL', localSupportTelegramUrl],
+      ['Gateway Base URL', localUddoktaBaseUrl],
+    ] as const;
+
+    const invalidUrlField = optionalUrlFields.find(([, value]) => !isValidOptionalUrl(value));
+    if (invalidUrlField) {
+      showToast({ type: 'error', text: `${invalidUrlField[0]} must be a valid http/https link.` });
+      return;
+    }
+
+    const optionalEmailFields = [
+      ['Gmail Address', localMailGmailUser],
+      ['Reply-To Email', localMailReplyTo],
+    ] as const;
+
+    const invalidEmailField = optionalEmailFields.find(([, value]) => !isValidOptionalEmail(value));
+    if (invalidEmailField) {
+      showToast({ type: 'error', text: `${invalidEmailField[0]} must be a valid email address.` });
       return;
     }
 
@@ -694,7 +735,7 @@ function ThemeCustomization() {
         </div>
 
         {['brand', 'content', 'integrations', 'sweetnote'].includes(activeTab) && (
-          <form id="theme-form" onSubmit={handleSave} className="space-y-6">
+          <form id="theme-form" onSubmit={handleSave} noValidate className="space-y-6">
             {/* Brand & Logo tab */}
             <div className={activeTab !== 'brand' ? 'hidden' : 'space-y-6'}>
               <div className="p-4 border shadow-sm rounded-xl bg-slate-50 border-slate-200">
