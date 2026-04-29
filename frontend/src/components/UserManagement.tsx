@@ -295,22 +295,23 @@ function UserManagement() {
         recipientEmails: activeRecipientEmails,
       });
 
+      const failedCount = response.data?.failedCount ?? 0;
+      const firstFailedEmail = response.data?.failed?.[0]?.email;
+      const firstFailedError = response.data?.failed?.[0]?.error;
+
       if (!response.success) {
         showToast({
           type: 'error',
-          text: response.message || 'Failed to send email.',
+          text: `${response.message || 'Failed to send email.'}${firstFailedError && !String(response.message || '').includes(firstFailedError) ? ` Reason: ${firstFailedError}` : ''}${firstFailedEmail && !String(response.message || '').includes(firstFailedEmail) ? ` (${firstFailedEmail})` : ''}`,
         });
         return;
       }
-
-      const failedCount = response.data?.failedCount ?? 0;
-      const firstFailedEmail = response.data?.failed?.[0]?.email;
 
       showToast({
         type: failedCount > 0 ? 'error' : 'success',
         text:
           failedCount > 0
-            ? `${response.message || 'Some emails failed.'}${firstFailedEmail ? ` First failed: ${firstFailedEmail}` : ''}`
+            ? `${response.message || 'Some emails failed.'}${firstFailedError && !String(response.message || '').includes(firstFailedError) ? ` Reason: ${firstFailedError}` : ''}${firstFailedEmail && !String(response.message || '').includes(firstFailedEmail) ? ` (${firstFailedEmail})` : ''}`
             : response.message || 'Email sent successfully.',
       });
 
