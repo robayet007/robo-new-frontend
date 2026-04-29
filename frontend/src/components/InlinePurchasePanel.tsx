@@ -242,7 +242,7 @@ function InlinePurchasePanel({
         setPlayerError("");
       } else {
         setPlayerName("");
-        setPlayerError("Player not found");
+        setPlayerError(data?.message || "Player not found");
       }
     } catch (error: any) {
       if (uidFetchRef.current !== trimmedUid) return;

@@ -482,6 +482,26 @@ export const userSyncApi = {
   },
 };
 
+export const userMailApi = {
+  send: async (payload: {
+    subject: string;
+    message: string;
+    recipientEmails: string[];
+  }): Promise<
+    ApiResponse<{
+      sentCount: number;
+      failedCount: number;
+      failed: Array<{ email: string; success: false; error: string }>;
+    }>
+  > => {
+    const response = await SmartAPIManager.smartFetch('/users/send-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return response.json();
+  },
+};
+
 export const userProfileApi = {
   profileSync: async (payload: {
     uid: string;

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, Crown, Tag, Shield, RefreshCw, Plus, X } from 'lucide-react';
+import { Users, Crown, Tag, Shield, RefreshCw, Plus, X, Mail, Send } from 'lucide-react';
 import useUsers, { type UserRole, type AppUser } from '../hooks/useUsers';
 import useAuth from '../hooks/useAuth';
-import { balanceApi, adminRoleApi, userSyncApi, type AdminModerationPermissions } from '../services/api';
+import { balanceApi, adminRoleApi, userSyncApi, userMailApi, type AdminModerationPermissions } from '../services/api';
 import { useToast } from '../contexts/ToastContext';
 import { useUsersQuery, usersQueryKeys } from '../hooks/useUsersQuery';
 import { useBalancesQuery, balancesQueryKeys } from '../hooks/useBalancesQuery';
@@ -28,6 +28,11 @@ function UserManagement() {
   const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
   const [syncFromAuthLoading, setSyncFromAuthLoading] = useState(false);
   const [roleMap, setRoleMap] = useState<Map<string, Role>>(new Map());
+  const [mailMode, setMailMode] = useState<'all' | 'selected'>('selected');
+  const [selectedMailUser, setSelectedMailUser] = useState<AppUser | null>(null);
+  const [mailSubject, setMailSubject] = useState('');
+  const [mailMessage, setMailMessage] = useState('');
+  const [mailSending, setMailSending] = useState(false);
 
   type ModerationPermissions = AdminModerationPermissions;
 
@@ -135,9 +140,36 @@ function UserManagement() {
   const moderatorCount = users.filter(u => u.role === 'moderator').length;
 
   const regularUsersList = filteredUsers.filter(u => u.role !== 'admin');
+  const emailableUsersMap = new Map<string, AppUser>();
+
+  usersWithRoles.forEach((user) => {
+    const normalizedEmail = user.email?.trim().toLowerCase();
+    if (normalizedEmail && !emailableUsersMap.has(normalizedEmail)) {
+      emailableUsersMap.set(normalizedEmail, user);
+    }
+  });
+
+  const emailableUsers = Array.from(emailableUsersMap.values());
+  const allRecipientEmails = emailableUsers
+    .map((user) => user.email?.trim().toLowerCase() || '')
+    .filter(Boolean);
+  const selectedRecipientEmails = selectedMailUser?.email
+    ? [selectedMailUser.email.trim().toLowerCase()]
+    : [];
+  const activeRecipientEmails = mailMode === 'all' ? allRecipientEmails : selectedRecipientEmails;
 
   const openBalanceForUser = (user: AppUser) => {
     void handleOpenBalanceEditor(user);
+  };
+
+  const openMailComposerForUser = (user: AppUser) => {
+    if (!user.email) {
+      showToast({ type: 'error', text: 'This user does not have an email address.' });
+      return;
+    }
+
+    setMailMode('selected');
+    setSelectedMailUser(user);
   };
 
   const handleOpenBalanceEditor = async (user: AppUser) => {
@@ -230,6 +262,69 @@ function UserManagement() {
       });
     } finally {
       setBalanceLoading(false);
+    }
+  };
+
+  const handleSendMail = async () => {
+    const cleanedSubject = mailSubject.trim();
+    const cleanedMessage = mailMessage.trim();
+
+    if (!cleanedSubject) {
+      showToast({ type: 'error', text: 'Please enter an email subject.' });
+      return;
+    }
+
+    if (!cleanedMessage) {
+      showToast({ type: 'error', text: 'Please enter your email message.' });
+      return;
+    }
+
+    if (activeRecipientEmails.length === 0) {
+      showToast({
+        type: 'error',
+        text: mailMode === 'all' ? 'No user emails found to send.' : 'Please select a user first.',
+      });
+      return;
+    }
+
+    try {
+      setMailSending(true);
+      const response = await userMailApi.send({
+        subject: cleanedSubject,
+        message: cleanedMessage,
+        recipientEmails: activeRecipientEmails,
+      });
+
+      if (!response.success) {
+        showToast({
+          type: 'error',
+          text: response.message || 'Failed to send email.',
+        });
+        return;
+      }
+
+      const failedCount = response.data?.failedCount ?? 0;
+      const firstFailedEmail = response.data?.failed?.[0]?.email;
+
+      showToast({
+        type: failedCount > 0 ? 'error' : 'success',
+        text:
+          failedCount > 0
+            ? `${response.message || 'Some emails failed.'}${firstFailedEmail ? ` First failed: ${firstFailedEmail}` : ''}`
+            : response.message || 'Email sent successfully.',
+      });
+
+      if (failedCount === 0) {
+        setMailSubject('');
+        setMailMessage('');
+      }
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        text: error?.message || 'Failed to send email.',
+      });
+    } finally {
+      setMailSending(false);
     }
   };
 
@@ -344,6 +439,17 @@ function UserManagement() {
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+          <button
+            type="button"
+            onClick={() => {
+              setMailMode('all');
+              setSelectedMailUser(null);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white transition-all bg-sky-600 sm:px-4 rounded-xl sm:text-sm hover:bg-sky-700"
+          >
+            <Mail className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+            Mail All Users
+          </button>
           {currentUser && !users.find(u => u.uid === currentUser.uid) && (
             <button
               onClick={() => {
@@ -403,6 +509,89 @@ function UserManagement() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-3 py-2 text-sm border sm:px-4 rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-sky-200 bg-gradient-to-br from-sky-50 via-white to-cyan-50 p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Email Broadcast</p>
+            <h4 className="text-base font-bold text-slate-900 sm:text-lg">Send Gmail from admin panel</h4>
+            <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+              Individual user select করতে row-এর <span className="font-semibold text-slate-900">Email User</span> button use করুন, অথবা একসাথে সব email-এ পাঠাতে <span className="font-semibold text-slate-900">All Users</span> mode নিন।
+            </p>
+          </div>
+          <div className="flex rounded-xl border border-sky-200 bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setMailMode('selected')}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all sm:text-sm ${mailMode === 'selected' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-sky-50'}`}
+            >
+              Selected User
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMailMode('all');
+                setSelectedMailUser(null);
+              }}
+              className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all sm:text-sm ${mailMode === 'all' ? 'bg-sky-600 text-white shadow-sm' : 'text-slate-600 hover:bg-sky-50'}`}
+            >
+              All Users
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-sky-100 bg-white/80 p-3 sm:p-4">
+          <p className="text-xs font-semibold text-slate-700 sm:text-sm">Recipients</p>
+          <p className="mt-1 text-xs text-slate-600 sm:text-sm">
+            {mailMode === 'all'
+              ? `${activeRecipientEmails.length} user email selected.`
+              : selectedMailUser?.email
+                ? `${selectedMailUser.displayName || 'Selected user'} • ${selectedMailUser.email}`
+                : 'No user selected yet. নিচের list থেকে Email User চাপুন।'}
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4">
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+              Subject
+            </label>
+            <input
+              type="text"
+              value={mailSubject}
+              onChange={(e) => setMailSubject(e.target.value)}
+              placeholder="Example: Important update from Robo TopUp"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 sm:px-4"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-semibold text-slate-700 sm:text-sm">
+              Message
+            </label>
+            <textarea
+              value={mailMessage}
+              onChange={(e) => setMailMessage(e.target.value)}
+              rows={6}
+              placeholder="Write the message you want to send..."
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 sm:px-4"
+            />
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-slate-500 sm:text-xs">
+              Gmail delivery works after backend env সেট করা থাকবে: <span className="font-semibold text-slate-700">GMAIL_USER</span> and <span className="font-semibold text-slate-700">GMAIL_APP_PASSWORD</span>.
+            </p>
+            <button
+              type="button"
+              onClick={handleSendMail}
+              disabled={mailSending}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-semibold text-white transition-all hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
+            >
+              <Send className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
+              {mailSending ? 'Sending...' : `Send Email${mailMode === 'all' ? ` (${activeRecipientEmails.length})` : ''}`}
+            </button>
           </div>
         </div>
       </div>
@@ -741,7 +930,7 @@ function UserManagement() {
                     (open editor)
                   </p>
                 </div>
-                <div>
+                <div className="flex flex-col gap-1 sm:flex-row">
                   <button
                     type="button"
                     onClick={() => handleOpenBalanceEditor(user)}
@@ -749,8 +938,14 @@ function UserManagement() {
                   >
                     View / Edit
                   </button>
-                </div>
-                <div>
+                  <button
+                    type="button"
+                    onClick={() => openMailComposerForUser(user)}
+                    disabled={!user.email}
+                    className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-sky-300 bg-sky-50 text-[10px] sm:text-xs text-sky-700 hover:bg-sky-100 transition-all whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Email User
+                  </button>
                   <button
                     onClick={() => handleRoleChange(user, 'user')}
                     disabled={user.uid === currentUser?.uid || user.email === currentUser?.email}
@@ -851,6 +1046,14 @@ function UserManagement() {
                     >
                       View / Edit
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => openMailComposerForUser(u)}
+                      disabled={!u.email}
+                      className="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border border-sky-300 bg-sky-50 text-[10px] sm:text-xs text-sky-700 hover:bg-sky-100 transition-all whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Email User
+                    </button>
                     {u.role === 'moderator' && (
                       <button
                         type="button"
@@ -896,7 +1099,3 @@ function UserManagement() {
 }
 
 export default UserManagement;
-
-
-
-

@@ -36,7 +36,7 @@ function LivePurchaseStatement() {
   const fetchRecentPurchases = async () => {
     try {
       setError(null);
-      const response = await paymentApi.getAll(50);
+      const response = await paymentApi.getRecentPurchases(10);
       if (response.success && Array.isArray(response.data)) {
         const filtered = response.data.filter(
           (p: BackendPurchase) =>

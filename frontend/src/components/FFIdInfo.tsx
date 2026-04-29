@@ -73,11 +73,11 @@ function FFIdInfo() {
 
       const response = await SmartAPIManager.smartFetch(`/player-nickname?uid=${encodeURIComponent(trimmedUid)}`);
 
-      if (!response.ok) {
-        throw new Error(`Request failed: ${response.status} ${response.statusText}`);
-      }
-
       const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json?.message || `Request failed: ${response.status} ${response.statusText}`);
+      }
 
       if (!json || !json.success || !json.player_info) {
         throw new Error(json?.message || 'No account info found for this UID.');
